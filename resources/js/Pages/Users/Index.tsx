@@ -22,7 +22,7 @@ import {
     MapPin,
     Building,
     CreditCard,
-    Calendar,
+    Calendar as CalendarIcon,
     Briefcase,
     UserCheck,
     UserX,
@@ -38,6 +38,9 @@ import {
     ZoomOut,
     RotateCcw
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { format, parseISO } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -59,6 +62,15 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/Components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/Components/ui/select';
+import { Calendar } from '@/Components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
 import AvatarCropperModal from '@/Components/AvatarCropperModal';
 
 interface UserData {
@@ -609,15 +621,19 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                     )}
                                 </div>
 
-                                <select
+                                <Select
                                     value={selectedStatusFilter}
-                                    onChange={(e) => setSelectedStatusFilter(e.target.value as any)}
-                                    className="h-9 px-2.5 text-xs rounded-md border border-input bg-background text-foreground shadow-2xs focus:outline-hidden focus:ring-1 focus:ring-ring"
+                                    onValueChange={(val: any) => setSelectedStatusFilter(val)}
                                 >
-                                    <option value="all">Semua Status</option>
-                                    <option value="active">Hanya Aktif</option>
-                                    <option value="inactive">Hanya Nonaktif</option>
-                                </select>
+                                    <SelectTrigger className="w-[145px] h-9 text-xs bg-background">
+                                        <SelectValue placeholder="Status Staf" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Semua Status</SelectItem>
+                                        <SelectItem value="active">Hanya Aktif</SelectItem>
+                                        <SelectItem value="inactive">Hanya Nonaktif</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                     </CardContent>
@@ -1238,16 +1254,59 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                             <Label htmlFor="user-join" className="text-xs font-semibold">
                                                 Tanggal Bergabung (Join Date)
                                             </Label>
-                                            <div className="relative">
-                                                <Calendar className="size-4 text-muted-foreground absolute left-3 top-2.5" />
-                                                <Input
-                                                    id="user-join"
-                                                    type="date"
-                                                    value={formData.join_date}
-                                                    onChange={(e) => setFormData('join_date', e.target.value)}
-                                                    className="pl-9 text-xs"
-                                                />
-                                            </div>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        id="user-join"
+                                                        type="button"
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "w-full justify-start text-left font-normal h-9 text-xs pl-3 border-input bg-background",
+                                                            !formData.join_date && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        <CalendarIcon className="mr-2 size-4 text-muted-foreground" />
+                                                        {formData.join_date ? (
+                                                            (() => {
+                                                                try {
+                                                                    return format(parseISO(formData.join_date), "dd MMMM yyyy", { locale: idLocale });
+                                                                } catch {
+                                                                    return formData.join_date;
+                                                                }
+                                                            })()
+                                                        ) : (
+                                                            <span>Pilih tanggal bergabung</span>
+                                                        )}
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0 z-50" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={formData.join_date ? parseISO(formData.join_date) : undefined}
+                                                        onSelect={(date) => {
+                                                            if (date) {
+                                                                setFormData('join_date', format(date, 'yyyy-MM-dd'));
+                                                            } else {
+                                                                setFormData('join_date', '');
+                                                            }
+                                                        }}
+                                                        autoFocus
+                                                    />
+                                                    {formData.join_date && (
+                                                        <div className="p-2 border-t border-border flex justify-end">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-xs h-7 px-2 text-muted-foreground hover:text-destructive"
+                                                                onClick={() => setFormData('join_date', '')}
+                                                            >
+                                                                Hapus Tanggal
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </PopoverContent>
+                                            </Popover>
                                             {formErrors.join_date && (
                                                 <p className="text-xs font-medium text-destructive">{formErrors.join_date}</p>
                                             )}

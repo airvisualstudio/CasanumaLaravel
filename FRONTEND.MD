@@ -59,14 +59,19 @@ resources/
 │   └── app.css                   # Tailwind v4 import, custom variants, OKLCH color tokens
 └── js/
     ├── Components/
-    │   └── ui/                   # shadcn/ui atomic components (Radix UI)
-    │       ├── button.tsx
-    │       ├── card.tsx
-    │       ├── checkbox.tsx
-    │       ├── dialog.tsx        # Standard modal & alert component
-    │       ├── dropdown-menu.tsx
-    │       ├── input.tsx
-    │       └── label.tsx
+    │   ├── ui/                   # shadcn/ui atomic components (Radix UI)
+    │   │   ├── badge.tsx
+    │   │   ├── button.tsx
+    │   │   ├── calendar.tsx      # Standard calendar & date picker (react-day-picker)
+    │   │   ├── card.tsx
+    │   │   ├── checkbox.tsx
+    │   │   ├── dialog.tsx        # Standard modal & alert component
+    │   │   ├── dropdown-menu.tsx
+    │   │   ├── input.tsx
+    │   │   ├── label.tsx
+    │   │   ├── popover.tsx       # Standard popover container
+    │   │   ├── select.tsx        # Standard select dropdown (Radix Select)
+    │   │   └── table.tsx         # Standard data table components
     ├── hooks/
     │   └── useAuthorization.ts   # Client-side Spatie RBAC hook (can, roles)
     ├── Layouts/
@@ -209,3 +214,58 @@ export default function LeadActions() {
   );
 }
 ```
+
+### 4.5. Standardisasi Dropdown & Date Picker (MANDATORY shadcn `Select` & `Calendar` + `Popover`)
+> **PENTING / MANDATORY:** Semua input pilihan dropdown dan pemilihan tanggal di seluruh CRM **WAJIB** menggunakan komponen resmi shadcn/ui.
+
+**Aturan Ketat:**
+- ❌ **DILARANG KERAS** menggunakan elemen native HTML `<select>` bawaan browser.
+- ❌ **DILARANG KERAS** menggunakan native date input bawaan browser (`<input type="date">`).
+- ✅ **WAJIB** menggunakan **`Select`** dari `@/Components/ui/select`:
+  ```tsx
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from '@/Components/ui/select';
+
+  <Select value={filterValue} onValueChange={(val) => setFilterValue(val)}>
+    <SelectTrigger className="w-[145px] h-9 text-xs">
+      <SelectValue placeholder="Pilih Opsi" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="option_1">Opsi Satu</SelectItem>
+      <SelectItem value="option_2">Opsi Dua</SelectItem>
+    </SelectContent>
+  </Select>
+  ```
+- ✅ **WAJIB** menggunakan **`Calendar`** dari `@/Components/ui/calendar` yang dibungkus dalam **`Popover`** (`@/Components/ui/popover`) bersama utilitas `date-fns`:
+  ```tsx
+  import { Calendar } from '@/Components/ui/calendar';
+  import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
+  import { format, parseISO } from 'date-fns';
+  import { id as idLocale } from 'date-fns/locale';
+
+  <Popover>
+    <PopoverTrigger asChild>
+      <Button
+        variant="outline"
+        className={cn("w-full justify-start text-left font-normal h-9 text-xs", !selectedDate && "text-muted-foreground")}
+      >
+        <CalendarIcon className="mr-2 size-4 text-muted-foreground" />
+        {selectedDate ? format(parseISO(selectedDate), "dd MMMM yyyy", { locale: idLocale }) : <span>Pilih tanggal</span>}
+      </Button>
+    </PopoverTrigger>
+    <PopoverContent className="w-auto p-0 z-50" align="start">
+      <Calendar
+        mode="single"
+        selected={selectedDate ? parseISO(selectedDate) : undefined}
+        onSelect={(date) => setSelectedDate(date ? format(date, 'yyyy-MM-dd') : '')}
+        autoFocus
+      />
+    </PopoverContent>
+  </Popover>
+  ```
+

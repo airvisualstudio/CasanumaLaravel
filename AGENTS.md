@@ -76,3 +76,10 @@ Boost replaces these bootstrap instructions with guidelines tailored to the appl
 ## 4. Database Standards
 - **DBMS:** PostgreSQL 16+ (`DB_CONNECTION=pgsql`, basis data `casanuma_crm`).
 - **Seeders:** `RolePermissionSeeder` dan `UserSeeder` sebagai acuan akun pengujian standar.
+
+## 5. Input, Dropdown & Date Picker Standards
+- **DILARANG KERAS** menggunakan dropdown native browser (`<select>`) dan date input native (`<input type="date">`).
+- **WAJIB** menggunakan komponen standar dari **shadcn/ui**:
+  - **Dropdown / Selection:** Wajib menggunakan `Select` (`SelectTrigger`, `SelectValue`, `SelectContent`, `SelectItem`) dari `@/Components/ui/select`.
+  - **Calendar / Date Picker:** Wajib menggunakan `Calendar` dari `@/Components/ui/calendar` yang dibungkus `Popover` (`@/Components/ui/popover`) dipadukan dengan formatting `date-fns`.
+

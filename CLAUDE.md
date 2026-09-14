@@ -23,6 +23,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
 - Check for existing components to reuse before writing a new one.
 - UI Standardization: All popups, alerts, confirmation prompts, and modals across the CRM MUST use the shadcn `Dialog` component (`@/Components/ui/dialog`). NEVER use native browser dialogs (`window.alert()`, `window.confirm()`, `window.prompt()`), custom modal implementations, or ad-hoc popup libraries.
+- Input & Form Standardization: All dropdowns and select menus MUST use the shadcn `Select` component (`@/Components/ui/select`). All date pickers and calendars MUST use the shadcn `Calendar` component (`@/Components/ui/calendar`) with `Popover` (`@/Components/ui/popover`). NEVER use native `<select>` or `<input type="date">`.
 - Sidebar Architecture: The desktop sidebar must remain sticky (`lg:sticky lg:top-0 lg:h-screen`). In collapsed mode (`w-[72px]`), all icons (Logo, Role Badge, Menu Buttons) MUST be strictly symmetrical at `size-10 rounded-xl` on the 36px center axis, with hidden physical scrollbar tracks (`[scrollbar-width:none] [&::-webkit-scrollbar]:hidden`).
 - Authorization: Use `spatie/laravel-permission` on backend, and consume permissions on frontend via `@/hooks/useAuthorization` (`can()`, `isSuperAdmin`, `isSalesManager`, `isSalesAgent`, `isFinance`).
 
