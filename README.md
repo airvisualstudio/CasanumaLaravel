@@ -39,6 +39,10 @@ Sistem menggunakan `spatie/laravel-permission` dengan 4 peran baku:
    - Menu independen yang dapat di-scroll ("bisa di-roll") tanpa merusak layout.
 3. **Tema Dark & Light Mode:**
    - Terintegrasi penuh di seluruh komponen dengan transisi halus dan persistensi preferensi user.
+4. **Audit Trail & Integrasi Bot Telegram (Superadmin Only):**
+   - Pencatatan otomatis setiap riwayat aktivitas (`activity_logs`) di `/settings/activity-logs`.
+   - Konfigurasi kredensial Bot Token & Chat ID dinamis tersimpan di database (`system_settings`).
+   - Fitur "Test Connection" instan dan auto-dispatch notifikasi log ke grup/chat Telegram secara real-time.
 
 ---
 

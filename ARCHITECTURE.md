@@ -63,13 +63,17 @@ crm-perumahan/
 │   │   └── PaymentStatus.php     # Pending, DP_Paid, KPR_Processing, Lunas, Cancelled
 │   ├── Http/
 │   │   ├── Controllers/
+│   │   │   ├── UserController.php
+│   │   │   ├── ActivityLogController.php
 │   │   │   ├── PropertyController.php
 │   │   │   ├── LeadController.php
 │   │   │   ├── TransactionController.php
 │   │   │   └── DashboardController.php
 │   │   ├── Requests/             # Form Requests & Request Ingestion Validation
 │   │   └── Resources/            # Inertia Data Transformation DTOs
-│   └── Models/                   # Eloquent Entities
+│   ├── Services/                 # External Integrations
+│   │   └── TelegramService.php   # Telegram Bot messaging & activity dispatch
+│   └── Models/                   # Eloquent Entities (User, ActivityLog, SystemSetting, etc.)
 ├── database/
 │   ├── migrations/               # Database Schemas & Foreign Keys
 │   └── seeders/                  # Initial Roles, Permissions, Master Data

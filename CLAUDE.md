@@ -26,6 +26,8 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Input & Form Standardization: All dropdowns and select menus MUST use the shadcn `Select` component (`@/Components/ui/select`). All date pickers and calendars MUST use the shadcn `Calendar` component (`@/Components/ui/calendar`) with `Popover` (`@/Components/ui/popover`). NEVER use native `<select>` or `<input type="date">`.
 - Sidebar Architecture: The desktop sidebar must remain sticky (`lg:sticky lg:top-0 lg:h-screen`). In collapsed mode (`w-[72px]`), all icons (Logo, Role Badge, Menu Buttons) MUST be strictly symmetrical at `size-10 rounded-xl` on the 36px center axis, with hidden physical scrollbar tracks (`[scrollbar-width:none] [&::-webkit-scrollbar]:hidden`).
 - Authorization: Use `spatie/laravel-permission` on backend, and consume permissions on frontend via `@/hooks/useAuthorization` (`can()`, `isSuperAdmin`, `isSalesManager`, `isSalesAgent`, `isFinance`).
+- System Settings & Configuration: Use database-driven settings via `App\Models\SystemSetting::get($key, $default)` and `App\Models\SystemSetting::set($key, $value, $group, $type)`. Never hardcode integration credentials.
+- Activity Logs & Audit Trail: Always record significant mutations via `App\Models\ActivityLog::record($action, $description, $subject, $properties)`. It automatically captures the actor, IP, user-agent, and dispatches real-time Telegram alerts via `TelegramService` when configured.
 
 ## Verification Scripts
 

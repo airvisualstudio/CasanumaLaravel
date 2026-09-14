@@ -34,8 +34,19 @@
   - **Format WA:** Mutator Eloquent otomatis men-sanitize no. telpon/WA ke format standar `628xx` di backend ([`User.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Models/User.php)).
   - **List User Toolbar:** Fitur search nama/email/NIK/WA + dropdown filter Role (`Select`) & filter Status Aktif (`Select`) terintegrasi tepat di atas tabel.
   - **Notifikasi Sonner Toast:** Integrasi `<Toaster richColors />` shadcn ([`sonner.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/ui/sonner.tsx)) terpasang di [`AuthenticatedLayout.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Layouts/AuthenticatedLayout.tsx) menangkap flash Inertia dan event aksi (tambah user, update, hapus, reset password, ganti avatar).
+- [x] **ADMIN-01:** Activity Logs & Audit Trail:
+  - Migrasi `activity_logs` table (`user_id`, `action`, `description`, `subject_type`, `subject_id`, `properties`, `ip_address`, `user_agent`).
+  - Helper Eloquent [`ActivityLog::record(...)`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Models/ActivityLog.php) terpasang di seluruh CRUD user, status toggle, force reset password, self profile update, dan password update.
+  - Data table shadcn di `/settings/activity-logs` dengan filter aksi, live search, dan dialog inspeksi JSON properties.
+- [x] **ADMIN-02:** Integrasi Telegram Bot Dinamis & Real-Time Notification:
+  - Migrasi `system_settings` table (`key`, `value`, `type`, `group`) dengan caching untuk penyimpanan kredensial bot Telegram di database.
+  - Form input Bot Token (toggle show/hide), Chat ID, dan toggle notifikasi real-time di UI Superadmin.
+  - Tombol "Test Connection" dengan verifikasi pesan langsung ke API Telegram.
+  - Layanan [`TelegramService.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Services/TelegramService.php) dengan bypass SSL otomatis pada mode local development (mengatasi cURL error 60 Windows).
+  - Auto-dispatch notifikasi real-time saat log aktivitas baru dicatat (non-blocking).
 - [x] **QA-USER:** Automated Feature Test Suite ([`UserManagementTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/UserManagementTest.php)) passing dengan 17 test cases.
-- [x] **QA-PROFILE:** Automated Feature Test Suite ([`ProfileTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/ProfileTest.php)) passing dengan 9 test cases (Total aplikasi: **48 passed, 160 assertions**).
+- [x] **QA-PROFILE:** Automated Feature Test Suite ([`ProfileTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/ProfileTest.php)) passing dengan 9 test cases.
+- [x] **QA-ADMIN:** Automated Feature Test Suite ([`ActivityLogTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/ActivityLogTest.php)) passing dengan 7 test cases (Total aplikasi: **55 passed, 196 assertions**).
 - [ ] **DB-04:** Migrations & Seeders for Housing Inventory:
   - Table `clusters` (nama, deskripsi, lokasi, total_unit).
   - Table `unit_types` (tipe_nama, lb, lt, spesifikasi_bangunan, denah_url).
