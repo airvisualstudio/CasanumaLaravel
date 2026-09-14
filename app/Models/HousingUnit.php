@@ -41,6 +41,16 @@ class HousingUnit extends Model
         return $this->belongsTo(UnitType::class, 'unit_type_id');
     }
 
+    public function bookings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Booking::class, 'housing_unit_id');
+    }
+
+    public function activeBooking(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Booking::class, 'housing_unit_id')->where('status', 'confirmed')->latestOfMany();
+    }
+
     public function getFormattedPriceAttribute(): string
     {
         return 'Rp ' . number_format((float) $this->base_price, 0, ',', '.');

@@ -20,6 +20,7 @@ class HousingProject extends Model
         'area_size',
         'area_unit',
         'banner_image',
+        'siteplan_svg',
         'description',
         'status',
     ];
@@ -30,8 +31,22 @@ class HousingProject extends Model
 
     protected $appends = [
         'banner_image_url',
+        'siteplan_svg_url',
         'formatted_area',
     ];
+
+    public function getSiteplanSvgUrlAttribute(): ?string
+    {
+        if (!$this->siteplan_svg) {
+            return null;
+        }
+
+        if (filter_var($this->siteplan_svg, FILTER_VALIDATE_URL)) {
+            return $this->siteplan_svg;
+        }
+
+        return Storage::disk('public')->url($this->siteplan_svg);
+    }
 
     /**
      * Get the developer that owns the housing project.

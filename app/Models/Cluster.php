@@ -18,12 +18,30 @@ class Cluster extends Model
         'code',
         'description',
         'siteplan_image',
+        'siteplan_svg',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    protected $appends = [
+        'siteplan_svg_url',
+    ];
+
+    public function getSiteplanSvgUrlAttribute(): ?string
+    {
+        if (!$this->siteplan_svg) {
+            return null;
+        }
+
+        if (filter_var($this->siteplan_svg, FILTER_VALIDATE_URL)) {
+            return $this->siteplan_svg;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->siteplan_svg);
+    }
 
     public function project(): BelongsTo
     {

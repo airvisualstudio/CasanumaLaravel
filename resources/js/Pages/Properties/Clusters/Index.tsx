@@ -402,6 +402,15 @@ export default function ClustersIndex({ clusters, unitTypes, projects, filters }
                             {unitTypes.length}
                         </Badge>
                     </button>
+
+                    <button
+                        onClick={() => router.get(route('siteplan.index'))}
+                        className="flex items-center gap-2 py-3 px-5 border-b-2 text-sm font-medium border-transparent text-muted-foreground hover:text-primary transition-colors ml-auto group"
+                    >
+                        <Layers className="size-4 text-primary group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold text-primary">Buka Peta Interactive Siteplan</span>
+                        <ExternalLink className="size-3.5 text-primary" />
+                    </button>
                 </div>
 
                 {/* Filter and Search Bar */}

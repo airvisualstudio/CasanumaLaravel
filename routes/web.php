@@ -75,6 +75,10 @@ Route::middleware(['auth', 'can:view-units'])->group(function () {
         Route::patch('/units/{housingUnit}/status', [\App\Http\Controllers\HousingUnitController::class, 'updateStatus'])->name('units.update-status');
         Route::delete('/units/{housingUnit}', [\App\Http\Controllers\HousingUnitController::class, 'destroy'])->name('units.destroy');
     });
+
+    // Interactive Siteplan Map
+    Route::get('/siteplan', [\App\Http\Controllers\SiteplanController::class, 'index'])->name('siteplan.index');
+    Route::post('/siteplan/upload-svg', [\App\Http\Controllers\SiteplanController::class, 'uploadSvg'])->name('siteplan.upload-svg');
 });
 
 // Penjualan & Leads CRM
@@ -92,6 +96,19 @@ Route::middleware(['auth', 'can:view-leads'])->group(function () {
 
     Route::middleware('can:delete-leads')->group(function () {
         Route::delete('/leads/{lead}', [\App\Http\Controllers\LeadController::class, 'destroy'])->name('leads.destroy');
+    });
+});
+
+// Transaksi Booking Fee & SPR
+Route::middleware(['auth', 'can:view-bookings'])->group(function () {
+    Route::get('/bookings', [\App\Http\Controllers\BookingController::class, 'index'])->name('bookings.index');
+
+    Route::middleware('can:create-bookings')->group(function () {
+        Route::post('/bookings', [\App\Http\Controllers\BookingController::class, 'store'])->name('bookings.store');
+    });
+
+    Route::middleware('can:cancel-bookings')->group(function () {
+        Route::post('/bookings/{booking}/cancel', [\App\Http\Controllers\BookingController::class, 'cancel'])->name('bookings.cancel');
     });
 });
 

@@ -247,7 +247,8 @@ export default function Authenticated({
                 {
                     label: 'Booking Fee & SPR',
                     icon: CreditCard,
-                    action: () => handleMenuClick('Booking Fee & SPR'),
+                    href: route('bookings.index'),
+                    active: isCurrent('bookings.*'),
                     visible: can('view-bookings'),
                 },
             ],
