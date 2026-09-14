@@ -2,8 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\Cluster;
 use App\Models\Developer;
 use App\Models\HousingProject;
+use App\Models\HousingUnit;
+use App\Models\UnitType;
 use Illuminate\Database\Seeder;
 
 class PropertySeeder extends Seeder
@@ -39,7 +42,7 @@ class PropertySeeder extends Seeder
             ]
         );
 
-        HousingProject::firstOrCreate(
+        $project1 = HousingProject::firstOrCreate(
             ['name' => 'Casanuma Highland Resort & Residence', 'developer_id' => $dev1->id],
             [
                 'city' => 'Bandung Barat',
@@ -51,7 +54,7 @@ class PropertySeeder extends Seeder
             ]
         );
 
-        HousingProject::firstOrCreate(
+        $project2 = HousingProject::firstOrCreate(
             ['name' => 'Casanuma Cityville Eco Living', 'developer_id' => $dev1->id],
             [
                 'city' => 'Cimahi',
@@ -63,7 +66,7 @@ class PropertySeeder extends Seeder
             ]
         );
 
-        HousingProject::firstOrCreate(
+        $project3 = HousingProject::firstOrCreate(
             ['name' => 'Grand Nusapro Sentosa', 'developer_id' => $dev2->id],
             [
                 'city' => 'Bandung Timur',
@@ -74,5 +77,150 @@ class PropertySeeder extends Seeder
                 'status' => 'planning',
             ]
         );
+
+        // 1. Clusters
+        $clusterLavender = Cluster::firstOrCreate(
+            ['housing_project_id' => $project1->id, 'name' => 'Cluster Lavender'],
+            [
+                'code' => 'LVN',
+                'description' => 'Kawasan hunian cluster terdepan dengan pemandangan langsung ke bukit pinus dan taman tematik lavender.',
+                'is_active' => true,
+            ]
+        );
+
+        $clusterPineHills = Cluster::firstOrCreate(
+            ['housing_project_id' => $project1->id, 'name' => 'Cluster Pine Hills'],
+            [
+                'code' => 'PNH',
+                'description' => 'Cluster eksklusif lereng bukit dengan kontur bertingkat dan view citylight Bandung.',
+                'is_active' => true,
+            ]
+        );
+
+        $clusterGardenia = Cluster::firstOrCreate(
+            ['housing_project_id' => $project2->id, 'name' => 'Cluster Gardenia'],
+            [
+                'code' => 'GRD',
+                'description' => 'Cluster modern eco-smart home dengan solar panel dan sirkulasi udara optimal.',
+                'is_active' => true,
+            ]
+        );
+
+        // 2. Unit Types
+        $tipe36 = UnitType::firstOrCreate(
+            ['housing_project_id' => $project1->id, 'name' => 'Tipe 36/60 (Deluxe)'],
+            [
+                'cluster_id' => $clusterLavender->id,
+                'surface_area' => 60,
+                'building_area' => 36,
+                'bedrooms' => 2,
+                'bathrooms' => 1,
+                'electricity' => '1300 VA',
+                'description' => 'Rumah 1 lantai efisien dengan 2 kamar tidur, ruang keluarga terbuka, dan carport luas.',
+            ]
+        );
+
+        $tipe45 = UnitType::firstOrCreate(
+            ['housing_project_id' => $project1->id, 'name' => 'Tipe 45/84 (Grand)'],
+            [
+                'cluster_id' => $clusterLavender->id,
+                'surface_area' => 84,
+                'building_area' => 45,
+                'bedrooms' => 2,
+                'bathrooms' => 1,
+                'electricity' => '2200 VA',
+                'description' => 'Hunian lega dengan sisa tanah belakang luas untuk taman atau pengembangan ruangan.',
+            ]
+        );
+
+        $tipe72 = UnitType::firstOrCreate(
+            ['housing_project_id' => $project1->id, 'name' => 'Tipe 72/120 (Villa 2 Lantai)'],
+            [
+                'cluster_id' => $clusterPineHills->id,
+                'surface_area' => 120,
+                'building_area' => 72,
+                'bedrooms' => 3,
+                'bathrooms' => 2,
+                'electricity' => '3500 VA',
+                'description' => 'Desain modern villa 2 lantai dengan rooftop terrace dan master bedroom luas.',
+            ]
+        );
+
+        // 3. Housing Units
+        $unitsData = [
+            [
+                'cluster_id' => $clusterLavender->id,
+                'unit_type_id' => $tipe36->id,
+                'block' => 'A1',
+                'unit_number' => '01',
+                'unit_code' => 'A1/01',
+                'base_price' => 450000000,
+                'status' => 'available',
+                'svg_element_id' => 'lot-a1-01',
+                'notes' => 'Posisi dekat gerbang utama cluster.',
+            ],
+            [
+                'cluster_id' => $clusterLavender->id,
+                'unit_type_id' => $tipe36->id,
+                'block' => 'A1',
+                'unit_number' => '02',
+                'unit_code' => 'A1/02',
+                'base_price' => 450000000,
+                'status' => 'booked',
+                'svg_element_id' => 'lot-a1-02',
+                'notes' => 'Tanda jadi via Pak Budi Santoso.',
+            ],
+            [
+                'cluster_id' => $clusterLavender->id,
+                'unit_type_id' => $tipe45->id,
+                'block' => 'A2',
+                'unit_number' => '05',
+                'unit_code' => 'A2/05',
+                'base_price' => 585000000,
+                'status' => 'available',
+                'svg_element_id' => 'lot-a2-05',
+                'notes' => 'Hadap timur (matahari pagi).',
+            ],
+            [
+                'cluster_id' => $clusterLavender->id,
+                'unit_type_id' => $tipe45->id,
+                'block' => 'A2',
+                'unit_number' => '06',
+                'unit_code' => 'A2/06',
+                'base_price' => 610000000,
+                'status' => 'sold',
+                'svg_element_id' => 'lot-a2-06',
+                'notes' => 'Sudah serah terima kunci.',
+            ],
+            [
+                'cluster_id' => $clusterPineHills->id,
+                'unit_type_id' => $tipe72->id,
+                'block' => 'PH1',
+                'unit_number' => '10',
+                'unit_code' => 'PH1/10',
+                'base_price' => 1150000000,
+                'status' => 'available',
+                'svg_element_id' => 'lot-ph1-10',
+                'notes' => 'Kavling sudut (hook) dengan view bukit.',
+            ],
+            [
+                'cluster_id' => $clusterPineHills->id,
+                'unit_type_id' => $tipe72->id,
+                'block' => 'PH1',
+                'unit_number' => '11',
+                'unit_code' => 'PH1/11',
+                'base_price' => 1100000000,
+                'status' => 'hold',
+                'svg_element_id' => 'lot-ph1-11',
+                'notes' => 'Ditahan untuk manajemen direksi.',
+            ],
+        ];
+
+        foreach ($unitsData as $unit) {
+            HousingUnit::firstOrCreate(
+                ['unit_code' => $unit['unit_code']],
+                $unit
+            );
+        }
     }
 }

@@ -208,13 +208,15 @@ export default function Authenticated({
                 {
                     label: 'Cluster & Site Plan',
                     icon: Building,
-                    action: () => handleMenuClick('Cluster & Site Plan'),
+                    href: route('clusters.index'),
+                    active: isCurrent('clusters.*'),
                     visible: can('create-units') || can('edit-units'),
                 },
                 {
                     label: 'Unit & Kavling',
                     icon: Home,
-                    action: () => handleMenuClick('Unit & Kavling'),
+                    href: route('units.index'),
+                    active: isCurrent('units.*'),
                     visible: can('view-units'),
                 },
             ],

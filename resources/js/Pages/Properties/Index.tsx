@@ -1,23 +1,23 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState, useMemo, useRef, FormEventHandler } from 'react';
-import { 
-    Building2, 
-    Home, 
-    Layers, 
-    Plus, 
-    Search, 
-    Edit2, 
-    Trash2, 
-    Loader2, 
-    MapPin, 
-    Phone, 
-    CreditCard, 
-    CheckCircle2, 
-    AlertTriangle, 
-    Upload, 
-    Image as ImageIcon, 
-    ExternalLink, 
+import {
+    Building2,
+    Home,
+    Layers,
+    Plus,
+    Search,
+    Edit2,
+    Trash2,
+    Loader2,
+    MapPin,
+    Phone,
+    CreditCard,
+    CheckCircle2,
+    AlertTriangle,
+    Upload,
+    Image as ImageIcon,
+    ExternalLink,
     X,
     Filter,
     Building,
@@ -425,8 +425,7 @@ export default function PropertiesIndex({
                                     disabled={developers.length === 0}
                                     title={developers.length === 0 ? 'Buat Developer PT terlebih dahulu' : ''}
                                 >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Tambah Proyek Baru
+                                    <Plus className="w-4 h-4 mr-2" /> Tambah Proyek Baru
                                 </Button>
                             )
                         )}
@@ -988,240 +987,240 @@ export default function PropertiesIndex({
                         </DialogHeader>
 
                         <form onSubmit={handleSubmitDev}>
-                            <div className="px-6 py-5 max-h-[72vh] overflow-y-auto space-y-5 [scrollbar-width:thin]">
-                                {/* Section 1: Identitas Legal & Operasional */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                        <Building className="w-3.5 h-3.5 text-primary" />
-                                        <span>Identitas Perusahaan / PT</span>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor="dev_name" className="text-xs font-semibold">
-                                                Nama PT / Pengembang <span className="text-destructive">*</span>
-                                            </Label>
-                                            <Input
-                                                id="dev_name"
-                                                placeholder="Contoh: PT Casanuma Modern Living"
-                                                value={devForm.data.name}
-                                                onChange={(e) => devForm.setData('name', e.target.value)}
-                                                className="h-10 text-sm"
-                                                required
-                                            />
-                                            {devForm.errors.name && (
-                                                <p className="text-xs text-destructive">{devForm.errors.name}</p>
-                                            )}
+                            <div className="px-6 py-5 max-h-[68vh] overflow-y-auto space-y-5 custom-scrollbar overscroll-contain">
+                                    {/* Section 1: Identitas Legal & Operasional */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                            <Building className="w-3.5 h-3.5 text-primary" />
+                                            <span>Identitas Perusahaan / PT</span>
                                         </div>
 
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor="dev_npwp" className="text-xs font-semibold">
-                                                NPWP Perusahaan
-                                            </Label>
-                                            <Input
-                                                id="dev_npwp"
-                                                placeholder="Contoh: 01.892.456.7-428.000"
-                                                value={devForm.data.npwp}
-                                                onChange={(e) => devForm.setData('npwp', e.target.value)}
-                                                className="h-10 text-sm font-mono"
-                                            />
-                                            {devForm.errors.npwp && (
-                                                <p className="text-xs text-destructive">{devForm.errors.npwp}</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor="dev_phone" className="text-xs font-semibold">
-                                                No. Telp / WhatsApp Kantor
-                                            </Label>
-                                            <Input
-                                                id="dev_phone"
-                                                placeholder="Contoh: 022-86813400 atau 08123456789"
-                                                value={devForm.data.phone}
-                                                onChange={(e) => devForm.setData('phone', e.target.value)}
-                                                className="h-10 text-sm"
-                                            />
-                                            {devForm.errors.phone && (
-                                                <p className="text-xs text-destructive">{devForm.errors.phone}</p>
-                                            )}
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <Label className="text-xs font-semibold">
-                                                Status Keaktifan
-                                            </Label>
-                                            <div className="flex items-center gap-3 h-10 px-3 rounded-lg border border-border/70 bg-muted/10">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => devForm.setData('is_active', !devForm.data.is_active)}
-                                                    className={cn(
-                                                        "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
-                                                        devForm.data.is_active ? "bg-primary" : "bg-muted"
-                                                    )}
-                                                >
-                                                    <span
-                                                        className={cn(
-                                                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out",
-                                                            devForm.data.is_active ? "translate-x-5" : "translate-x-0"
-                                                        )}
-                                                    />
-                                                </button>
-                                                <span className="text-xs font-medium text-foreground">
-                                                    {devForm.data.is_active ? 'Developer Aktif' : 'Developer Nonaktif'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="dev_address" className="text-xs font-semibold">
-                                            Alamat Kantor Operasional
-                                        </Label>
-                                        <Textarea
-                                            id="dev_address"
-                                            placeholder="Jl. Boulevard Utama No. 88, Kawasan Niaga Kota Baru Parahyangan, Bandung Barat"
-                                            value={devForm.data.office_address}
-                                            onChange={(e) => devForm.setData('office_address', e.target.value)}
-                                            rows={2}
-                                            className="text-sm"
-                                        />
-                                        {devForm.errors.office_address && (
-                                            <p className="text-xs text-destructive">{devForm.errors.office_address}</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Section 2: Logo Developer */}
-                                <div className="space-y-2 pt-1 border-t border-border/60">
-                                    <Label className="text-xs font-semibold">
-                                        Logo Developer / PT
-                                    </Label>
-                                    <div className="flex items-center gap-4 p-3 rounded-xl border border-border/70 bg-muted/10">
-                                        <div className="w-16 h-16 rounded-xl border border-border/80 bg-background flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
-                                            {devLogoPreview ? (
-                                                <img
-                                                    src={devLogoPreview}
-                                                    alt="Preview"
-                                                    className="w-full h-full object-contain p-1"
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="dev_name" className="text-xs font-semibold">
+                                                    Nama PT / Pengembang <span className="text-destructive">*</span>
+                                                </Label>
+                                                <Input
+                                                    id="dev_name"
+                                                    placeholder="Contoh: PT Casanuma Modern Living"
+                                                    value={devForm.data.name}
+                                                    onChange={(e) => devForm.setData('name', e.target.value)}
+                                                    className="h-10 text-sm"
+                                                    required
                                                 />
-                                            ) : (
-                                                <Building2 className="w-7 h-7 text-muted-foreground/30" />
-                                            )}
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <input
-                                                ref={devLogoInputRef}
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={handleDevLogoChange}
-                                            />
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => devLogoInputRef.current?.click()}
-                                                    className="h-8 text-xs bg-background"
-                                                >
-                                                    <Upload className="w-3.5 h-3.5 mr-1.5" />
-                                                    {devLogoPreview ? 'Ganti Logo PT' : 'Pilih File Logo'}
-                                                </Button>
-                                                {devLogoPreview && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            setDevLogoPreview(null);
-                                                            devForm.setData('logo', null);
-                                                        }}
-                                                        className="h-8 text-xs text-muted-foreground hover:text-destructive"
-                                                    >
-                                                        Hapus
-                                                    </Button>
+                                                {devForm.errors.name && (
+                                                    <p className="text-xs text-destructive">{devForm.errors.name}</p>
                                                 )}
                                             </div>
-                                            <p className="text-[11px] text-muted-foreground">
-                                                Format PNG, JPG, atau WebP (transparan lebih disukai). Maksimal 2MB.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    {devForm.errors.logo && (
-                                        <p className="text-xs text-destructive">{devForm.errors.logo}</p>
-                                    )}
-                                </div>
 
-                                {/* Section 3: Rekening Operasional */}
-                                <div className="rounded-xl border border-border/80 p-4 bg-muted/20 space-y-3.5">
-                                    <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                                        <CreditCard className="w-4 h-4 text-primary" />
-                                        <span>Rekening Operasional Transaksi Developer</span>
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="dev_npwp" className="text-xs font-semibold">
+                                                    NPWP Perusahaan
+                                                </Label>
+                                                <Input
+                                                    id="dev_npwp"
+                                                    placeholder="Contoh: 01.892.456.7-428.000"
+                                                    value={devForm.data.npwp}
+                                                    onChange={(e) => devForm.setData('npwp', e.target.value)}
+                                                    className="h-10 text-sm font-mono"
+                                                />
+                                                {devForm.errors.npwp && (
+                                                    <p className="text-xs text-destructive">{devForm.errors.npwp}</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="dev_phone" className="text-xs font-semibold">
+                                                    No. Telp / WhatsApp Kantor
+                                                </Label>
+                                                <Input
+                                                    id="dev_phone"
+                                                    placeholder="Contoh: 022-86813400 atau 08123456789"
+                                                    value={devForm.data.phone}
+                                                    onChange={(e) => devForm.setData('phone', e.target.value)}
+                                                    className="h-10 text-sm"
+                                                />
+                                                {devForm.errors.phone && (
+                                                    <p className="text-xs text-destructive">{devForm.errors.phone}</p>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs font-semibold">
+                                                    Status Keaktifan
+                                                </Label>
+                                                <div className="flex items-center gap-3 h-10 px-3 rounded-lg border border-border/70 bg-muted/10">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => devForm.setData('is_active', !devForm.data.is_active)}
+                                                        className={cn(
+                                                            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                                                            devForm.data.is_active ? "bg-primary" : "bg-muted"
+                                                        )}
+                                                    >
+                                                        <span
+                                                            className={cn(
+                                                                "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out",
+                                                                devForm.data.is_active ? "translate-x-5" : "translate-x-0"
+                                                            )}
+                                                        />
+                                                    </button>
+                                                    <span className="text-xs font-medium text-foreground">
+                                                        {devForm.data.is_active ? 'Developer Aktif' : 'Developer Nonaktif'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="dev_address" className="text-xs font-semibold">
+                                                Alamat Kantor Operasional
+                                            </Label>
+                                            <Textarea
+                                                id="dev_address"
+                                                placeholder="Jl. Boulevard Utama No. 88, Kawasan Niaga Kota Baru Parahyangan, Bandung Barat"
+                                                value={devForm.data.office_address}
+                                                onChange={(e) => devForm.setData('office_address', e.target.value)}
+                                                rows={2}
+                                                className="text-sm"
+                                            />
+                                            {devForm.errors.office_address && (
+                                                <p className="text-xs text-destructive">{devForm.errors.office_address}</p>
+                                            )}
+                                        </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor="bank_name" className="text-xs font-medium">
-                                                Nama Bank
-                                            </Label>
-                                            <Input
-                                                id="bank_name"
-                                                placeholder="BCA, Mandiri, BRI..."
-                                                value={devForm.data.bank_name}
-                                                onChange={(e) => devForm.setData('bank_name', e.target.value)}
-                                                className="h-9 text-xs bg-background"
-                                            />
+                                    {/* Section 2: Logo Developer */}
+                                    <div className="space-y-2 pt-1 border-t border-border/60">
+                                        <Label className="text-xs font-semibold">
+                                            Logo Developer / PT
+                                        </Label>
+                                        <div className="flex items-center gap-4 p-3 rounded-xl border border-border/70 bg-muted/10">
+                                            <div className="w-16 h-16 rounded-xl border border-border/80 bg-background flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+                                                {devLogoPreview ? (
+                                                    <img
+                                                        src={devLogoPreview}
+                                                        alt="Preview"
+                                                        className="w-full h-full object-contain p-1"
+                                                    />
+                                                ) : (
+                                                    <Building2 className="w-7 h-7 text-muted-foreground/30" />
+                                                )}
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <input
+                                                    ref={devLogoInputRef}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={handleDevLogoChange}
+                                                />
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => devLogoInputRef.current?.click()}
+                                                        className="h-8 text-xs bg-background"
+                                                    >
+                                                        <Upload className="w-3.5 h-3.5 mr-1.5" />
+                                                        {devLogoPreview ? 'Ganti Logo PT' : 'Pilih File Logo'}
+                                                    </Button>
+                                                    {devLogoPreview && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setDevLogoPreview(null);
+                                                                devForm.setData('logo', null);
+                                                            }}
+                                                            className="h-8 text-xs text-muted-foreground hover:text-destructive"
+                                                        >
+                                                            Hapus
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                                <p className="text-[11px] text-muted-foreground">
+                                                    Format PNG, JPG, atau WebP (transparan lebih disukai). Maksimal 2MB.
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor="bank_acc_no" className="text-xs font-medium">
-                                                Nomor Rekening
-                                            </Label>
-                                            <Input
-                                                id="bank_acc_no"
-                                                placeholder="7720991823"
-                                                value={devForm.data.bank_account_number}
-                                                onChange={(e) => devForm.setData('bank_account_number', e.target.value)}
-                                                className="h-9 text-xs font-mono bg-background"
-                                            />
+                                        {devForm.errors.logo && (
+                                            <p className="text-xs text-destructive">{devForm.errors.logo}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Section 3: Rekening Operasional */}
+                                    <div className="rounded-xl border border-border/80 p-4 bg-muted/20 space-y-3.5">
+                                        <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                                            <CreditCard className="w-4 h-4 text-primary" />
+                                            <span>Rekening Operasional Transaksi Developer</span>
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor="bank_acc_holder" className="text-xs font-medium">
-                                                Atas Nama Rekening
-                                            </Label>
-                                            <Input
-                                                id="bank_acc_holder"
-                                                placeholder="PT Casanuma Modern Living"
-                                                value={devForm.data.bank_account_holder}
-                                                onChange={(e) => devForm.setData('bank_account_holder', e.target.value)}
-                                                className="h-9 text-xs bg-background"
-                                            />
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="bank_name" className="text-xs font-medium">
+                                                    Nama Bank
+                                                </Label>
+                                                <Input
+                                                    id="bank_name"
+                                                    placeholder="BCA, Mandiri, BRI..."
+                                                    value={devForm.data.bank_name}
+                                                    onChange={(e) => devForm.setData('bank_name', e.target.value)}
+                                                    className="h-9 text-xs bg-background"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="bank_acc_no" className="text-xs font-medium">
+                                                    Nomor Rekening
+                                                </Label>
+                                                <Input
+                                                    id="bank_acc_no"
+                                                    placeholder="7720991823"
+                                                    value={devForm.data.bank_account_number}
+                                                    onChange={(e) => devForm.setData('bank_account_number', e.target.value)}
+                                                    className="h-9 text-xs font-mono bg-background"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="bank_acc_holder" className="text-xs font-medium">
+                                                    Atas Nama Rekening
+                                                </Label>
+                                                <Input
+                                                    id="bank_acc_holder"
+                                                    placeholder="PT Casanuma Modern Living"
+                                                    value={devForm.data.bank_account_holder}
+                                                    onChange={(e) => devForm.setData('bank_account_holder', e.target.value)}
+                                                    className="h-9 text-xs bg-background"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
                             <DialogFooter className="px-6 py-4 border-t border-border/80 bg-muted/20 flex items-center justify-end gap-2.5">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setDevModalOpen(false)}
-                                    disabled={devForm.processing}
-                                >
-                                    Batal
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={devForm.processing}
-                                    className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
-                                >
-                                    {devForm.processing && (
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    )}
-                                    {editingDev ? 'Simpan Perubahan' : 'Tambah Developer'}
-                                </Button>
-                            </DialogFooter>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setDevModalOpen(false)}
+                                        disabled={devForm.processing}
+                                    >
+                                        Batal
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={devForm.processing}
+                                        className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                                    >
+                                        {devForm.processing && (
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        )}
+                                        {editingDev ? 'Simpan Perubahan' : 'Tambah Developer'}
+                                    </Button>
+                                </DialogFooter>
                         </form>
                     </DialogContent>
                 </Dialog>
@@ -1248,7 +1247,7 @@ export default function PropertiesIndex({
                         </DialogHeader>
 
                         <form onSubmit={handleSubmitProj}>
-                            <div className="px-6 py-5 max-h-[72vh] overflow-y-auto space-y-5 [scrollbar-width:thin]">
+                            <div className="px-6 py-5 max-h-[68vh] overflow-y-auto space-y-5 custom-scrollbar overscroll-contain">
                                 {/* Section 1: Relasi & Status */}
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">

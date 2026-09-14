@@ -54,6 +54,27 @@ Route::middleware(['auth', 'can:view-units'])->group(function () {
         Route::match(['put', 'post'], '/housing-projects/{housingProject}', [\App\Http\Controllers\HousingProjectController::class, 'update'])->name('housing-projects.update');
         Route::delete('/housing-projects/{housingProject}', [\App\Http\Controllers\HousingProjectController::class, 'destroy'])->name('housing-projects.destroy');
     });
+
+    // Cluster & Site Plan
+    Route::get('/clusters', [\App\Http\Controllers\ClusterController::class, 'index'])->name('clusters.index');
+    Route::middleware('can:create-units')->group(function () {
+        Route::post('/clusters', [\App\Http\Controllers\ClusterController::class, 'store'])->name('clusters.store');
+        Route::put('/clusters/{cluster}', [\App\Http\Controllers\ClusterController::class, 'update'])->name('clusters.update');
+        Route::delete('/clusters/{cluster}', [\App\Http\Controllers\ClusterController::class, 'destroy'])->name('clusters.destroy');
+
+        Route::post('/unit-types', [\App\Http\Controllers\UnitTypeController::class, 'store'])->name('unit-types.store');
+        Route::match(['put', 'post'], '/unit-types/{unitType}', [\App\Http\Controllers\UnitTypeController::class, 'update'])->name('unit-types.update');
+        Route::delete('/unit-types/{unitType}', [\App\Http\Controllers\UnitTypeController::class, 'destroy'])->name('unit-types.destroy');
+    });
+
+    // Unit & Kavling
+    Route::get('/units', [\App\Http\Controllers\HousingUnitController::class, 'index'])->name('units.index');
+    Route::middleware('can:create-units')->group(function () {
+        Route::post('/units', [\App\Http\Controllers\HousingUnitController::class, 'store'])->name('units.store');
+        Route::put('/units/{housingUnit}', [\App\Http\Controllers\HousingUnitController::class, 'update'])->name('units.update');
+        Route::patch('/units/{housingUnit}/status', [\App\Http\Controllers\HousingUnitController::class, 'updateStatus'])->name('units.update-status');
+        Route::delete('/units/{housingUnit}', [\App\Http\Controllers\HousingUnitController::class, 'destroy'])->name('units.destroy');
+    });
 });
 
 require __DIR__.'/auth.php';

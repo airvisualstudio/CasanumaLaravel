@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 class HousingProject extends Model
@@ -38,6 +39,22 @@ class HousingProject extends Model
     public function developer(): BelongsTo
     {
         return $this->belongsTo(Developer::class, 'developer_id');
+    }
+
+    /**
+     * Get the clusters under this project.
+     */
+    public function clusters(): HasMany
+    {
+        return $this->hasMany(Cluster::class, 'housing_project_id');
+    }
+
+    /**
+     * Get the unit types under this project.
+     */
+    public function unitTypes(): HasMany
+    {
+        return $this->hasMany(UnitType::class, 'housing_project_id');
     }
 
     /**
