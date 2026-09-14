@@ -26,6 +26,10 @@ export interface AppSettings {
     app_name: string;
     company_name: string;
     app_description: string;
+    primary_color?: string | null;
+    primary_hsl?: string | null;
+    login_background?: string | null;
+    login_background_url?: string | null;
     logo_light?: string | null;
     logo_light_url?: string | null;
     logo_dark?: string | null;

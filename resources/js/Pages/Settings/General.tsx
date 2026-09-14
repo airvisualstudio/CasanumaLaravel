@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
-import React, { FormEventHandler, useRef, useState } from 'react';
+import React, { FormEventHandler, useRef, useState, useEffect } from 'react';
 import { 
     Settings, 
     Building2, 
@@ -17,7 +17,11 @@ import {
     Image as ImageIcon,
     FileImage,
     Globe,
-    Info
+    Info,
+    Palette,
+    RotateCcw,
+    Check,
+    LayoutTemplate
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -27,45 +31,63 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Com
 import { Badge } from '@/Components/ui/badge';
 import { toast } from '@/Components/ui/sonner';
 import { AppSettings } from '@/types';
+import { applyBrandTheme } from '@/lib/theme';
 
 interface GeneralSettingsProps {
     settings: AppSettings;
 }
 
+const colorPresets = [
+    { label: 'Casanuma Rose', hex: '#e11d48' },
+    { label: 'Royal Blue', hex: '#2563eb' },
+    { label: 'Emerald Green', hex: '#059669' },
+    { label: 'Deep Indigo', hex: '#4f46e5' },
+    { label: 'Modern Teal', hex: '#0f766e' },
+    { label: 'Warm Amber', hex: '#d97706' },
+    { label: 'Purple Violet', hex: '#7c3aed' },
+    { label: 'Dark Slate', hex: '#334155' },
+];
+
 export default function GeneralSettings({ settings }: GeneralSettingsProps) {
     const lightLogoInputRef = useRef<HTMLInputElement>(null);
     const darkLogoInputRef = useRef<HTMLInputElement>(null);
     const faviconInputRef = useRef<HTMLInputElement>(null);
+    const loginBgInputRef = useRef<HTMLInputElement>(null);
 
     // Preview state
     const [lightLogoPreview, setLightLogoPreview] = useState<string | null>(settings.logo_light_url || null);
     const [darkLogoPreview, setDarkLogoPreview] = useState<string | null>(settings.logo_dark_url || null);
     const [faviconPreview, setFaviconPreview] = useState<string | null>(settings.favicon_url || null);
+    const [loginBgPreview, setLoginBgPreview] = useState<string | null>(settings.login_background_url || null);
 
     // Inertia form
     const { data, setData, post, processing, errors, recentlySuccessful } = useForm({
         app_name: settings.app_name || 'CASANUMA CRM',
         company_name: settings.company_name || 'PT Casanuma Modern Living',
         app_description: settings.app_description || '',
+        primary_color: settings.primary_color || '',
         logo_light: null as File | null,
         logo_dark: null as File | null,
         favicon: null as File | null,
+        login_background: null as File | null,
         remove_logo_light: false,
         remove_logo_dark: false,
         remove_favicon: false,
+        remove_login_background: false,
+        remove_primary_color: false,
     });
 
     const handleFileChange = (
         e: React.ChangeEvent<HTMLInputElement>,
-        type: 'logo_light' | 'logo_dark' | 'favicon'
+        type: 'logo_light' | 'logo_dark' | 'favicon' | 'login_background'
     ) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Size check (max 2MB for logos, 1MB for favicon)
-        const maxSize = type === 'favicon' ? 1 * 1024 * 1024 : 2 * 1024 * 1024;
+        // Size check: login_bg max 4MB, favicon 1MB, logos 2MB
+        const maxSize = type === 'login_background' ? 4 * 1024 * 1024 : (type === 'favicon' ? 1 * 1024 * 1024 : 2 * 1024 * 1024);
         if (file.size > maxSize) {
-            toast.error(`Ukuran file melebihi batas maksimal (${type === 'favicon' ? '1MB' : '2MB'}).`);
+            toast.error(`Ukuran file melebihi batas maksimal (${type === 'login_background' ? '4MB' : (type === 'favicon' ? '1MB' : '2MB')}).`);
             e.target.value = '';
             return;
         }
@@ -81,10 +103,13 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
         } else if (type === 'favicon') {
             setData((prev) => ({ ...prev, favicon: file, remove_favicon: false }));
             setFaviconPreview(previewUrl);
+        } else if (type === 'login_background') {
+            setData((prev) => ({ ...prev, login_background: file, remove_login_background: false }));
+            setLoginBgPreview(previewUrl);
         }
     };
 
-    const handleRemoveFile = (type: 'logo_light' | 'logo_dark' | 'favicon') => {
+    const handleRemoveFile = (type: 'logo_light' | 'logo_dark' | 'favicon' | 'login_background') => {
         if (type === 'logo_light') {
             setData((prev) => ({ ...prev, logo_light: null, remove_logo_light: true }));
             setLightLogoPreview(null);
@@ -97,8 +122,35 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
             setData((prev) => ({ ...prev, favicon: null, remove_favicon: true }));
             setFaviconPreview(null);
             if (faviconInputRef.current) faviconInputRef.current.value = '';
+        } else if (type === 'login_background') {
+            setData((prev) => ({ ...prev, login_background: null, remove_login_background: true }));
+            setLoginBgPreview(null);
+            if (loginBgInputRef.current) loginBgInputRef.current.value = '';
         }
     };
+
+    const handleSelectColorPreset = (hex: string) => {
+        setData((prev) => ({ ...prev, primary_color: hex, remove_primary_color: false }));
+        applyBrandTheme(hex);
+    };
+
+    const handleResetColor = () => {
+        setData((prev) => ({ ...prev, primary_color: '', remove_primary_color: true }));
+        applyBrandTheme(null);
+    };
+
+    const handleColorInput = (hex: string) => {
+        setData('primary_color', hex);
+        if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+            applyBrandTheme(hex);
+        }
+    };
+
+    useEffect(() => {
+        if (settings.primary_color || settings.primary_hsl) {
+            applyBrandTheme(settings.primary_color || settings.primary_hsl);
+        }
+    }, [settings.primary_color, settings.primary_hsl]);
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -107,6 +159,7 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
             forceFormData: true,
             preserveScroll: true,
             onSuccess: () => {
+                applyBrandTheme(data.primary_color || null);
                 toast.success('Pengaturan identitas aplikasi & branding berhasil disimpan!');
             },
             onError: () => {
@@ -135,7 +188,7 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                             </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Kelola identitas visual, nama sistem, perusahaan pengembang, logo mode terang & gelap, serta favicon browser.
+                            Kelola identitas visual, warna tema brand, logo mode terang/gelap, favicon, serta background banner halaman login.
                         </p>
                     </div>
 
@@ -229,13 +282,118 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                             <p className="text-xs font-medium text-destructive">{errors.app_description}</p>
                                         )}
                                         <p className="text-[11px] text-muted-foreground">
-                                            Deskripsi pendukung yang ditampilkan di bawah form login dan meta deskripsi.
+                                            Deskripsi pendukung yang ditampilkan di bawah form login dan banner samping.
                                         </p>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            {/* Card 2: Visual Assets (Logo & Favicon) */}
+                            {/* Card 2: Primary Brand Color (Color Picker) */}
+                            <Card className="border-border/80 shadow-xs">
+                                <CardHeader className="p-5 pb-4 border-b border-border/50 bg-muted/10">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                                            <Palette className="size-4" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-sm font-bold text-foreground">
+                                                Warna Utama Brand (Primary Color)
+                                            </CardTitle>
+                                            <CardDescription className="text-xs">
+                                                Ubah warna aksen brand secara menyeluruh di seluruh tombol, badge, link, dan sidebar CRM.
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+
+                                <CardContent className="p-5 space-y-4">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                        {/* Color Picker Box */}
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative size-12 rounded-xl border-2 border-border/80 shadow-xs overflow-hidden flex items-center justify-center cursor-pointer shrink-0">
+                                                <input
+                                                    type="color"
+                                                    value={data.primary_color || '#e11d48'}
+                                                    onChange={(e) => handleColorInput(e.target.value)}
+                                                    className="absolute -inset-2 size-16 cursor-pointer opacity-0"
+                                                    id="primary_color_picker"
+                                                />
+                                                <div 
+                                                    className="size-full rounded-lg"
+                                                    style={{ backgroundColor: data.primary_color || '#e11d48' }}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <Label htmlFor="primary_color_input" className="text-xs font-semibold">
+                                                    Kode Warna (HEX)
+                                                </Label>
+                                                <div className="flex items-center gap-2">
+                                                    <Input
+                                                        id="primary_color_input"
+                                                        value={data.primary_color}
+                                                        onChange={(e) => handleColorInput(e.target.value)}
+                                                        placeholder="#e11d48 (Default)"
+                                                        className="w-36 text-xs font-mono uppercase"
+                                                    />
+                                                    {data.primary_color && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={handleResetColor}
+                                                            className="h-8 text-xs text-muted-foreground hover:text-foreground gap-1 px-2"
+                                                            title="Kembalikan ke warna default tema"
+                                                        >
+                                                            <RotateCcw className="size-3" />
+                                                            <span>Reset Default</span>
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {errors.primary_color && (
+                                        <p className="text-xs font-medium text-destructive">{errors.primary_color}</p>
+                                    )}
+
+                                    {/* Palette Presets */}
+                                    <div className="space-y-1.5 pt-1">
+                                        <p className="text-[11px] font-semibold text-muted-foreground">
+                                            Pilihan Warna Brand Populer:
+                                        </p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {colorPresets.map((preset) => (
+                                                <button
+                                                    key={preset.hex}
+                                                    type="button"
+                                                    onClick={() => handleSelectColorPreset(preset.hex)}
+                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
+                                                        data.primary_color?.toLowerCase() === preset.hex.toLowerCase()
+                                                            ? 'border-foreground shadow-xs ring-2 ring-primary/30 font-bold'
+                                                            : 'border-border/80 hover:border-foreground/50'
+                                                    }`}
+                                                >
+                                                    <span 
+                                                        className="size-3 rounded-full border border-black/20"
+                                                        style={{ backgroundColor: preset.hex }}
+                                                    />
+                                                    <span>{preset.label}</span>
+                                                    {data.primary_color?.toLowerCase() === preset.hex.toLowerCase() && (
+                                                        <Check className="size-3 text-primary ml-0.5" />
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <p className="text-[11px] text-muted-foreground leading-relaxed pt-1">
+                                        💡 Sistem otomatis mengatur kontras teks tombol (hitam/putih) agar selalu nyaman dibaca sesuai standar aksesibilitas WCAG.
+                                    </p>
+                                </CardContent>
+                            </Card>
+
+                            {/* Card 3: Visual Assets (Logo & Favicon) */}
                             <Card className="border-border/80 shadow-xs">
                                 <CardHeader className="p-5 pb-4 border-b border-border/50 bg-muted/10">
                                     <div className="flex items-center gap-2.5">
@@ -267,7 +425,6 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                         </div>
 
                                         <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
-                                            {/* Preview Box Light */}
                                             <div className="size-24 rounded-xl bg-white border border-zinc-200 flex items-center justify-center p-2 shadow-xs shrink-0">
                                                 {lightLogoPreview ? (
                                                     <img
@@ -340,7 +497,6 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                         </div>
 
                                         <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
-                                            {/* Preview Box Dark */}
                                             <div className="size-24 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center p-2 shadow-xs shrink-0">
                                                 {darkLogoPreview ? (
                                                     <img
@@ -391,7 +547,7 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                                     )}
                                                 </div>
                                                 <p className="text-[11px] text-muted-foreground">
-                                                    Gunakan logo dengan tulisan/grafis terang (putih/emas/aksen cerah) agar kontras di latar gelap.
+                                                    Gunakan logo dengan grafis terang (putih/emas/aksen cerah) agar kontras di latar gelap.
                                                 </p>
                                                 {errors.logo_dark && (
                                                     <p className="text-xs font-medium text-destructive">{errors.logo_dark}</p>
@@ -413,7 +569,6 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                         </div>
 
                                         <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
-                                            {/* Preview Box Favicon */}
                                             <div className="size-16 rounded-xl bg-card border border-border flex items-center justify-center p-2 shadow-xs shrink-0">
                                                 {faviconPreview ? (
                                                     <img
@@ -422,7 +577,10 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                                         className="size-8 object-contain"
                                                     />
                                                 ) : (
-                                                    <div className="size-8 rounded-lg bg-primary/20 text-primary font-bold text-xs flex items-center justify-center">
+                                                    <div 
+                                                        className="size-8 rounded-lg font-bold text-xs flex items-center justify-center text-white"
+                                                        style={{ backgroundColor: data.primary_color || '#e11d48' }}
+                                                    >
                                                         {data.app_name ? data.app_name.charAt(0).toUpperCase() : 'C'}
                                                     </div>
                                                 )}
@@ -473,6 +631,105 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            {/* Card 4: Background Halaman Login (Side Banner) */}
+                            <Card className="border-border/80 shadow-xs">
+                                <CardHeader className="p-5 pb-4 border-b border-border/50 bg-muted/10">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                                            <LayoutTemplate className="size-4" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-sm font-bold text-foreground">
+                                                Background & Banner Sisi Samping Login
+                                            </CardTitle>
+                                            <CardDescription className="text-xs">
+                                                Upload foto arsitektur perumahan atau kavling untuk ditampilkan di sisi samping card login (layout split-screen desktop).
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+
+                                <CardContent className="p-5 space-y-4">
+                                    <div className="space-y-2 p-4 rounded-xl border border-border/70 bg-muted/5">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                                                <ImageIcon className="size-4 text-primary" />
+                                                <span>Gambar Banner / Hero Login</span>
+                                            </div>
+                                            <span className="text-[10px] text-muted-foreground font-mono">
+                                                Maks. 4MB (JPG, PNG, WebP)
+                                            </span>
+                                        </div>
+
+                                        <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
+                                            {/* Preview Box Banner */}
+                                            <div className="w-full sm:w-44 h-28 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center overflow-hidden shadow-xs shrink-0 relative">
+                                                {loginBgPreview ? (
+                                                    <>
+                                                        <img
+                                                            src={loginBgPreview}
+                                                            alt="Login Banner Preview"
+                                                            className="size-full object-cover"
+                                                        />
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-2">
+                                                            <span className="text-[9px] text-white font-medium">Split Banner Aktif</span>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center text-zinc-500 text-center p-2">
+                                                        <ImageIcon className="size-6 mb-1 opacity-60" />
+                                                        <span className="text-[9px]">Belum Ada Gambar Banner</span>
+                                                        <span className="text-[8px] text-zinc-600">(Mode Standar Centered)</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="flex-1 space-y-2 text-center sm:text-left">
+                                                <input
+                                                    type="file"
+                                                    ref={loginBgInputRef}
+                                                    accept="image/png,image/jpeg,image/webp"
+                                                    onChange={(e) => handleFileChange(e, 'login_background')}
+                                                    className="hidden"
+                                                    id="login_background_input"
+                                                />
+                                                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => loginBgInputRef.current?.click()}
+                                                        className="h-8 text-xs gap-1.5"
+                                                    >
+                                                        <Upload className="size-3.5" />
+                                                        <span>{loginBgPreview ? 'Ganti Banner Login' : 'Pilih Gambar Banner'}</span>
+                                                    </Button>
+
+                                                    {loginBgPreview && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleRemoveFile('login_background')}
+                                                            className="h-8 text-xs text-destructive hover:bg-destructive/10 gap-1 px-2.5"
+                                                        >
+                                                            <Trash2 className="size-3" />
+                                                            <span>Hapus Banner</span>
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                                    Disarankan menggunakan foto perumahan/kavling beresolusi tinggi (min. 1200×900 px) dengan orientasi landscape atau portrait.
+                                                </p>
+                                                {errors.login_background && (
+                                                    <p className="text-xs font-medium text-destructive">{errors.login_background}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
 
                         {/* Right 1 Column: Live Preview & Submit Card */}
@@ -504,7 +761,10 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                             {darkLogoPreview ? (
                                                 <img src={darkLogoPreview} alt="Preview Dark" className="h-7 w-auto max-w-[100px] object-contain" />
                                             ) : (
-                                                <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs shrink-0">
+                                                <div 
+                                                    className="size-8 rounded-lg text-white flex items-center justify-center font-bold text-xs shrink-0"
+                                                    style={{ backgroundColor: data.primary_color || '#e11d48' }}
+                                                >
                                                     <Building2 className="size-4" />
                                                 </div>
                                             )}
@@ -529,7 +789,10 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                             {lightLogoPreview ? (
                                                 <img src={lightLogoPreview} alt="Preview Light" className="h-7 w-auto max-w-[100px] object-contain" />
                                             ) : (
-                                                <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs shrink-0">
+                                                <div 
+                                                    className="size-8 rounded-lg text-white flex items-center justify-center font-bold text-xs shrink-0"
+                                                    style={{ backgroundColor: data.primary_color || '#e11d48' }}
+                                                >
                                                     <Building2 className="size-4" />
                                                 </div>
                                             )}
@@ -544,7 +807,46 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                         </div>
                                     </div>
 
-                                    {/* Preview 3: Browser Tab Mockup */}
+                                    {/* Preview 3: Login Split-Screen Banner Mockup */}
+                                    <div className="space-y-1.5">
+                                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                                            <LayoutTemplate className="size-3 text-primary" />
+                                            <span>Simulasi Halaman Login (Desktop)</span>
+                                        </span>
+                                        <div className="h-24 rounded-xl border border-border/80 overflow-hidden flex shadow-xs">
+                                            {/* Side Banner Mock */}
+                                            <div className="w-1/2 relative bg-zinc-950 flex flex-col justify-between p-2 text-white overflow-hidden">
+                                                {loginBgPreview ? (
+                                                    <img src={loginBgPreview} alt="Banner Mock" className="absolute inset-0 size-full object-cover opacity-60" />
+                                                ) : (
+                                                    <div 
+                                                        className="absolute inset-0 opacity-40" 
+                                                        style={{ backgroundColor: data.primary_color || '#e11d48' }}
+                                                    />
+                                                )}
+                                                <div className="relative z-10 text-[8px] font-bold truncate">
+                                                    {data.app_name || 'CASANUMA'}
+                                                </div>
+                                                <div className="relative z-10 text-[7px] text-zinc-300 leading-tight truncate">
+                                                    {loginBgPreview ? 'Side Banner Aktif' : 'Default Glow'}
+                                                </div>
+                                            </div>
+
+                                            {/* Login Form Mock */}
+                                            <div className="w-1/2 bg-card p-2 flex flex-col items-center justify-center text-center space-y-1">
+                                                <div className="size-3 rounded-full bg-primary/20" />
+                                                <span className="text-[8px] font-semibold">Masuk CRM</span>
+                                                <div 
+                                                    className="w-12 h-2 rounded text-[6px] text-white flex items-center justify-center font-bold"
+                                                    style={{ backgroundColor: data.primary_color || '#e11d48' }}
+                                                >
+                                                    Login
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Preview 4: Browser Tab Mockup */}
                                     <div className="space-y-1.5">
                                         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                                             <Globe className="size-3 text-emerald-500" />
@@ -555,7 +857,10 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                                 {faviconPreview ? (
                                                     <img src={faviconPreview} alt="Favicon" className="size-3.5 object-contain" />
                                                 ) : (
-                                                    <span className="size-3 rounded-full bg-primary/40 block"></span>
+                                                    <span 
+                                                        className="size-3 rounded-full block" 
+                                                        style={{ backgroundColor: data.primary_color || '#e11d48' }}
+                                                    />
                                                 )}
                                             </div>
                                             <span className="text-[11px] font-medium text-foreground truncate">
@@ -570,6 +875,7 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                             type="submit"
                                             disabled={processing}
                                             className="w-full gap-2 shadow-xs font-semibold"
+                                            style={{ backgroundColor: data.primary_color || undefined }}
                                         >
                                             {processing ? (
                                                 <>
@@ -595,7 +901,7 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                     <div className="p-3 rounded-xl border border-primary/20 bg-primary/5 text-[11px] text-muted-foreground flex items-start gap-2">
                                         <Info className="size-4 text-primary shrink-0 mt-0.5" />
                                         <p className="leading-relaxed">
-                                            Perubahan branding otomatis tersinkronisasi ke seluruh pengguna dan halaman secara *real-time* tanpa perlu rebuild.
+                                            Warna dan branding baru otomatis langsung aktif di seluruh sistem begitu disimpan tanpa perlu kompilasi ulang.
                                         </p>
                                     </div>
                                 </CardContent>

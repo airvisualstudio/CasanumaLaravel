@@ -66,7 +66,7 @@ export default function Welcome({
                                         </Link>
                                         <Link
                                             href="/dashboard-test"
-                                            className="rounded-md px-3 py-2 text-indigo-600 dark:text-indigo-400 font-medium ring-1 ring-transparent transition hover:text-indigo-800 dark:hover:text-indigo-300 focus:outline-none"
+                                            className="rounded-md px-3 py-2 text-primary font-medium ring-1 ring-transparent transition hover:text-primary/80 focus:outline-none"
                                         >
                                             Shadcn Test 🚀
                                         </Link>
