@@ -53,7 +53,7 @@ class ActivityLog extends Model
     ): static {
         $request = request();
 
-        return static::create([
+        $log = static::create([
             'user_id' => Auth::id(),
             'action' => $action,
             'description' => $description,
@@ -63,6 +63,17 @@ class ActivityLog extends Model
             'ip_address' => $request?->ip(),
             'user_agent' => $request?->userAgent() ? substr($request->userAgent(), 0, 500) : null,
         ]);
+
+        // Auto-send real-time notification to Telegram bot/group
+        try {
+            if ($action !== 'telegram_test') {
+                app(\App\Services\TelegramService::class)->sendActivityNotification($log);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Telegram activity notification error: ' . $e->getMessage());
+        }
+
+        return $log;
     }
 
     /**

@@ -57,6 +57,7 @@ import {
     SelectValue,
 } from '@/Components/ui/select';
 import { toast } from '@/Components/ui/sonner';
+import { Checkbox } from '@/Components/ui/checkbox';
 
 interface LogItem {
     id: number;
@@ -688,6 +689,26 @@ export default function ActivityLogsIndex({
                                             {tgErrors.chat_id && (
                                                 <p className="text-xs font-medium text-destructive">{tgErrors.chat_id}</p>
                                             )}
+                                        </div>
+
+                                        {/* Telegram Notification Realtime Toggle */}
+                                        <div className="flex items-start justify-between gap-3 p-3.5 rounded-xl border border-sky-500/20 bg-sky-500/5 transition-colors">
+                                            <div className="space-y-0.5">
+                                                <Label htmlFor="notifications_enabled" className="text-xs font-semibold cursor-pointer flex items-center gap-1.5 text-foreground">
+                                                    <Bell className="size-3.5 text-sky-500" />
+                                                    <span>Kirim Notifikasi Log Aktivitas Real-time ke Telegram</span>
+                                                </Label>
+                                                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                                    Setiap ada aktivitas penting (tambah/edit user, status akun, ganti password, reset password), ringkasan audit log akan otomatis dikirimkan ke Telegram.
+                                                </p>
+                                            </div>
+                                            <div className="pt-0.5">
+                                                <Checkbox
+                                                    id="notifications_enabled"
+                                                    checked={tgData.notifications_enabled}
+                                                    onCheckedChange={(checked) => setTgData('notifications_enabled', Boolean(checked))}
+                                                />
+                                            </div>
                                         </div>
 
                                         {/* Action Buttons */}

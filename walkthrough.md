@@ -163,9 +163,12 @@ Semua akun menggunakan password bawaan: `password`
   - Tombol **"Simpan Pengaturan"**: Menyimpan konfigurasi ke database.
   - Panduan interaktif cara membuat bot via `@BotFather` dan mencari Chat ID via `@userinfobot`.
 
-### 5.4 Hasil Pengujian & Build
-- **Frontend Build (`bun run build`):** Berhasil 100% tanpa error TypeScript (`ActivityLogs-BJeMEH_F.js` ter-bundle dalam 1.97s).
-- **PHP Feature Tests (`php artisan test`):** **54 passed, 193 assertions** (termasuk 6 test cases di `ActivityLogTest.php` mencakup RBAC protection, DB saving, `Http::fake` success & failure handling, serta audit trail logging).
+### 5.4 Notifikasi Real-Time Log Aktivitas ke Telegram
+- **Metode `sendActivityNotification`:** Ditambahkan pada [`TelegramService.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Services/TelegramService.php) untuk mengirimkan format pesan HTML yang rapi ke bot/grup Telegram secara instan saat aktivitas baru dicatat (`user_create`, `user_update`, `status_toggle`, `password_reset`, `profile_update`, `password_change`, dll).
+- **Trigger Otomatis di [`ActivityLog::record(...)`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Models/ActivityLog.php):** Setiap log aktivitas baru otomatis diteruskan ke Telegram secara asinkron/non-blocking tanpa memperlambat proses utama pengguna.
+- **SSL Bypass untuk Local Windows Development:** cURL error 60 diatasi otomatis dengan konfigurasi `withoutVerifying()` saat mode development/local, sehingga bot Telegram dapat mengirim pesan tanpa terhalang cert chain lokal.
+- **UI Toggle Real-Time:** Tersedia checkbox shadcn di tab Pengaturan Telegram untuk mengaktifkan/menonaktifkan pengiriman log real-time ke Telegram kapan saja.
 
-
-
+### 5.5 Hasil Pengujian & Build
+- **Frontend Build (`bun run build`):** Berhasil 100% tanpa error TypeScript (termasuk komponen Checkbox dan update form).
+- **PHP Feature Tests (`php artisan test`):** **55 passed, 196 assertions** (100% lulus, mencakup auto-dispatch log aktivitas ke Telegram saat ada aksi pengguna).

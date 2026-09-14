@@ -20,9 +20,16 @@ class PasswordController extends Controller
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
-        $request->user()->update([
+        $user = $request->user();
+        $user->update([
             'password' => Hash::make($validated['password']),
         ]);
+
+        \App\Models\ActivityLog::record(
+            'password_change',
+            "Pengguna {$user->name} berhasil memperbarui password mandiri",
+            $user
+        );
 
         return back();
     }

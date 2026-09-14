@@ -186,4 +186,32 @@ class ActivityLogTest extends TestCase
             'action' => 'user_delete',
         ]);
     }
+
+    public function test_activity_log_dispatches_telegram_notification_when_configured(): void
+    {
+        SystemSetting::set('telegram_bot_token', '123456:MOCK_TOKEN', 'telegram');
+        SystemSetting::set('telegram_chat_id', '-100987654321', 'telegram');
+        SystemSetting::set('telegram_notifications_enabled', true, 'telegram', 'boolean');
+
+        Http::fake([
+            'https://api.telegram.org/*' => Http::response(['ok' => true, 'result' => ['message_id' => 999]], 200),
+        ]);
+
+        $admin = User::where('email', 'admin@casanuma.com')->first();
+        $this->actingAs($admin);
+
+        ActivityLog::record(
+            'user_create',
+            'Menambahkan pengguna baru: Budi Santoso (sales_agent)',
+            $admin,
+            ['email' => 'budi@casanuma.com', 'role' => 'sales_agent']
+        );
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'sendMessage')
+                && $request['chat_id'] === '-100987654321'
+                && str_contains($request['text'], 'Menambahkan pengguna baru: Budi Santoso')
+                && str_contains($request['text'], 'budi@casanuma.com');
+        });
+    }
 }
