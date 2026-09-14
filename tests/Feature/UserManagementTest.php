@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class UserManagementTest extends TestCase
@@ -78,6 +80,63 @@ class UserManagementTest extends TestCase
         $this->assertTrue($created->hasRole('sales_agent'));
     }
 
+    public function test_superadmin_can_create_user_with_complete_profile_fields(): void
+    {
+        $admin = User::where('email', 'admin@casanuma.com')->first();
+
+        $response = $this->actingAs($admin)->post('/users', [
+            'name' => 'Doni Saputra',
+            'email' => 'doni@casanuma.com',
+            'password' => 'password123',
+            'role' => 'sales_agent',
+            'phone' => '081299887766',
+            'address' => 'Jl. Aster Merah No. 10, Cimahi',
+            'emergency_contact_name' => 'Sinta (Istri)',
+            'emergency_contact_phone' => '081299887700',
+            'employee_id' => 'CSN-SLS-010',
+            'position' => 'Property Advisor',
+            'join_date' => '2024-02-01',
+            'is_active' => true,
+            'bank_name' => 'BCA',
+            'bank_account_number' => '1234567890',
+            'bank_account_holder' => 'Doni Saputra',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('users', [
+            'email' => 'doni@casanuma.com',
+            'phone' => '081299887766',
+            'employee_id' => 'CSN-SLS-010',
+            'bank_name' => 'BCA',
+            'bank_account_number' => '1234567890',
+        ]);
+
+        $user = User::where('email', 'doni@casanuma.com')->first();
+        $this->assertTrue($user->is_active);
+        $this->assertEquals('Property Advisor', $user->position);
+    }
+
+    public function test_superadmin_can_upload_avatar_for_user(): void
+    {
+        Storage::fake('public');
+        $admin = User::where('email', 'admin@casanuma.com')->first();
+
+        $avatarFile = UploadedFile::fake()->create('avatar.jpg', 150, 'image/jpeg');
+
+        $response = $this->actingAs($admin)->post('/users', [
+            'name' => 'Maya Anggraeni',
+            'email' => 'maya@casanuma.com',
+            'password' => 'password123',
+            'role' => 'finance',
+            'avatar' => $avatarFile,
+        ]);
+
+        $response->assertRedirect();
+        $user = User::where('email', 'maya@casanuma.com')->first();
+        $this->assertNotNull($user->avatar);
+        Storage::disk('public')->assertExists($user->avatar);
+    }
+
     public function test_superadmin_can_update_user_and_role(): void
     {
         $admin = User::where('email', 'admin@casanuma.com')->first();
@@ -87,17 +146,51 @@ class UserManagementTest extends TestCase
             'name' => 'Sales Dipromosikan',
             'email' => 'sales@casanuma.com',
             'role' => 'sales_manager',
+            'position' => 'Senior Sales Manager',
+            'phone' => '082199998888',
         ]);
 
         $response->assertRedirect();
         $this->assertDatabaseHas('users', [
             'id' => $sales->id,
             'name' => 'Sales Dipromosikan',
+            'position' => 'Senior Sales Manager',
+            'phone' => '082199998888',
         ]);
 
         $sales->refresh();
         $this->assertTrue($sales->hasRole('sales_manager'));
         $this->assertFalse($sales->hasRole('sales_agent'));
+    }
+
+    public function test_superadmin_can_toggle_user_active_status(): void
+    {
+        $admin = User::where('email', 'admin@casanuma.com')->first();
+        $sales = User::where('email', 'sales@casanuma.com')->first();
+
+        $this->assertTrue($sales->is_active);
+
+        $response = $this->actingAs($admin)->patch("/users/{$sales->id}/toggle-status");
+        $response->assertRedirect();
+
+        $sales->refresh();
+        $this->assertFalse($sales->is_active);
+
+        // Toggle back
+        $this->actingAs($admin)->patch("/users/{$sales->id}/toggle-status");
+        $sales->refresh();
+        $this->assertTrue($sales->is_active);
+    }
+
+    public function test_superadmin_cannot_deactivate_themselves(): void
+    {
+        $admin = User::where('email', 'admin@casanuma.com')->first();
+
+        $response = $this->actingAs($admin)->patch("/users/{$admin->id}/toggle-status");
+
+        $response->assertSessionHasErrors('error');
+        $admin->refresh();
+        $this->assertTrue($admin->is_active);
     }
 
     public function test_superadmin_can_delete_user(): void

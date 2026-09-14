@@ -20,11 +20,12 @@
 - [x] **FE-01:** Sticky Full-Height Sidebar (`lg:sticky lg:top-0 lg:h-screen`) with independent scrolling ("bisa di-roll") & desktop single toggle.
 - [x] **FE-02:** Collapsible Icon-Only Sidebar (`w-64` to `w-[72px]`) with perfect 36px vertical center symmetry and hidden scrollbar layout track.
 - [x] **FE-03:** Fluid Responsive Dashboard (`max-w-[1550px]`) with vertical-centered Welcome Card and role-tailored quick action modules.
-- [x] **USER-01:** User Management CRUD Controller ([`UserController.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Http/Controllers/UserController.php)) with validation, Spatie role sync, and self-deletion prevention.
+- [x] **USER-01:** User Management CRUD Controller ([`UserController.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Http/Controllers/UserController.php)) with validation, avatar storage, Spatie role sync, toggle status, and self-deletion prevention.
 - [x] **USER-02:** Strict Spatie Middleware Lock (`role:superadmin` throwing HTTP 403 for sales_agent, sales_manager, finance).
-- [x] **USER-03:** Data Table shadcn UI ([`table.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/ui/table.tsx)) & User List ([`Users/Index.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Users/Index.tsx)) with search & role filters.
-- [x] **USER-04:** Add/Edit/Delete User Modals strictly using shadcn `Dialog` with role assignment picker cards.
-- [x] **QA-USER:** Automated Feature Test Suite ([`UserManagementTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/UserManagementTest.php)) passing with 8 test cases & 27 assertions.
+- [x] **USER-03:** Data Table shadcn UI ([`table.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/ui/table.tsx)) & User List ([`Users/Index.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Users/Index.tsx)) with live search, role filters, active status filter, and quick WhatsApp link.
+- [x] **USER-04:** Tabbed Add/Edit User Dialog (Account, Personal Info, Work Info, Bank Account) & Dossier Detail Dialog strictly using shadcn `Dialog`.
+- [x] **USER-05:** Database migration & seeder for extended user fields (avatar, phone, address, emergency contact, employee_id, position, join_date, is_active, bank info).
+- [x] **QA-USER:** Automated Feature Test Suite ([`UserManagementTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/UserManagementTest.php)) passing with 12 test cases & 41 assertions.
 - [ ] **DB-04:** Migrations & Seeders for Housing Inventory:
   - Table `clusters` (nama, deskripsi, lokasi, total_unit).
   - Table `unit_types` (tipe_nama, lb, lt, spesifikasi_bangunan, denah_url).

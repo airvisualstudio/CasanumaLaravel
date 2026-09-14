@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, usePage } from '@inertiajs/react';
-import { useState, useMemo, FormEventHandler } from 'react';
+import { Head, useForm, usePage, router } from '@inertiajs/react';
+import { useState, useMemo, FormEventHandler, useRef, useEffect } from 'react';
 import { 
     Users, 
     UserPlus, 
@@ -17,7 +17,26 @@ import {
     CheckCircle2, 
     X,
     Filter,
-    KeyRound
+    KeyRound,
+    Phone,
+    MapPin,
+    Building,
+    CreditCard,
+    Calendar,
+    Briefcase,
+    UserCheck,
+    UserX,
+    ExternalLink,
+    Eye,
+    Upload,
+    Check,
+    Image as ImageIcon,
+    Sparkles,
+    AlertCircle,
+    Crop as CropIcon,
+    ZoomIn,
+    ZoomOut,
+    RotateCcw
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -45,6 +64,20 @@ interface UserData {
     id: number;
     name: string;
     email: string;
+    avatar?: string | null;
+    avatar_url?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    emergency_contact_name?: string | null;
+    emergency_contact_phone?: string | null;
+    employee_id?: string | null;
+    position?: string | null;
+    join_date?: string | null;
+    join_date_formatted?: string | null;
+    is_active: boolean;
+    bank_name?: string | null;
+    bank_account_number?: string | null;
+    bank_account_holder?: string | null;
     roles: string[];
     created_at: string;
 }
@@ -91,6 +124,45 @@ const roleBadges: Record<string, { label: string; color: string; dotColor: strin
     },
 };
 
+const popularBanks = ['BCA', 'Mandiri', 'BRI', 'BNI', 'BSI', 'CIMB Niaga', 'Permata', 'BTN'];
+
+type FormTab = 'account' | 'personal' | 'work' | 'finance';
+
+// Dedicated resilient avatar component with graceful fallback
+function UserAvatar({ 
+    user, 
+    className = "size-10", 
+    textClassName = "text-xs" 
+}: { 
+    user: UserData; 
+    className?: string; 
+    textClassName?: string;
+}) {
+    const [imgError, setImgError] = useState(false);
+
+    // Reset error if avatar_url changes
+    useEffect(() => {
+        setImgError(false);
+    }, [user.avatar_url]);
+
+    if (user.avatar_url && !imgError) {
+        return (
+            <img 
+                src={user.avatar_url} 
+                alt={user.name} 
+                onError={() => setImgError(true)}
+                className={`${className} rounded-full object-cover border border-border/80 shrink-0 shadow-2xs`}
+            />
+        );
+    }
+
+    return (
+        <div className={`${className} rounded-full bg-linear-to-br from-primary/20 to-primary/5 text-primary font-bold ${textClassName} flex items-center justify-center border border-primary/20 shrink-0 shadow-2xs`}>
+            {user.name ? user.name.charAt(0).toUpperCase() : '?'}
+        </div>
+    );
+}
+
 export default function UsersIndex({ users, availableRoles }: PageProps) {
     const { auth, flash, errors: pageErrors } = usePage<PageProps>().props;
     const currentUserId = auth.user.id;
@@ -98,27 +170,74 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
     // Search & Filter state
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('all');
+    const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
     // Dialog states
     const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<FormTab>('account');
     const [editingUser, setEditingUser] = useState<UserData | null>(null);
     const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
+    const [userToView, setUserToView] = useState<UserData | null>(null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+    // Cropping & Compression states
+    const [isCropperOpen, setIsCropperOpen] = useState(false);
+    const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
+    const [originalFileSize, setOriginalFileSize] = useState<number>(0);
+    const [compressedFileSize, setCompressedFileSize] = useState<number | null>(null);
+    const [cropZoom, setCropZoom] = useState<number>(1);
+    const [cropPosition, setCropPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const cropContainerRef = useRef<HTMLDivElement>(null);
 
     // Form handling for Add/Edit
     const {
         data: formData,
         setData: setFormData,
         post,
-        put,
         processing: formProcessing,
         errors: formErrors,
         reset: resetForm,
         clearErrors: clearFormErrors,
-    } = useForm({
+    } = useForm<{
+        name: string;
+        email: string;
+        password: string;
+        role: string;
+        avatar: File | null;
+        remove_avatar: boolean;
+        phone: string;
+        address: string;
+        emergency_contact_name: string;
+        emergency_contact_phone: string;
+        employee_id: string;
+        position: string;
+        join_date: string;
+        is_active: boolean;
+        bank_name: string;
+        bank_account_number: string;
+        bank_account_holder: string;
+    }>({
         name: '',
         email: '',
         password: '',
         role: 'sales_agent',
+        avatar: null,
+        remove_avatar: false,
+        phone: '',
+        address: '',
+        emergency_contact_name: '',
+        emergency_contact_phone: '',
+        employee_id: '',
+        position: '',
+        join_date: '',
+        is_active: true,
+        bank_name: '',
+        bank_account_number: '',
+        bank_account_holder: '',
     });
 
     // Form handling for Delete
@@ -132,15 +251,23 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
         return users.filter((u) => {
             const matchesSearch = 
                 u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                u.email.toLowerCase().includes(searchQuery.toLowerCase());
+                u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (u.employee_id && u.employee_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                (u.position && u.position.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                (u.phone && u.phone.includes(searchQuery));
 
             const matchesRole = 
                 selectedRoleFilter === 'all' || 
                 u.roles.includes(selectedRoleFilter);
 
-            return matchesSearch && matchesRole;
+            const matchesStatus = 
+                selectedStatusFilter === 'all' ||
+                (selectedStatusFilter === 'active' && u.is_active) ||
+                (selectedStatusFilter === 'inactive' && !u.is_active);
+
+            return matchesSearch && matchesRole && matchesStatus;
         });
-    }, [users, searchQuery, selectedRoleFilter]);
+    }, [users, searchQuery, selectedRoleFilter, selectedStatusFilter]);
 
     // Role count summary
     const roleCounts = useMemo(() => {
@@ -161,15 +288,33 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
         return counts;
     }, [users]);
 
+    const activeUsersCount = useMemo(() => users.filter(u => u.is_active).length, [users]);
+
     const openAddDialog = () => {
         setEditingUser(null);
         clearFormErrors();
         resetForm();
+        setAvatarPreview(null);
+        setCompressedFileSize(null);
+        setActiveTab('account');
         setFormData({
             name: '',
             email: '',
             password: '',
             role: 'sales_agent',
+            avatar: null,
+            remove_avatar: false,
+            phone: '',
+            address: '',
+            emergency_contact_name: '',
+            emergency_contact_phone: '',
+            employee_id: '',
+            position: '',
+            join_date: new Date().toISOString().split('T')[0],
+            is_active: true,
+            bank_name: 'BCA',
+            bank_account_number: '',
+            bank_account_holder: '',
         });
         setIsFormDialogOpen(true);
     };
@@ -178,11 +323,27 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
         setEditingUser(user);
         clearFormErrors();
         resetForm();
+        setAvatarPreview(user.avatar_url || null);
+        setCompressedFileSize(null);
+        setActiveTab('account');
         setFormData({
             name: user.name,
             email: user.email,
             password: '',
             role: user.roles[0] || 'sales_agent',
+            avatar: null,
+            remove_avatar: false,
+            phone: user.phone || '',
+            address: user.address || '',
+            emergency_contact_name: user.emergency_contact_name || '',
+            emergency_contact_phone: user.emergency_contact_phone || '',
+            employee_id: user.employee_id || '',
+            position: user.position || '',
+            join_date: user.join_date || '',
+            is_active: user.is_active,
+            bank_name: user.bank_name || '',
+            bank_account_number: user.bank_account_number || '',
+            bank_account_holder: user.bank_account_holder || user.name,
         });
         setIsFormDialogOpen(true);
     };
@@ -190,24 +351,143 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
     const closeFormDialog = () => {
         setIsFormDialogOpen(false);
         setEditingUser(null);
+        setAvatarPreview(null);
+        setCompressedFileSize(null);
         clearFormErrors();
         resetForm();
+    };
+
+    // Triggered when file input changes -> Opens Cropper Dialog
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            alert('Silakan pilih file gambar (JPG, PNG, atau WEBP).');
+            return;
+        }
+
+        setOriginalFileSize(file.size);
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            setRawImageSrc(event.target?.result as string);
+            setCropZoom(1);
+            setCropPosition({ x: 0, y: 0 });
+            setIsCropperOpen(true);
+        };
+        reader.readAsDataURL(file);
+
+        // Reset input value so same file can be re-selected if cancelled
+        e.target.value = '';
+    };
+
+    // Cropper Drag handlers
+    const handleMouseDown = (e: React.MouseEvent) => {
+        setIsDragging(true);
+        setDragStart({ x: e.clientX - cropPosition.x, y: e.clientY - cropPosition.y });
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging) return;
+        setCropPosition({
+            x: e.clientX - dragStart.x,
+            y: e.clientY - dragStart.y,
+        });
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    // Apply crop & compress to standard 512x512 JPEG (< 200 KB)
+    const applyCropAndCompress = () => {
+        if (!rawImageSrc) return;
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            const outputSize = 512;
+            const canvas = document.createElement('canvas');
+            canvas.width = outputSize;
+            canvas.height = outputSize;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            ctx.clearRect(0, 0, outputSize, outputSize);
+
+            // Container preview viewport size is 260px
+            const viewportSize = 260;
+            const scaleFactor = outputSize / viewportSize;
+
+            const baseScale = Math.max(viewportSize / img.naturalWidth, viewportSize / img.naturalHeight);
+            const effectiveScale = baseScale * cropZoom * scaleFactor;
+
+            const centerX = outputSize / 2 + cropPosition.x * scaleFactor;
+            const centerY = outputSize / 2 + cropPosition.y * scaleFactor;
+            const drawWidth = img.naturalWidth * effectiveScale;
+            const drawHeight = img.naturalHeight * effectiveScale;
+
+            ctx.drawImage(
+                img,
+                centerX - drawWidth / 2,
+                centerY - drawHeight / 2,
+                drawWidth,
+                drawHeight
+            );
+
+            // Compress to JPEG with 0.85 quality
+            canvas.toBlob((blob) => {
+                if (!blob) return;
+
+                const compressedFile = new File([blob], 'avatar.jpg', {
+                    type: 'image/jpeg',
+                    lastModified: Date.now(),
+                });
+
+                setFormData('avatar', compressedFile);
+                setFormData('remove_avatar', false);
+                setCompressedFileSize(blob.size);
+                setAvatarPreview(URL.createObjectURL(blob));
+                setIsCropperOpen(false);
+                setRawImageSrc(null);
+            }, 'image/jpeg', 0.85);
+        };
+        img.src = rawImageSrc;
+    };
+
+    const handleRemoveAvatar = () => {
+        setFormData('avatar', null);
+        setFormData('remove_avatar', true);
+        setAvatarPreview(null);
+        setCompressedFileSize(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     };
 
     const handleFormSubmit: FormEventHandler = (e) => {
         e.preventDefault();
 
         if (editingUser) {
-            put(route('users.update', editingUser.id), {
+            post(route('users.update', editingUser.id), {
+                forceFormData: true,
                 preserveScroll: true,
                 onSuccess: () => closeFormDialog(),
             });
         } else {
             post(route('users.store'), {
+                forceFormData: true,
                 preserveScroll: true,
                 onSuccess: () => closeFormDialog(),
             });
         }
+    };
+
+    const handleToggleStatus = (user: UserData) => {
+        router.patch(route('users.toggle-status', user.id), {}, {
+            preserveScroll: true,
+        });
     };
 
     const confirmDelete = (user: UserData) => {
@@ -221,6 +501,21 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
             preserveScroll: true,
             onSuccess: () => setUserToDelete(null),
         });
+    };
+
+    const cleanWaNumber = (phone?: string | null) => {
+        if (!phone) return null;
+        let cleaned = phone.replace(/\D/g, '');
+        if (cleaned.startsWith('0')) {
+            cleaned = '62' + cleaned.substring(1);
+        }
+        return cleaned;
+    };
+
+    const formatFileSize = (bytes: number) => {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
     };
 
     return (
@@ -237,10 +532,10 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                             </div>
                             <div>
                                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-heading">
-                                    Manajemen Pengguna & Hak Akses
+                                    Manajemen Pengguna & Profil Staf
                                 </h1>
                                 <p className="text-xs sm:text-sm text-muted-foreground">
-                                    Kelola akun karyawan, pembagian peran Spatie RBAC, dan kredensial sistem CRM.
+                                    Kelola kredensial, info kerja (NIK/Jabatan), kontak darurat, serta data rekening pencairan komisi.
                                 </p>
                             </div>
                         </div>
@@ -266,10 +561,67 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                     </div>
                 )}
 
-                {/* 2. Role Filter Tabs & Search */}
+                {/* 2. Top Summary KPI Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <Card className="border-border/80 shadow-2xs">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <Users className="size-5" />
+                            </div>
+                            <div>
+                                <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Total User</p>
+                                <p className="text-xl font-bold text-foreground font-heading">{users.length}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-border/80 shadow-2xs">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="size-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                <UserCheck className="size-5" />
+                            </div>
+                            <div>
+                                <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Status Aktif</p>
+                                <p className="text-xl font-bold text-foreground font-heading">
+                                    {activeUsersCount} <span className="text-xs font-normal text-muted-foreground">/ {users.length}</span>
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-border/80 shadow-2xs">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="size-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                <Briefcase className="size-5" />
+                            </div>
+                            <div>
+                                <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Tim Penjualan</p>
+                                <p className="text-xl font-bold text-foreground font-heading">
+                                    {(roleCounts.sales_manager || 0) + (roleCounts.sales_agent || 0)}
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-border/80 shadow-2xs">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="size-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                <CreditCard className="size-5" />
+                            </div>
+                            <div>
+                                <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Tim Finance</p>
+                                <p className="text-xl font-bold text-foreground font-heading">
+                                    {roleCounts.finance || 0}
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* 3. Filter & Search Controls */}
                 <Card className="border-border/80 shadow-xs">
                     <CardContent className="p-4 space-y-4">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                             {/* Role Filter Buttons */}
                             <div className="flex flex-wrap items-center gap-1.5">
                                 <button
@@ -309,39 +661,51 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                 })}
                             </div>
 
-                            {/* Search Input */}
-                            <div className="relative w-full md:w-64">
-                                <Search className="size-4 text-muted-foreground absolute left-3 top-2.5 pointer-events-none" />
-                                <Input
-                                    type="text"
-                                    placeholder="Cari nama atau email..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9 h-9 text-xs"
-                                />
-                                {searchQuery && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setSearchQuery('')}
-                                        className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
-                                    >
-                                        <X className="size-3.5" />
-                                    </button>
-                                )}
+                            {/* Search & Status Filter */}
+                            <div className="flex items-center gap-2 w-full lg:w-auto">
+                                <div className="relative flex-1 lg:w-72">
+                                    <Search className="size-4 text-muted-foreground absolute left-3 top-2.5 pointer-events-none" />
+                                    <Input
+                                        type="text"
+                                        placeholder="Cari nama, email, NIK, jabatan, no WA..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="pl-9 h-9 text-xs"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSearchQuery('')}
+                                            className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                                        >
+                                            <X className="size-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                <select
+                                    value={selectedStatusFilter}
+                                    onChange={(e) => setSelectedStatusFilter(e.target.value as any)}
+                                    className="h-9 px-2.5 text-xs rounded-md border border-input bg-background text-foreground shadow-2xs focus:outline-hidden focus:ring-1 focus:ring-ring"
+                                >
+                                    <option value="all">Semua Status</option>
+                                    <option value="active">Hanya Aktif</option>
+                                    <option value="inactive">Hanya Nonaktif</option>
+                                </select>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* 3. User Data Table */}
+                {/* 4. User Data Table */}
                 <Card className="border-border/80 shadow-md overflow-hidden">
                     <CardHeader className="p-5 pb-3 border-b border-border/50 bg-muted/10 flex flex-row items-center justify-between">
                         <div>
                             <CardTitle className="text-base font-semibold">
-                                Daftar Pengguna Aktif
+                                Direktori Staf & Pengguna CRM
                             </CardTitle>
                             <CardDescription className="text-xs text-muted-foreground">
-                                Menampilkan {filteredUsers.length} dari total {users.length} pengguna terdaftar
+                                Menampilkan {filteredUsers.length} dari total {users.length} staf terdaftar
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
@@ -354,10 +718,11 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                         <Table>
                             <TableHeader className="bg-muted/30">
                                 <TableRow>
-                                    <TableHead className="w-[300px]">Pengguna</TableHead>
-                                    <TableHead>Peran (Role)</TableHead>
-                                    <TableHead className="hidden sm:table-cell">Terdaftar Sejak</TableHead>
-                                    <TableHead className="hidden md:table-cell">Status</TableHead>
+                                    <TableHead className="w-[280px]">Profil Pengguna</TableHead>
+                                    <TableHead>Peran & Jabatan</TableHead>
+                                    <TableHead className="hidden md:table-cell">Kontak & Domisili</TableHead>
+                                    <TableHead className="hidden lg:table-cell">Rekening Komisi</TableHead>
+                                    <TableHead>Status</TableHead>
                                     <TableHead className="text-right">Aksi</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -371,60 +736,148 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                             color: 'border-border bg-muted text-muted-foreground',
                                             dotColor: 'bg-muted-foreground',
                                         };
+                                        const waLink = cleanWaNumber(user.phone);
 
                                         return (
-                                            <TableRow key={user.id} className="hover:bg-muted/20">
+                                            <TableRow key={user.id} className="hover:bg-muted/20 transition-colors">
+                                                {/* Profil: UserAvatar, Nama, NIK, Email */}
                                                 <TableCell className="font-medium">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="size-9 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center border border-primary/20 shrink-0">
-                                                            {user.name.charAt(0).toUpperCase()}
-                                                        </div>
+                                                        <UserAvatar user={user} className="size-10" textClassName="text-xs" />
                                                         <div className="truncate">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-semibold text-foreground text-sm truncate">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setUserToView(user)}
+                                                                    className="font-semibold text-foreground text-sm truncate hover:text-primary transition-colors text-left"
+                                                                >
                                                                     {user.name}
-                                                                </span>
+                                                                </button>
                                                                 {isSelf && (
-                                                                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-primary/40 bg-primary/10 text-primary">
+                                                                    <Badge variant="outline" className="text-[10px] py-0 px-1 border-primary/40 bg-primary/10 text-primary shrink-0">
                                                                         Anda
                                                                     </Badge>
                                                                 )}
                                                             </div>
-                                                            <span className="text-xs text-muted-foreground truncate block">
-                                                                {user.email}
-                                                            </span>
+                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                {user.employee_id && (
+                                                                    <span className="font-mono text-[11px] text-primary/80 font-medium">
+                                                                        {user.employee_id}
+                                                                    </span>
+                                                                )}
+                                                                <span className="truncate">{user.email}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </TableCell>
+
+                                                {/* Peran & Jabatan */}
                                                 <TableCell>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {user.roles.map((r) => {
-                                                            const badge = roleBadges[r] || {
-                                                                label: r,
-                                                                color: 'border-border bg-muted text-muted-foreground',
-                                                            };
-                                                            return (
-                                                                <span
-                                                                    key={r}
-                                                                    className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${badge.color}`}
-                                                                >
-                                                                    {badge.label}
-                                                                </span>
-                                                            );
-                                                        })}
+                                                    <div className="space-y-1">
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {user.roles.map((r) => {
+                                                                const badge = roleBadges[r] || {
+                                                                    label: r,
+                                                                    color: 'border-border bg-muted text-muted-foreground',
+                                                                };
+                                                                return (
+                                                                    <span
+                                                                        key={r}
+                                                                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${badge.color}`}
+                                                                    >
+                                                                        {badge.label}
+                                                                    </span>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                                                            <Briefcase className="size-3 shrink-0 text-muted-foreground/70" />
+                                                            <span>{user.position || 'Staf Operasional'}</span>
+                                                        </p>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="hidden sm:table-cell text-xs text-muted-foreground font-mono">
-                                                    {user.created_at}
-                                                </TableCell>
+
+                                                {/* Kontak & Domisili */}
                                                 <TableCell className="hidden md:table-cell">
-                                                    <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                                                        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                        Aktif
-                                                    </span>
+                                                    <div className="space-y-1 text-xs">
+                                                        {user.phone ? (
+                                                            waLink ? (
+                                                                <a
+                                                                    href={`https://wa.me/${waLink}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium hover:underline"
+                                                                    title="Buka Chat WhatsApp"
+                                                                >
+                                                                    <Phone className="size-3 text-emerald-500" />
+                                                                    <span>{user.phone}</span>
+                                                                    <ExternalLink className="size-2.5 opacity-60" />
+                                                                </a>
+                                                            ) : (
+                                                                <span className="text-foreground">{user.phone}</span>
+                                                            )
+                                                        ) : (
+                                                            <span className="text-muted-foreground italic text-[11px]">- Belum ada WA -</span>
+                                                        )}
+                                                        {user.address && (
+                                                            <p className="text-[11px] text-muted-foreground truncate max-w-[180px] flex items-center gap-1" title={user.address}>
+                                                                <MapPin className="size-3 shrink-0 text-muted-foreground/70" />
+                                                                <span className="truncate">{user.address}</span>
+                                                            </p>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
+
+                                                {/* Rekening Komisi */}
+                                                <TableCell className="hidden lg:table-cell">
+                                                    {user.bank_account_number ? (
+                                                        <div className="space-y-0.5 text-xs">
+                                                            <div className="flex items-center gap-1.5 font-medium text-foreground">
+                                                                <span className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-bold uppercase border border-border">
+                                                                    {user.bank_name || 'BANK'}
+                                                                </span>
+                                                                <span className="font-mono text-xs">{user.bank_account_number}</span>
+                                                            </div>
+                                                            <p className="text-[11px] text-muted-foreground truncate max-w-[160px]">
+                                                                a/n {user.bank_account_holder || user.name}
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-muted-foreground text-xs italic">- Belum diisi -</span>
+                                                    )}
+                                                </TableCell>
+
+                                                {/* Status Aktif / Nonaktif */}
+                                                <TableCell>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleToggleStatus(user)}
+                                                        disabled={isSelf}
+                                                        title={isSelf ? 'Tidak dapat menonaktifkan akun sendiri' : 'Klik untuk ubah status aktif/nonaktif'}
+                                                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                                                            user.is_active
+                                                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
+                                                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                                        } ${isSelf ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+                                                    >
+                                                        <span className={`size-1.5 rounded-full ${user.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground'}`} />
+                                                        <span>{user.is_active ? 'Aktif' : 'Nonaktif'}</span>
+                                                    </button>
+                                                </TableCell>
+
+                                                {/* Aksi */}
                                                 <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-1.5">
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon-sm"
+                                                            onClick={() => setUserToView(user)}
+                                                            title={`Lihat Detail ${user.name}`}
+                                                            className="text-muted-foreground hover:text-primary"
+                                                        >
+                                                            <Eye className="size-3.5" />
+                                                        </Button>
+
                                                         <Button
                                                             variant="ghost"
                                                             size="icon-sm"
@@ -452,12 +905,12 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                     })
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-32 text-center text-muted-foreground text-xs">
+                                        <TableCell colSpan={6} className="h-36 text-center text-muted-foreground text-xs">
                                             <div className="flex flex-col items-center justify-center gap-1.5">
-                                                <Users className="size-6 text-muted-foreground/50 mb-1" />
-                                                <p className="font-semibold text-foreground">Tidak ada pengguna ditemukan</p>
-                                                <p className="text-[11px] text-muted-foreground">
-                                                    Coba sesuaikan kata kunci pencarian atau filter peran yang dipilih.
+                                                <Users className="size-7 text-muted-foreground/50 mb-1" />
+                                                <p className="font-semibold text-foreground text-sm">Tidak ada staf atau pengguna ditemukan</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Coba sesuaikan kata kunci pencarian atau filter status dan peran.
                                                 </p>
                                             </div>
                                         </TableCell>
@@ -468,145 +921,525 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                     </CardContent>
                 </Card>
 
-                {/* 4. Dialog Form Tambah / Edit Pengguna (Standard shadcn Dialog) */}
+                {/* 5. Dialog Form Tambah / Edit Pengguna (Bertab Modern) */}
                 <Dialog open={isFormDialogOpen} onOpenChange={(open) => !open && closeFormDialog()}>
-                    <DialogContent className="sm:max-w-lg">
-                        <DialogHeader>
+                    <DialogContent className="sm:max-w-2xl p-0 overflow-hidden">
+                        <DialogHeader className="px-5 pt-4 pb-2 border-b border-border bg-muted/20">
                             <div className="flex items-center gap-3">
-                                <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                                <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
                                     {editingUser ? <Edit2 className="size-5" /> : <UserPlus className="size-5" />}
                                 </div>
                                 <div>
                                     <DialogTitle className="text-lg font-bold">
-                                        {editingUser ? 'Perbarui Data Pengguna' : 'Tambah Pengguna Baru'}
+                                        {editingUser ? `Edit Staf: ${editingUser.name}` : 'Tambah Pengguna & Staf Baru'}
                                     </DialogTitle>
-                                    <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                                        {editingUser 
-                                            ? `Mengubah kredensial dan alokasi peran untuk ${editingUser.name}.`
-                                            : 'Masukkan data pengguna baru dan tentukan peran akses CRM.'}
+                                    <DialogDescription className="text-xs">
+                                        Lengkapi kredensial login, profil pribadi, jabatan kerja, dan data rekening komisi.
                                     </DialogDescription>
                                 </div>
                             </div>
+
+                            {/* Tab Switcher Header */}
+                            <div className="flex items-center gap-1 pt-2 border-t border-border/50 mt-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('account')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                        activeTab === 'account'
+                                            ? 'bg-primary text-primary-foreground font-semibold shadow-2xs'
+                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                    }`}
+                                >
+                                    <KeyRound className="size-3.5" />
+                                    <span>1. Akun & Role</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('personal')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                        activeTab === 'personal'
+                                            ? 'bg-primary text-primary-foreground font-semibold shadow-2xs'
+                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                    }`}
+                                >
+                                    <UserIcon className="size-3.5" />
+                                    <span>2. Info Pribadi</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('work')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                        activeTab === 'work'
+                                            ? 'bg-primary text-primary-foreground font-semibold shadow-2xs'
+                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                    }`}
+                                >
+                                    <Briefcase className="size-3.5" />
+                                    <span>3. Data Kerja</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('finance')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                        activeTab === 'finance'
+                                            ? 'bg-primary text-primary-foreground font-semibold shadow-2xs'
+                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                    }`}
+                                >
+                                    <CreditCard className="size-3.5" />
+                                    <span>4. Rekening Bank</span>
+                                </button>
+                            </div>
                         </DialogHeader>
 
-                        <form onSubmit={handleFormSubmit} className="space-y-4 pt-1">
-                            {/* Nama Lengkap */}
-                            <div className="space-y-1.5">
-                                <Label htmlFor="user-name" className="text-xs font-semibold">
-                                    Nama Lengkap <span className="text-destructive">*</span>
-                                </Label>
-                                <div className="relative">
-                                    <Input
-                                        id="user-name"
-                                        type="text"
-                                        placeholder="Contoh: Budi Santoso"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData('name', e.target.value)}
-                                        className="pl-9 text-xs"
-                                        autoFocus
-                                        aria-invalid={!!formErrors.name}
-                                    />
-                                    <UserIcon className="size-4 text-muted-foreground absolute left-3 top-2.5 pointer-events-none" />
-                                </div>
-                                {formErrors.name && (
-                                    <p className="text-xs font-medium text-destructive">{formErrors.name}</p>
+                        <form onSubmit={handleFormSubmit}>
+                            <div className="px-5 pt-3 pb-5 max-h-[60vh] overflow-y-auto space-y-4 custom-scrollbar">
+                                {/* TAB 1: AKUN & ROLE */}
+                                {activeTab === 'account' && (
+                                    <div className="space-y-4 animate-in fade-in-50">
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="user-name" className="text-xs font-semibold">
+                                                Nama Lengkap <span className="text-destructive">*</span>
+                                            </Label>
+                                            <div className="relative">
+                                                <UserIcon className="size-4 text-muted-foreground absolute left-3 top-2.5" />
+                                                <Input
+                                                    id="user-name"
+                                                    type="text"
+                                                    value={formData.name}
+                                                    onChange={(e) => setFormData('name', e.target.value)}
+                                                    placeholder="Contoh: Rian Pratama"
+                                                    className="pl-9 text-xs"
+                                                    required
+                                                />
+                                            </div>
+                                            {formErrors.name && (
+                                                <p className="text-xs font-medium text-destructive">{formErrors.name}</p>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="user-email" className="text-xs font-semibold">
+                                                Alamat Email Login <span className="text-destructive">*</span>
+                                            </Label>
+                                            <div className="relative">
+                                                <Mail className="size-4 text-muted-foreground absolute left-3 top-2.5" />
+                                                <Input
+                                                    id="user-email"
+                                                    type="email"
+                                                    value={formData.email}
+                                                    onChange={(e) => setFormData('email', e.target.value)}
+                                                    placeholder="nama@casanuma.com"
+                                                    className="pl-9 text-xs"
+                                                    required
+                                                />
+                                            </div>
+                                            {formErrors.email && (
+                                                <p className="text-xs font-medium text-destructive">{formErrors.email}</p>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <Label htmlFor="user-password" className="text-xs font-semibold">
+                                                    Password {editingUser ? '(Kosongkan jika tidak diubah)' : <span className="text-destructive">*</span>}
+                                                </Label>
+                                                {editingUser && (
+                                                    <span className="text-[11px] text-muted-foreground">Opsional saat edit</span>
+                                                )}
+                                            </div>
+                                            <div className="relative">
+                                                <Lock className="size-4 text-muted-foreground absolute left-3 top-2.5" />
+                                                <Input
+                                                    id="user-password"
+                                                    type="password"
+                                                    value={formData.password}
+                                                    onChange={(e) => setFormData('password', e.target.value)}
+                                                    placeholder={editingUser ? '••••••••' : 'Minimal 8 karakter'}
+                                                    className="pl-9 text-xs"
+                                                    required={!editingUser}
+                                                />
+                                            </div>
+                                            {formErrors.password && (
+                                                <p className="text-xs font-medium text-destructive">{formErrors.password}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Role Assignment Card Picker */}
+                                        <div className="space-y-2 pt-2 border-t border-border/60">
+                                            <Label className="text-xs font-semibold">
+                                                Pilih Peran Utama (Spatie RBAC) <span className="text-destructive">*</span>
+                                            </Label>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                {availableRoles.map((roleKey) => {
+                                                    const isSelected = formData.role === roleKey;
+                                                    const info = roleBadges[roleKey] || { label: roleKey };
+
+                                                    return (
+                                                        <div
+                                                            key={roleKey}
+                                                            onClick={() => setFormData('role', roleKey)}
+                                                            className={`cursor-pointer rounded-xl border p-3 flex items-start gap-3 transition-all ${
+                                                                isSelected
+                                                                    ? 'border-primary bg-primary/5 ring-1 ring-primary shadow-xs'
+                                                                    : 'border-border/80 bg-card hover:bg-muted/40'
+                                                            }`}
+                                                        >
+                                                            <div className={`size-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
+                                                                isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground'
+                                                            }`}>
+                                                                {isSelected && <div className="size-1.5 rounded-full bg-white" />}
+                                                            </div>
+                                                            <div className="space-y-0.5">
+                                                                <p className="text-xs font-bold text-foreground">{info.label}</p>
+                                                                <p className="text-[11px] text-muted-foreground leading-snug">
+                                                                    {roleKey === 'superadmin' && 'Akses penuh seluruh sistem & user.'}
+                                                                    {roleKey === 'sales_manager' && 'Supervisi tim sales & approval.'}
+                                                                    {roleKey === 'sales_agent' && 'Input leads & tanda jadi kavling.'}
+                                                                    {roleKey === 'finance' && 'Validasi bayar & berkas KPR.'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            {formErrors.role && (
+                                                <p className="text-xs font-medium text-destructive">{formErrors.role}</p>
+                                            )}
+                                        </div>
+                                    </div>
                                 )}
-                            </div>
 
-                            {/* Alamat Email */}
-                            <div className="space-y-1.5">
-                                <Label htmlFor="user-email" className="text-xs font-semibold">
-                                    Alamat Email <span className="text-destructive">*</span>
-                                </Label>
-                                <div className="relative">
-                                    <Input
-                                        id="user-email"
-                                        type="email"
-                                        placeholder="Contoh: budi@casanuma.com"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData('email', e.target.value)}
-                                        className="pl-9 text-xs"
-                                        aria-invalid={!!formErrors.email}
-                                    />
-                                    <Mail className="size-4 text-muted-foreground absolute left-3 top-2.5 pointer-events-none" />
-                                </div>
-                                {formErrors.email && (
-                                    <p className="text-xs font-medium text-destructive">{formErrors.email}</p>
-                                )}
-                            </div>
+                                {/* TAB 2: INFO PRIBADI */}
+                                {activeTab === 'personal' && (
+                                    <div className="space-y-4 animate-in fade-in-50">
+                                        {/* Avatar Upload Dropzone with Crop & Compress */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-xs font-semibold">Foto Profil Staf (Avatar)</Label>
+                                                <span className="text-[11px] text-muted-foreground">
+                                                    Dilengkapi fitur crop & kompresi otomatis
+                                                </span>
+                                            </div>
 
-                            {/* Password */}
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="user-password" className="text-xs font-semibold">
-                                        Kata Sandi {editingUser ? '(Opsional)' : <span className="text-destructive">*</span>}
-                                    </Label>
-                                    {editingUser && (
-                                        <span className="text-[10px] text-muted-foreground">
-                                            Kosongkan jika tidak diubah
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="relative">
-                                    <Input
-                                        id="user-password"
-                                        type="password"
-                                        placeholder={editingUser ? 'Biarkan kosong untuk mempertahankan password lama' : 'Minimal 8 karakter'}
-                                        value={formData.password}
-                                        onChange={(e) => setFormData('password', e.target.value)}
-                                        className="pl-9 text-xs"
-                                        aria-invalid={!!formErrors.password}
-                                    />
-                                    <Lock className="size-4 text-muted-foreground absolute left-3 top-2.5 pointer-events-none" />
-                                </div>
-                                {formErrors.password && (
-                                    <p className="text-xs font-medium text-destructive">{formErrors.password}</p>
-                                )}
-                            </div>
+                                            <div className="flex items-center gap-4 p-3.5 rounded-xl border border-dashed border-border bg-muted/20">
+                                                {avatarPreview ? (
+                                                    <div className="relative group shrink-0">
+                                                        <img 
+                                                            src={avatarPreview} 
+                                                            alt="Avatar Preview" 
+                                                            className="size-16 rounded-full object-cover border-2 border-primary shadow-sm"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleRemoveAvatar}
+                                                            className="absolute -top-1 -right-1 size-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-xs hover:scale-110 transition-transform"
+                                                            title="Hapus foto"
+                                                        >
+                                                            <X className="size-3" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="size-16 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground shrink-0">
+                                                        <ImageIcon className="size-6 opacity-40" />
+                                                    </div>
+                                                )}
 
-                            {/* Pilihan Peran (Spatie RBAC) */}
-                            <div className="space-y-2">
-                                <Label className="text-xs font-semibold">
-                                    Penugasan Peran (Spatie Role) <span className="text-destructive">*</span>
-                                </Label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {availableRoles.map((role) => {
-                                        const isSelected = formData.role === role;
-                                        const meta = roleBadges[role] || { label: role, color: '' };
+                                                <div className="space-y-1.5 flex-1">
+                                                    <input 
+                                                        type="file" 
+                                                        ref={fileInputRef}
+                                                        accept="image/jpeg,image/png,image/jpg,image/webp"
+                                                        onChange={handleFileSelect}
+                                                        className="hidden" 
+                                                        id="avatar-upload"
+                                                    />
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <label 
+                                                            htmlFor="avatar-upload"
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted text-xs font-medium cursor-pointer text-foreground shadow-2xs transition-colors"
+                                                        >
+                                                            <Upload className="size-3.5 text-primary" />
+                                                            <span>{avatarPreview ? 'Ganti & Crop Foto' : 'Unggah & Crop Foto'}</span>
+                                                        </label>
 
-                                        return (
-                                            <div
-                                                key={role}
-                                                onClick={() => setFormData('role', role)}
-                                                className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 ${
-                                                    isSelected
-                                                        ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
-                                                        : 'border-border/70 hover:border-border bg-card'
-                                                }`}
-                                            >
-                                                <div className={`size-4 rounded-full border mt-0.5 flex items-center justify-center ${
-                                                    isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground'
-                                                }`}>
-                                                    {isSelected && <div className="size-1.5 rounded-full bg-white" />}
-                                                </div>
-                                                <div className="space-y-0.5 leading-tight">
-                                                    <p className="text-xs font-semibold text-foreground">
-                                                        {meta.label}
-                                                    </p>
-                                                    <p className="text-[10px] text-muted-foreground font-mono">
-                                                        role: {role}
+                                                        {compressedFileSize && (
+                                                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                                                                <Sparkles className="size-3" />
+                                                                <span>Optimal: {formatFileSize(compressedFileSize)}</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                                        Pilih foto dari komputer. Anda dapat mengatur crop dan zoom. Gambar berukuran &gt; 2MB otomatis dikompresi menjadi ukuran optimal.
                                                     </p>
                                                 </div>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                                {formErrors.role && (
-                                    <p className="text-xs font-medium text-destructive">{formErrors.role}</p>
+                                            {formErrors.avatar && (
+                                                <p className="text-xs font-medium text-destructive">{formErrors.avatar}</p>
+                                            )}
+                                        </div>
+
+                                        {/* No WhatsApp Aktif */}
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="user-phone" className="text-xs font-semibold">
+                                                Nomor WhatsApp Aktif
+                                            </Label>
+                                            <div className="relative">
+                                                <Phone className="size-4 text-emerald-500 absolute left-3 top-2.5" />
+                                                <Input
+                                                    id="user-phone"
+                                                    type="text"
+                                                    value={formData.phone}
+                                                    onChange={(e) => setFormData('phone', e.target.value)}
+                                                    placeholder="Contoh: 081234567890"
+                                                    className="pl-9 text-xs"
+                                                />
+                                            </div>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                Akan digunakan untuk komunikasi tim dan tombol pintasan WhatsApp.
+                                            </p>
+                                            {formErrors.phone && (
+                                                <p className="text-xs font-medium text-destructive">{formErrors.phone}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Alamat Domisili */}
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="user-address" className="text-xs font-semibold">
+                                                Alamat Domisili / Tempat Tinggal
+                                            </Label>
+                                            <div className="relative">
+                                                <MapPin className="size-4 text-muted-foreground absolute left-3 top-2.5" />
+                                                <textarea
+                                                    id="user-address"
+                                                    value={formData.address}
+                                                    onChange={(e) => setFormData('address', e.target.value)}
+                                                    placeholder="Contoh: Komplek Larasati Residence Blok B-12, Bandung Barat"
+                                                    rows={2}
+                                                    className="w-full pl-9 pr-3 py-2 text-xs rounded-md border border-input bg-transparent text-foreground shadow-2xs focus:outline-hidden focus:ring-1 focus:ring-ring"
+                                                />
+                                            </div>
+                                            {formErrors.address && (
+                                                <p className="text-xs font-medium text-destructive">{formErrors.address}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Emergency Contact */}
+                                        <div className="p-3.5 rounded-xl border border-border/80 bg-muted/10 space-y-3">
+                                            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                                                <AlertCircle className="size-3.5 text-amber-500" />
+                                                <span>Kontak Darurat (Emergency Contact)</span>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="ec-name" className="text-[11px] text-muted-foreground">
+                                                        Nama Kontak Darurat
+                                                    </Label>
+                                                    <Input
+                                                        id="ec-name"
+                                                        type="text"
+                                                        value={formData.emergency_contact_name}
+                                                        onChange={(e) => setFormData('emergency_contact_name', e.target.value)}
+                                                        placeholder="Contoh: Ratna Dewi (Istri)"
+                                                        className="h-8 text-xs"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="ec-phone" className="text-[11px] text-muted-foreground">
+                                                        Nomor Telepon Darurat
+                                                    </Label>
+                                                    <Input
+                                                        id="ec-phone"
+                                                        type="text"
+                                                        value={formData.emergency_contact_phone}
+                                                        onChange={(e) => setFormData('emergency_contact_phone', e.target.value)}
+                                                        placeholder="Contoh: 081324567899"
+                                                        className="h-8 text-xs"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* TAB 3: DATA PEKERJAAN */}
+                                {activeTab === 'work' && (
+                                    <div className="space-y-4 animate-in fade-in-50">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="emp-id" className="text-xs font-semibold">
+                                                    NIK / ID Karyawan
+                                                </Label>
+                                                <div className="relative">
+                                                    <Shield className="size-4 text-muted-foreground absolute left-3 top-2.5" />
+                                                    <Input
+                                                        id="emp-id"
+                                                        type="text"
+                                                        value={formData.employee_id}
+                                                        onChange={(e) => setFormData('employee_id', e.target.value)}
+                                                        placeholder="Contoh: CSN-SLS-008"
+                                                        className="pl-9 text-xs font-mono"
+                                                    />
+                                                </div>
+                                                {formErrors.employee_id && (
+                                                    <p className="text-xs font-medium text-destructive">{formErrors.employee_id}</p>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="user-position" className="text-xs font-semibold">
+                                                    Jabatan / Posisi Resmi
+                                                </Label>
+                                                <div className="relative">
+                                                    <Briefcase className="size-4 text-muted-foreground absolute left-3 top-2.5" />
+                                                    <Input
+                                                        id="user-position"
+                                                        type="text"
+                                                        value={formData.position}
+                                                        onChange={(e) => setFormData('position', e.target.value)}
+                                                        placeholder="Contoh: Senior Property Advisor"
+                                                        className="pl-9 text-xs"
+                                                    />
+                                                </div>
+                                                {formErrors.position && (
+                                                    <p className="text-xs font-medium text-destructive">{formErrors.position}</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="user-join" className="text-xs font-semibold">
+                                                Tanggal Bergabung (Join Date)
+                                            </Label>
+                                            <div className="relative">
+                                                <Calendar className="size-4 text-muted-foreground absolute left-3 top-2.5" />
+                                                <Input
+                                                    id="user-join"
+                                                    type="date"
+                                                    value={formData.join_date}
+                                                    onChange={(e) => setFormData('join_date', e.target.value)}
+                                                    className="pl-9 text-xs"
+                                                />
+                                            </div>
+                                            {formErrors.join_date && (
+                                                <p className="text-xs font-medium text-destructive">{formErrors.join_date}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Status Akun Toggle Switch */}
+                                        <div className="p-4 rounded-xl border border-border/80 bg-muted/20 flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <p className="text-xs font-bold text-foreground">Status Keaktifan Akun</p>
+                                                <p className="text-[11px] text-muted-foreground">
+                                                    Jika nonaktif, pengguna tidak dapat login ke sistem CRM.
+                                                </p>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.is_active}
+                                                    onChange={(e) => setFormData('is_active', e.target.checked)}
+                                                    className="sr-only peer"
+                                                />
+                                                <div className="w-11 h-6 bg-muted peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* TAB 4: REKENING BANK */}
+                                {activeTab === 'finance' && (
+                                    <div className="space-y-4 animate-in fade-in-50">
+                                        <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                                            <CreditCard className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                                            <span>
+                                                Data bank ini digunakan bagian Finance untuk pencairan komisi penjualan unit dan reimbursement operasional.
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="bank-name" className="text-xs font-semibold">
+                                                Nama Bank
+                                            </Label>
+                                            <div className="relative">
+                                                <Building className="size-4 text-muted-foreground absolute left-3 top-2.5" />
+                                                <Input
+                                                    id="bank-name"
+                                                    type="text"
+                                                    value={formData.bank_name}
+                                                    onChange={(e) => setFormData('bank_name', e.target.value)}
+                                                    placeholder="Contoh: BCA / Mandiri / BNI"
+                                                    className="pl-9 text-xs"
+                                                />
+                                            </div>
+                                            {/* Quick Bank Chips */}
+                                            <div className="flex flex-wrap gap-1.5 pt-1">
+                                                {popularBanks.map((b) => (
+                                                    <button
+                                                        key={b}
+                                                        type="button"
+                                                        onClick={() => setFormData('bank_name', b)}
+                                                        className={`px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
+                                                            formData.bank_name === b
+                                                                ? 'bg-primary text-primary-foreground border-primary'
+                                                                : 'bg-muted/50 border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                        }`}
+                                                    >
+                                                        {b}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            {formErrors.bank_name && (
+                                                <p className="text-xs font-medium text-destructive">{formErrors.bank_name}</p>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="bank-account" className="text-xs font-semibold">
+                                                Nomor Rekening
+                                            </Label>
+                                            <div className="relative">
+                                                <CreditCard className="size-4 text-muted-foreground absolute left-3 top-2.5" />
+                                                <Input
+                                                    id="bank-account"
+                                                    type="text"
+                                                    value={formData.bank_account_number}
+                                                    onChange={(e) => setFormData('bank_account_number', e.target.value)}
+                                                    placeholder="Contoh: 8420912345"
+                                                    className="pl-9 text-xs font-mono"
+                                                />
+                                            </div>
+                                            {formErrors.bank_account_number && (
+                                                <p className="text-xs font-medium text-destructive">{formErrors.bank_account_number}</p>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="bank-holder" className="text-xs font-semibold">
+                                                Nama Pemilik Rekening (Sesuai Buku Tabungan)
+                                            </Label>
+                                            <div className="relative">
+                                                <UserIcon className="size-4 text-muted-foreground absolute left-3 top-2.5" />
+                                                <Input
+                                                    id="bank-holder"
+                                                    type="text"
+                                                    value={formData.bank_account_holder}
+                                                    onChange={(e) => setFormData('bank_account_holder', e.target.value)}
+                                                    placeholder="Contoh: Rian Pratama"
+                                                    className="pl-9 text-xs"
+                                                />
+                                            </div>
+                                            {formErrors.bank_account_holder && (
+                                                <p className="text-xs font-medium text-destructive">{formErrors.bank_account_holder}</p>
+                                            )}
+                                        </div>
+                                    </div>
                                 )}
                             </div>
 
-                            <DialogFooter className="gap-2.5 sm:gap-3 pt-3 border-t border-border">
+                            {/* Standard DialogFooter with comfortable spacing */}
+                            <DialogFooter className="gap-2.5 sm:gap-3 p-4 border-t border-border bg-muted/20">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -621,37 +1454,315 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                     className="gap-2"
                                 >
                                     {formProcessing && <Loader2 className="size-3.5 animate-spin" />}
-                                    <span>{editingUser ? 'Simpan Perubahan' : 'Buat Akun Pengguna'}</span>
+                                    <span>{editingUser ? 'Simpan Perubahan' : 'Buat Profil Staf'}</span>
                                 </Button>
                             </DialogFooter>
                         </form>
                     </DialogContent>
                 </Dialog>
 
-                {/* 5. Dialog Konfirmasi Hapus Pengguna (Standard shadcn Dialog) */}
+                {/* 6. Dialog Modal Crop & Compress Foto Avatar (Standard shadcn Dialog) */}
+                <Dialog open={isCropperOpen} onOpenChange={(open) => !open && setIsCropperOpen(false)}>
+                    <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+                        <DialogHeader className="p-5 pb-3 border-b border-border bg-muted/20">
+                            <div className="flex items-center gap-3">
+                                <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
+                                    <CropIcon className="size-5" />
+                                </div>
+                                <div>
+                                    <DialogTitle className="text-base font-bold">
+                                        Sesuaikan & Crop Foto Profil
+                                    </DialogTitle>
+                                    <DialogDescription className="text-xs">
+                                        Geser gambar dan atur zoom agar posisi wajah berada tepat di dalam lingkaran avatar.
+                                    </DialogDescription>
+                                </div>
+                            </div>
+                        </DialogHeader>
+
+                        <div className="p-5 space-y-4">
+                            {/* Interactive Crop Viewport with Circular Mask */}
+                            <div className="flex flex-col items-center">
+                                <div 
+                                    ref={cropContainerRef}
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseUp}
+                                    className="relative size-65 rounded-2xl bg-black/90 overflow-hidden border-2 border-primary/50 cursor-grab active:cursor-grabbing select-none flex items-center justify-center shadow-inner"
+                                >
+                                    {rawImageSrc && (
+                                        <img
+                                            src={rawImageSrc}
+                                            alt="Crop target"
+                                            draggable={false}
+                                            style={{
+                                                transform: `translate(${cropPosition.x}px, ${cropPosition.y}px) scale(${cropZoom})`,
+                                                transformOrigin: 'center center',
+                                                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+                                            }}
+                                            className="max-w-none max-h-none pointer-events-none select-none"
+                                        />
+                                    )}
+
+                                    {/* Circular Crop Guide Overlay */}
+                                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                                        <div className="size-55 rounded-full border-2 border-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]"></div>
+                                    </div>
+
+                                    {/* Center helper crosshair */}
+                                    <div className="absolute size-2 bg-white/60 rounded-full pointer-events-none"></div>
+                                </div>
+
+                                <p className="text-[11px] text-muted-foreground mt-2">
+                                    💡 Klik dan geser gambar untuk mengatur posisi tengah.
+                                </p>
+                            </div>
+
+                            {/* Zoom Slider Controls */}
+                            <div className="space-y-1.5 p-3 rounded-xl border border-border/80 bg-muted/20">
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                                        <ZoomIn className="size-3.5 text-primary" />
+                                        <span>Perbesaran (Zoom): {cropZoom.toFixed(1)}x</span>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCropZoom(1);
+                                            setCropPosition({ x: 0, y: 0 });
+                                        }}
+                                        className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                                    >
+                                        <RotateCcw className="size-3" />
+                                        <span>Reset</span>
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <ZoomOut className="size-3.5 text-muted-foreground shrink-0" />
+                                    <input
+                                        type="range"
+                                        min="0.8"
+                                        max="3"
+                                        step="0.05"
+                                        value={cropZoom}
+                                        onChange={(e) => setCropZoom(parseFloat(e.target.value))}
+                                        className="w-full accent-primary h-1.5 bg-muted rounded-lg cursor-pointer"
+                                    />
+                                    <ZoomIn className="size-3.5 text-muted-foreground shrink-0" />
+                                </div>
+                            </div>
+
+                            {/* Compression notice */}
+                            <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-800 dark:text-emerald-300 space-y-1">
+                                <div className="flex items-center gap-1.5 font-bold">
+                                    <Sparkles className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    <span>Kompresi Otomatis Aktif</span>
+                                </div>
+                                <p className="text-[11px] text-emerald-700/90 dark:text-emerald-300/90 leading-relaxed">
+                                    Ukuran file asli: <strong>{formatFileSize(originalFileSize)}</strong>. Foto akan dipotong menjadi resolusi 512×512 dan otomatis dikompresi ke <strong>&lt; 200 KB</strong> berkualitas tajam.
+                                </p>
+                            </div>
+                        </div>
+
+                        <DialogFooter className="gap-2.5 sm:gap-3 p-4 border-t border-border bg-muted/20">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsCropperOpen(false)}
+                            >
+                                Batal
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={applyCropAndCompress}
+                                className="gap-1.5"
+                            >
+                                <Check className="size-4" />
+                                <span>Terapkan & Kompres Foto</span>
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* 7. Dialog Detail Dossier Staf (Modal Profil Lengkap) */}
+                <Dialog open={!!userToView} onOpenChange={(open) => !open && setUserToView(null)}>
+                    <DialogContent className="sm:max-w-xl p-0 overflow-hidden">
+                        {userToView && (
+                            <>
+                                <DialogHeader className="p-5 pb-4 border-b border-border bg-linear-to-r from-muted/30 to-muted/10">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-center gap-3.5">
+                                            <UserAvatar user={userToView} className="size-14" textClassName="text-lg" />
+                                            <div>
+                                                <DialogTitle className="text-lg font-bold text-foreground">
+                                                    {userToView.name}
+                                                </DialogTitle>
+                                                <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                                                    <span>{userToView.position || 'Staf Casanuma'}</span>
+                                                    <span>•</span>
+                                                    <span className="font-mono text-primary font-medium">{userToView.employee_id || 'Tanpa NIK'}</span>
+                                                </p>
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    {userToView.roles.map(r => (
+                                                        <span key={r} className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${roleBadges[r]?.color || 'bg-muted'}`}>
+                                                            {roleBadges[r]?.label || r}
+                                                        </span>
+                                                    ))}
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
+                                                        userToView.is_active ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-muted text-muted-foreground'
+                                                    }`}>
+                                                        {userToView.is_active ? '● Aktif' : '○ Nonaktif'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </DialogHeader>
+
+                                <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                                    {/* 1. Informasi Kontak & Pribadi */}
+                                    <div className="rounded-xl border border-border/80 p-4 space-y-2.5">
+                                        <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                                            <UserIcon className="size-3.5 text-primary" />
+                                            <span>Informasi Pribadi & Kontak</span>
+                                        </h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                                            <div>
+                                                <p className="text-[11px] text-muted-foreground">Email Login</p>
+                                                <p className="font-medium text-foreground">{userToView.email}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] text-muted-foreground">WhatsApp Aktif</p>
+                                                {userToView.phone ? (
+                                                    <a
+                                                        href={`https://wa.me/${cleanWaNumber(userToView.phone)}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                                                    >
+                                                        <span>{userToView.phone}</span>
+                                                        <ExternalLink className="size-3" />
+                                                    </a>
+                                                ) : (
+                                                    <p className="text-muted-foreground italic">-</p>
+                                                )}
+                                            </div>
+                                            <div className="sm:col-span-2">
+                                                <p className="text-[11px] text-muted-foreground">Alamat Tinggal</p>
+                                                <p className="font-medium text-foreground">{userToView.address || '-'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] text-muted-foreground">Kontak Darurat</p>
+                                                <p className="font-medium text-foreground">{userToView.emergency_contact_name || '-'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] text-muted-foreground">No. Telepon Darurat</p>
+                                                <p className="font-medium text-foreground">{userToView.emergency_contact_phone || '-'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Informasi Kepegawaian */}
+                                    <div className="rounded-xl border border-border/80 p-4 space-y-2.5">
+                                        <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                                            <Briefcase className="size-3.5 text-primary" />
+                                            <span>Data Kepegawaian</span>
+                                        </h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                                            <div>
+                                                <p className="text-[11px] text-muted-foreground">NIK / ID Karyawan</p>
+                                                <p className="font-mono font-semibold text-primary">{userToView.employee_id || '-'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] text-muted-foreground">Jabatan</p>
+                                                <p className="font-medium text-foreground">{userToView.position || '-'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] text-muted-foreground">Tanggal Bergabung</p>
+                                                <p className="font-medium text-foreground">{userToView.join_date_formatted || userToView.join_date || '-'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] text-muted-foreground">Terdaftar di Sistem</p>
+                                                <p className="font-medium text-foreground">{userToView.created_at}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 3. Data Rekening Komisi */}
+                                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-2.5">
+                                        <h4 className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                            <CreditCard className="size-3.5" />
+                                            <span>Data Rekening Pencairan Komisi</span>
+                                        </h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                                            <div>
+                                                <p className="text-[11px] text-muted-foreground">Nama Bank</p>
+                                                <p className="font-bold text-foreground">{userToView.bank_name || '-'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] text-muted-foreground">Nomor Rekening</p>
+                                                <p className="font-mono font-semibold text-foreground">{userToView.bank_account_number || '-'}</p>
+                                            </div>
+                                            <div className="sm:col-span-2">
+                                                <p className="text-[11px] text-muted-foreground">Atas Nama Rekening</p>
+                                                <p className="font-medium text-foreground">{userToView.bank_account_holder || '-'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <DialogFooter className="gap-2.5 sm:gap-3 p-4 border-t border-border bg-muted/20">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setUserToView(null)}
+                                    >
+                                        Tutup
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            const u = userToView;
+                                            setUserToView(null);
+                                            openEditDialog(u);
+                                        }}
+                                        className="gap-2"
+                                    >
+                                        <Edit2 className="size-3.5" />
+                                        <span>Edit Profil</span>
+                                    </Button>
+                                </DialogFooter>
+                            </>
+                        )}
+                    </DialogContent>
+                </Dialog>
+
+                {/* 8. Dialog Konfirmasi Hapus Pengguna (Standard shadcn Dialog) */}
                 <Dialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader className="gap-2">
                             <div className="flex items-center gap-2 text-destructive">
                                 <AlertTriangle className="size-5" />
-                                <DialogTitle className="text-lg font-bold">
+                                <DialogTitle className="text-base font-bold text-destructive">
                                     Konfirmasi Hapus Pengguna
                                 </DialogTitle>
                             </div>
-                            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-                                Apakah Anda yakin ingin menghapus akun pengguna berikut secara permanen? Tindakan ini tidak dapat dibatalkan.
+                            <DialogDescription className="text-xs text-muted-foreground">
+                                Tindakan ini tidak dapat dibatalkan. Akun pengguna dan aksesnya ke sistem CASANUMA CRM akan dihapus secara permanen.
                             </DialogDescription>
                         </DialogHeader>
 
                         {userToDelete && (
-                            <div className="p-3.5 rounded-xl border border-destructive/20 bg-destructive/5 space-y-1.5 text-xs">
+                            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3.5 space-y-2 text-xs">
                                 <div className="flex items-center justify-between">
                                     <span className="text-muted-foreground">Nama:</span>
                                     <span className="font-semibold text-foreground">{userToDelete.name}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-muted-foreground">Email:</span>
-                                    <span className="font-mono text-foreground">{userToDelete.email}</span>
+                                    <span className="font-mono text-muted-foreground">{userToDelete.email}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-muted-foreground">Peran:</span>
