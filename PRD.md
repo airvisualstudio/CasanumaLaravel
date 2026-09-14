@@ -15,14 +15,14 @@ Developer perumahan dan tim agency sales menghadapi kendala operasional harian:
 ---
 
 ## 2. Target Users & Personas
-1. **Super Admin / Business Owner (Developer):**
-   - Melihat dashboard aggregate: omzet penjualan, stok unit tersisa per cluster, performa sales.
-2. **Sales Manager:**
-   - Mendistribusikan leads ke sales agent, memantau funnel follow-up, approval diskon atau booking fee.
-3. **Sales Agent:**
-   - Menginput prospek baru, mencatat log aktivitas follow-up, mengecek site plan / ketersediaan kavling realtime.
-4. **Admin Legal & KPR:**
-   - Memvalidasi berkas customer, tracking status pengajuan bank rekanan (BI Checking/SLIK -> SP3K -> Akad).
+1. **Super Administrator (`superadmin`):**
+   - Akses penuh seluruh konfigurasi sistem, database perumahan, pengelolaan role pengguna, bypass semua izin sistem, dan analitik bisnis global.
+2. **Sales Manager (`sales_manager`):**
+   - Supervisi pipeline penjualan, monitoring kinerja sales agent, distribusi alokasi leads baru, dan persetujuan pengajuan booking kavling.
+3. **Sales Agent (`sales_agent`):**
+   - Pengelolaan prospek leads pribadi, update progres follow-up konsumen, cek ketersediaan kavling unit, dan pembuatan tanda jadi (booking fee).
+4. **Finance & KPR (`finance`):**
+   - Validasi bukti pembayaran booking & DP, penerbitan tanda terima SPR, pemantauan berkas KPR bank, dan rekonsiliasi arus kas perumahan.
 
 ---
 
@@ -56,6 +56,8 @@ Developer perumahan dan tim agency sales menghadapi kendala operasional harian:
 ---
 
 ## 4. Non-Functional Requirements (NFR)
-- **Responsiveness:** Tampilan dashboard desktop ultra-responsif; tampilan mobile-friendly untuk sales di lapangan.
-- **Concurrency & Locking:** Mencegah double-booking kavling yang sama pada detik yang bersamaan.
+- **Responsiveness & Layout:** Tampilan dashboard ultra-responsif (`max-w-[1550px]`) dengan sticky collapsible sidebar (`w-64` ke `w-[72px]`) yang simetris presisi.
+- **UI & Interaction Standardization:** Seluruh dialog interaksi, alert, dan konfirmasi modal wajib menggunakan standar shadcn `Dialog` (Radix UI) dengan larangan mutlak terhadap browser popup `alert()`.
+- **Concurrency & Locking:** Mencegah double-booking kavling yang sama pada detik yang bersamaan via database row-locking.
 - **Data Retention & Audit:** Perubahan status unit dan nominal uang wajib memiliki audit trail (*who changed what and when*).
+- **Role-Based Access Control:** Strict RBAC via `spatie/laravel-permission` pada PostgreSQL.

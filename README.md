@@ -1,58 +1,95 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🏡 CASANUMA CRM & Centralized Housing Database
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistem CRM (Customer Relationship Management) dan Database Perumahan Terpadu berbasis **Laravel 12**, **Inertia.js v2**, **React 18**, **TypeScript**, **PostgreSQL**, dan **shadcn/ui**.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🚀 Teknologi Utama
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Backend:** PHP 8.5, Laravel 12, Spatie Laravel-Permission 8.x
+- **Frontend:** React 18, TypeScript, Inertia.js v2, Tailwind CSS v4, Lucide Icons
+- **UI Engine:** shadcn/ui (Radix UI Primitives)
+- **Database:** PostgreSQL 16+ (`casanuma_crm`)
+- **Package Manager & Bundler:** Bun, Composer, Vite 8
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 👥 Struktur Peran Pengguna (RBAC)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Sistem menggunakan `spatie/laravel-permission` dengan 4 peran baku:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Peran | Email Default | Password | Deskripsi Kewenangan |
+| :--- | :--- | :--- | :--- |
+| **Super Administrator** | `admin@casanuma.com` | `password` | Akses penuh ke seluruh konfigurasi sistem, database perumahan, pengelolaan role, dan bypass semua permission. |
+| **Sales Manager** | `manager@casanuma.com` | `password` | Supervisi pipeline penjualan, alokasi leads ke sales agent, dan persetujuan tanda jadi booking. |
+| **Sales Agent** | `sales@casanuma.com` | `password` | Pengelolaan prospek leads pribadi, update progres follow-up, dan pembuatan booking fee kavling. |
+| **Finance & KPR** | `finance@casanuma.com` | `password` | Validasi pembayaran booking/DP, penerbitan tanda terima SPR, dan pemantauan berkas KPR bank. |
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+---
 
-## Agentic Development
+## 📐 Standar Antarmuka (UI & Frontend Standards)
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+1. **Modal, Alert, & Popup (MANDATORY):**
+   - **Dilarang Keras:** Memakai dialog bawaan browser (`window.alert()`, `window.confirm()`, `window.prompt()`).
+   - **Wajib:** Menggunakan komponen resmi `Dialog` dari `@/Components/ui/dialog` (berbasis Radix UI) lengkap dengan `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription`, dan `DialogFooter`.
+2. **Navigasi & Sidebar Desktop:**
+   - Sidebar sticky terkunci di layar (`lg:sticky lg:top-0 lg:h-screen`).
+   - Mendukung mode minimize (`w-64` ke `w-[72px]`) dengan icon-only yang **simetris presisi pada sumbu 36px**.
+   - Dimensi seluruh icon di mode minimize seragam `size-10 rounded-xl` (40×40px).
+   - Menu independen yang dapat di-scroll ("bisa di-roll") tanpa merusak layout.
+3. **Tema Dark & Light Mode:**
+   - Terintegrasi penuh di seluruh komponen dengan transisi halus dan persistensi preferensi user.
 
+---
+
+## 🛠️ Instalasi & Menjalankan Lokal
+
+### 1. Klon Repositori & Pasang Dependensi
 ```bash
-composer require laravel/boost --dev
+# Dependensi PHP
+composer install
 
-php artisan boost:install
+# Dependensi Frontend (Bun)
+bun install
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### 2. Konfigurasi Environment (`.env`)
+Pastikan konfigurasi database PostgreSQL telah sesuai:
+```env
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=casanuma_crm
+DB_USERNAME=postgres
+DB_PASSWORD=secret
+```
 
-## Contributing
+### 3. Migrasi & Database Seeder
+Jalankan migrasi dan seeder akun dummy:
+```bash
+php artisan migrate --seed
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 4. Build atau Jalankan Server Dev
+```bash
+# Build production bundle
+bun run build
 
-## Code of Conduct
+# Atau jalankan dev server
+bun run dev
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Jalankan aplikasi Laravel:
+```bash
+php artisan serve
+```
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 🧪 Pengujian Otomasi (Test Suite)
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Jalankan pengujian unit dan fitur:
+```bash
+php artisan test
+```
+*Status Terkini:* **27 passed, 86 assertions** (100% lulus).

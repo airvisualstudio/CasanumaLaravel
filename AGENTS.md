@@ -46,7 +46,7 @@ php artisan boost:install
 Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
 </laravel-boost-guidelines>
 
-# UI & Frontend Standardization Rules (MANDATORY)
+# UI & Architecture Standardization Rules (MANDATORY)
 
 ## 1. Alert, Popup, & Modal Standards
 - **DILARANG KERAS** menggunakan dialog native bawaan browser (`window.alert()`, `window.confirm()`, atau `window.prompt()`).
@@ -55,3 +55,24 @@ Boost replaces these bootstrap instructions with guidelines tailored to the appl
   - Struktur dialog wajib teratur menggunakan `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription`, dan `DialogFooter`.
 - **DILARANG** membuat modal/popup custom sendiri (misal dengan `div fixed/absolute` manual) atau memakai komponen modal legacy.
 - **Konsistensi UI/UX**: Seluruh dialog harus mematuhi tema warna CRM (Dark/Light mode), animasi halus (`zoom-in-95`, backdrop blur), dan accessibility (keyboard focus trap, ESC to close).
+
+## 2. Sidebar & Navigasi Standards
+- **Sticky Viewport:** Sidebar wajib berada dalam posisi sticky setinggi layar (`lg:sticky lg:top-0 lg:h-screen`).
+- **Collapsible Mode:** Mendukung minimize ke icon-only (`w-64` ke `w-[72px]`) dengan state tersimpan di `localStorage` (`sidebar_collapsed`).
+- **Presisi Simetri 36px:** Pada mode minimize, semua elemen icon (Logo, Role Badge, Menu Buttons) **wajib seragam** berukuran `size-10 rounded-xl` (40×40px) dan berada tepat pada sumbu tengah vertikal 36px (`justify-center mx-auto`).
+- **Hidden Scrollbar Layout:** Track scrollbar pada mode minimize disembunyikan menggunakan `[scrollbar-width:none] [&::-webkit-scrollbar]:hidden` agar tidak memotong ruang layout dan tidak mendorong icon ke kiri (fitur scroll mousewheel tetap aktif).
+- **Single Toggle Control:** Tombol toggle minimize hanya ada satu di desktop topbar (hindari duplikasi tombol toggle di header sidebar).
+
+## 3. Role-Based Access Control (RBAC) Standards
+- **Spatie Laravel-Permission:** Seluruh otorisasi role dan permissions menggunakan `spatie/laravel-permission`.
+- **4 Role Baku:**
+  1. `superadmin` (Bypass all permissions - Akses penuh sistem)
+  2. `sales_manager` (Supervisi pipeline leads, sales, dan approval booking)
+  3. `sales_agent` (Manajemen prospek leads pribadi dan input tanda jadi unit)
+  4. `finance` (Validasi pembayaran, dokumen SPR, dan tracking KPR bank)
+- **Frontend Authorization:** Wajib menggunakan hook `useAuthorization` dari `@/hooks/useAuthorization` (`can()`, `isSuperAdmin`, `isSalesManager`, `isSalesAgent`, `isFinance`).
+- **Inertia Props:** Data roles dan permissions dioper secara global via `HandleInertiaRequests.php` (`auth.user.roles`, `auth.user.permissions`).
+
+## 4. Database Standards
+- **DBMS:** PostgreSQL 16+ (`DB_CONNECTION=pgsql`, basis data `casanuma_crm`).
+- **Seeders:** `RolePermissionSeeder` dan `UserSeeder` sebagai acuan akun pengujian standar.

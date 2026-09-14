@@ -78,15 +78,17 @@
 ---
 
 ## 3. Database & Storage
-- **Relational Database:** MySQL 8.0+ / MariaDB 10.11+
-  - InnoDB storage engine with strict foreign key constraints.
+- **Relational Database:** PostgreSQL 16+ (`DB_CONNECTION=pgsql`, database: `casanuma_crm`)
+  - Strict foreign key constraints and schema isolation.
+  - Spatie Laravel-Permission tables (`roles`, `permissions`, `model_has_roles`, `model_has_permissions`, `role_has_permissions`).
   - Indexes on searching fields: `units(block_number, status)`, `leads(phone, email, status)`.
-- **Cache & Session:** Redis or optimized database driver.
+- **Cache & Session:** PostgreSQL database driver / Redis.
 - **File System:** Local NVMe disk with public storage symlink; architecture built over Laravel Storage facade for transparent S3/GCS compatibility.
 
 ---
 
 ## 4. Server & Infrastructure Target
-- **Current Runtime:** VPS (Ubuntu 24.04 LTS, Nginx, PHP-FPM, Supervisor).
+- **Package Manager & Bundler:** Bun (`bun install`, `bun run build`, `bun.lock`) + Composer.
+- **Current Runtime:** Development Environment (Windows 11 / PHP 8.5 / Bun / PostgreSQL) -> Production VPS (Ubuntu 24.04 LTS, Nginx, PHP-FPM, Supervisor).
 - **Process Manager:** Supervisor for running queue workers and scheduled tasks.
 - **Production Strategy:** Git workflow -> Automated Deploy Script -> Zero-downtime symlink releases.

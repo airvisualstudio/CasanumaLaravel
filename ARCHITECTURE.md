@@ -1,7 +1,7 @@
 # 🏗️ System Architecture & Engineering Blueprint
-**Project:** Real Estate CRM & Property Database  
-**Stack:** Laravel 11 + Inertia.js v2 + React 18 + TypeScript + shadcn/ui + Tailwind CSS  
-**Target Environment:** VPS (Linux Ubuntu 24.04 LTS) -> Staging -> Cloud Scale-ready (AWS/GCP)
+**Project:** CASANUMA CRM & Centralized Housing Database  
+**Stack:** Laravel 12 + Inertia.js v2 + React 18 + TypeScript + shadcn/ui + Tailwind CSS v4 + PostgreSQL  
+**Target Environment:** VPS (Linux Ubuntu 24.04 LTS / Windows Dev Environment) -> Staging -> Cloud Scale-ready
 
 ---
 
@@ -21,20 +21,21 @@ The application follows a modern **Monolithic-hybrid SPA (Single Page Applicatio
 |                    Inertia.js Bridge Middleware                       |
 |   - Session Validation & CSRF Protection                             |
 |   - Partial Reload & Deferred Prop Serialization                      |
-|   - Shared Flash & Auth State Propagation                             |
+|   - Shared Auth State: auth.user.roles & auth.user.permissions        |
 +------------------------------------+----------------------------------+
                                      |
 +------------------------------------v----------------------------------+
-|                      Laravel 11 Application Core                      |
-|   - Form Request Validation & Policy Authorization                    |
+|                      Laravel 12 Application Core                      |
+|   - Form Request Validation & Policy Authorization (Spatie RBAC)      |
 |   - Action/Service Layer (Domain Driven Logic)                        |
 |   - Eloquent ORM + Query Scopes                                      |
-|   - Event Dispatchers & Async Queues (Redis/Database)                 |
+|   - Event Dispatchers & Async Queues                                  |
 +-------------------+-------------------------------+-------------------+
                     |                               |
           +---------v---------+           +---------v---------+
           |  Database Layer   |           |  Storage & Files  |
-          |  MySQL 8 / MariaDB|           |  Local NVMe / S3  |
+          |  PostgreSQL 16+   |           |  Local NVMe / S3  |
+          |  (casanuma_crm)   |           |                   |
           +-------------------+           +-------------------+
 ```
 
@@ -93,9 +94,9 @@ crm-perumahan/
 
 ## 3. Data Flow & Transaction Lifecycle
 
-1. **Client Action:** Sales rep updates a unit status to `BOOKED` and attaches customer KYC docs via shadcn modal.
+1. **Client Action:** User triggers an action (e.g. reserving a unit, creating a booking fee, or viewing customer details) via standard shadcn `Dialog`.
 2. **Inertia Payload:** React dispatches form data with typed parameters via `router.post()` or `useForm()`.
-3. **Form Request & Policy:** Laravel validates request body (MIME type, unit availability lock) and verifies user permissions (Role: `admin`, `sales_agent`).
+3. **Form Request & Policy:** Laravel validates request body (MIME type, unit availability lock) and verifies user permissions via Spatie RBAC (`superadmin`, `sales_manager`, `sales_agent`, `finance`).
 4. **Action Invocation:** `CreateBookingOrderAction` executes inside a DB transaction:
    - Locks the property row (`SELECT ... FOR UPDATE`).
    - Updates `units.status` from `AVAILABLE` to `BOOKED`.
@@ -105,8 +106,19 @@ crm-perumahan/
 
 ---
 
-## 4. Security & Performance Strategy
-- **Authentication & Roles:** Spatie Laravel-Permission with Breeze authentication scaffolding.
-- **CSRF & Session Security:** SameSite cookie security, HTTPS enforcement, encrypted sessions.
+## 4. Security & Role-Based Authorization Strategy
+- **Authentication & RBAC:** `spatie/laravel-permission` layered on top of Laravel Breeze.
+  - **4 Active Roles:**
+    - `superadmin`: Total system authority, permission bypass.
+    - `sales_manager`: Supervision of sales pipeline, lead assignments, and booking approvals.
+    - `sales_agent`: Individual lead prospect handling, customer follow-up, and booking creation.
+    - `finance`: Payment validation, document issuance (SPR), and bank KPR monitoring.
+- **Frontend Authorization Contract:**
+  - Roles & permissions automatically serialized via `HandleInertiaRequests.php` (`auth.user.roles`, `auth.user.permissions`).
+  - React components consume the reactive `@/hooks/useAuthorization` hook (`can()`, `isSuperAdmin`, `isSalesManager`, `isSalesAgent`, `isFinance`).
+- **UI Interaction & Dialog Standardization:**
+  - Native browser popups (`alert`, `confirm`, `prompt`) and legacy modals are strictly prohibited.
+  - All interactive dialogs, alerts, and forms utilize standard shadcn `Dialog` (`@/Components/ui/dialog`).
+- **CSRF & Session Security:** SameSite cookie security, HTTPS enforcement, encrypted sessions on PostgreSQL.
 - **Query Optimization:** Eager loading with indexed foreign keys (`property_cluster_id`, `assigned_sales_id`, `status`).
-- **File Assets:** Direct temporary uploads or local NVMe storage with symlinks, prepared for S3 adapter switch.
+- **File Assets:** Direct temporary uploads or local storage with symlinks, prepared for S3 adapter switch.
