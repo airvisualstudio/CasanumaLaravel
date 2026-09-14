@@ -49,8 +49,9 @@ Seluruh file dokumentasi Markdown (`.md`) dalam repositori telah **diperiksa, di
 
 ### Hasil Verifikasi Sistem
 
-- **Build Frontend (`bun run build`):** Berhasil 100% tanpa error TypeScript (`Edit-D-8oFX-3.js`, `Index-D8LaqFD3.js`, `AuthenticatedLayout-CRAROx9v.js`).
-- **Pengujian Backend (`php artisan test`):** 41 test lolos (130 assertions).
-- **Integritas Kode:** Seluruh fitur modul pengguna (User Management) telah tuntas 100% dan siap melangkah ke Master Properti.
+- **Build Frontend (`bun run build`):** Berhasil 100% tanpa error TypeScript (`UpdateProfileInformationForm-BiIb5V3N.js`, `AvatarCropperModal-CM540xde.js`, `AuthenticatedLayout-CiRsSPif.js`).
+- **Pengujian Backend (`php artisan test`):** 43 test lolos (148 assertions).
+- **Integritas Kode:** Pengaturan profil mandiri staf lengkap dengan proteksi read-only hak Superadmin tuntas 100%.
+
 
 

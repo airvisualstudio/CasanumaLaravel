@@ -28,7 +28,9 @@
 - [x] **USER-06:** Force Reset Password oleh Superadmin di tabel User Management & Dossier modal dengan generator password acak, copy button, dan dialog shadcn `Dialog`.
 - [x] **USER-07:** Self-service Ganti Password dan Settings/Profile di dropdown profil topbar & sidebar footer dengan anchor navigation (`Profile/Edit.tsx`).
 - [x] **USER-08:** Standardisasi Dropdown shadcn `Select` & Date Picker `Calendar` + `Popover` (tanpa native HTML `<select>` / `<input type="date">`).
-- [x] **QA-USER:** Automated Feature Test Suite ([`UserManagementTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/UserManagementTest.php)) passing dengan 14 test cases & 44 assertions (Total aplikasi: 41 passed, 130 assertions).
+- [x] **USER-09:** Form Pengaturan Profil Mandiri ([`UpdateProfileInformationForm.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.tsx)): User dapat melengkapi Foto Profil (crop & kompresi), No WA, Alamat, Kontak Darurat, dan Rekening Bank secara mandiri, dengan proteksi ketat field NIK, Jabatan, Role, Tanggal Join, dan Status Akun terkunci (read-only) di frontend dan controller backend ([`ProfileController.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Http/Controllers/ProfileController.php) & [`ProfileUpdateRequest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Http/Requests/ProfileUpdateRequest.php)).
+- [x] **QA-USER:** Automated Feature Test Suite ([`UserManagementTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/UserManagementTest.php)) passing dengan 14 test cases & 44 assertions.
+- [x] **QA-PROFILE:** Automated Feature Test Suite ([`ProfileTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/ProfileTest.php)) passing dengan 7 test cases & 39 assertions (Total aplikasi: 43 passed, 148 assertions).
 - [ ] **DB-04:** Migrations & Seeders for Housing Inventory:
   - Table `clusters` (nama, deskripsi, lokasi, total_unit).
   - Table `unit_types` (tipe_nama, lb, lt, spesifikasi_bangunan, denah_url).
