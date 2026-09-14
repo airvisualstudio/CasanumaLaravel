@@ -391,9 +391,10 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
             return;
         }
 
-        const maxSizeBytes = 2 * 1024 * 1024; // 2MB
-        if (file.size > maxSizeBytes) {
-            toast.error('Ukuran berkas melebihi 2MB. Silakan pilih foto dengan ukuran maksimal 2MB.');
+        // Izinkan foto mentah dari kamera/HP hingga 20MB untuk kemudian di-crop & otomatis dikompres ke < 150KB
+        const maxRawSizeBytes = 20 * 1024 * 1024; // 20MB
+        if (file.size > maxRawSizeBytes) {
+            toast.error('Ukuran foto mentah melebihi 20MB. Silakan pilih foto dengan ukuran di bawah 20MB.');
             e.target.value = '';
             return;
         }
@@ -1275,7 +1276,7 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                                         )}
                                                     </div>
                                                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                                        Format: JPG atau PNG (Maks. 2MB). Foto dapat di-crop dan diposisikan dengan presisi sebelum disimpan.
+                                                        Pilih foto dari komputer atau kamera HP (hingga 20MB). Foto dapat di-crop dan otomatis dikompresi menjadi ukuran optimal (&lt; 150 KB).
                                                     </p>
                                                 </div>
                                             </div>
