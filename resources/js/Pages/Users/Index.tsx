@@ -606,7 +606,7 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                 )}
                             </div>
 
-                            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border">
+                            <DialogFooter className="gap-2.5 sm:gap-3 pt-3 border-t border-border">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -662,7 +662,7 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                             </div>
                         )}
 
-                        <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-border">
+                        <DialogFooter className="gap-2.5 sm:gap-3 pt-2 border-t border-border">
                             <Button
                                 type="button"
                                 variant="outline"

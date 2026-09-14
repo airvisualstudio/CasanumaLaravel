@@ -634,7 +634,7 @@ export default function Authenticated({
                         <span className="font-semibold text-primary">{currentRoleInfo.label}</span>
                     </div>
 
-                    <DialogFooter className="gap-2 sm:gap-0 pt-1">
+                    <DialogFooter className="gap-2.5 sm:gap-3 pt-1">
                         <Button onClick={() => setPendingMenu(null)} className="w-full sm:w-auto font-medium">
                             Mengerti
                         </Button>
