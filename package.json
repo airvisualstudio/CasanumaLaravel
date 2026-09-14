@@ -5,7 +5,8 @@
     "scripts": {
         "build": "tsc && vite build",
         "dev": "vite",
-        "dev:caddy": "concurrently -k -c \"cyan.bold,magenta.bold,green.bold\" --names \"php-cgi,caddy,vite\" \"php-cgi -b 127.0.0.1:9000\" \"caddy run\" \"vite\""
+        "dev:caddy": "concurrently -k -c \"cyan.bold,magenta.bold,green.bold\" --names \"php-cgi,caddy,vite\" \"php-cgi -b 127.0.0.1:9000\" \"caddy run\" \"vite\"",
+        "sync:tech-stack": "node scripts/sync-tech-stack.mjs"
     },
     "devDependencies": {
         "@headlessui/react": "^2.0.0",

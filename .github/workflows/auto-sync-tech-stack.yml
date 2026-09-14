@@ -1,0 +1,51 @@
+name: Auto-Sync TECH_STACK.md
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'composer.json'
+      - 'composer.lock'
+      - 'package.json'
+      - 'bun.lock'
+      - 'package-lock.json'
+      - 'scripts/sync-tech-stack.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-tech-stack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run sync parser
+        run: node scripts/sync-tech-stack.mjs
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          if [ -n "$(git status --porcelain TECH_STACK.md)" ]; then
+            echo "Changes detected in TECH_STACK.md. Committing..."
+            git add TECH_STACK.md
+            git commit -m "docs: auto-sync TECH_STACK.md dependencies [skip ci]"
+            git push
+          else
+            echo "TECH_STACK.md is up to date. No commit necessary."
+          fi
