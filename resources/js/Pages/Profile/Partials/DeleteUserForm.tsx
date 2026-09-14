@@ -1,7 +1,14 @@
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
-import Modal from '@/Components/Modal';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/Components/ui/dialog';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler, useRef, useState } from 'react';
 import { AlertTriangle, Loader2, Lock, Trash2 } from 'lucide-react';
@@ -72,70 +79,77 @@ export default function DeleteUserForm({
                 Hapus Akun Saya
             </Button>
 
-            <Modal show={confirmingUserDeletion} onClose={closeModal}>
-                <form onSubmit={deleteUser} className="p-6 space-y-6">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-destructive">
-                            <AlertTriangle className="size-5" />
-                            <h2 className="text-lg font-bold">
-                                Apakah Anda yakin ingin menghapus akun?
-                            </h2>
-                        </div>
+            <Dialog
+                open={confirmingUserDeletion}
+                onOpenChange={(open) => {
+                    if (!open) closeModal();
+                }}
+            >
+                <DialogContent className="sm:max-w-lg">
+                    <form onSubmit={deleteUser} className="space-y-5">
+                        <DialogHeader className="space-y-2">
+                            <div className="flex items-center gap-2 text-destructive">
+                                <AlertTriangle className="size-5" />
+                                <DialogTitle className="text-lg font-bold">
+                                    Apakah Anda yakin ingin menghapus akun?
+                                </DialogTitle>
+                            </div>
 
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                            Tindakan ini tidak dapat dibatalkan. Semua data, riwayat sesi, dan preferensi akun Anda akan dihapus secara permanen dari basis data. Silakan masukkan kata sandi Anda untuk mengonfirmasi.
-                        </p>
-                    </div>
+                            <DialogDescription className="text-xs leading-relaxed text-muted-foreground">
+                                Tindakan ini tidak dapat dibatalkan. Semua data, riwayat sesi, dan preferensi akun Anda akan dihapus secara permanen dari basis data. Silakan masukkan kata sandi Anda untuk mengonfirmasi.
+                            </DialogDescription>
+                        </DialogHeader>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="password" className="sr-only">Password</Label>
-                        <div className="relative">
-                            <Input
-                                id="password"
-                                type="password"
-                                name="password"
-                                ref={passwordInput}
-                                value={data.password}
-                                onChange={(e) => setData('password', e.target.value)}
-                                className="pl-9"
-                                placeholder="Masukkan password Anda untuk konfirmasi"
-                                autoFocus
-                                aria-invalid={!!errors.password}
-                            />
-                            <Lock className="size-4 text-muted-foreground absolute left-3 top-2.5 pointer-events-none" />
-                        </div>
-                        {errors.password && (
-                            <p className="text-xs font-medium text-destructive">{errors.password}</p>
-                        )}
-                    </div>
-
-                    <div className="flex justify-end gap-3 pt-2 border-t border-border">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={closeModal}
-                        >
-                            Batal
-                        </Button>
-
-                        <Button
-                            type="submit"
-                            variant="destructive"
-                            disabled={processing}
-                            className="gap-1.5"
-                        >
-                            {processing ? (
-                                <>
-                                    <Loader2 className="size-3.5 animate-spin mr-1" />
-                                    Menghapus...
-                                </>
-                            ) : (
-                                'Ya, Hapus Akun'
+                        <div className="space-y-2">
+                            <Label htmlFor="password" className="sr-only">Password</Label>
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    name="password"
+                                    ref={passwordInput}
+                                    value={data.password}
+                                    onChange={(e) => setData('password', e.target.value)}
+                                    className="pl-9"
+                                    placeholder="Masukkan password Anda untuk konfirmasi"
+                                    autoFocus
+                                    aria-invalid={!!errors.password}
+                                />
+                                <Lock className="size-4 text-muted-foreground absolute left-3 top-2.5 pointer-events-none" />
+                            </div>
+                            {errors.password && (
+                                <p className="text-xs font-medium text-destructive">{errors.password}</p>
                             )}
-                        </Button>
-                    </div>
-                </form>
-            </Modal>
+                        </div>
+
+                        <DialogFooter className="gap-2 sm:gap-2 pt-2 border-t border-border">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={closeModal}
+                            >
+                                Batal
+                            </Button>
+
+                            <Button
+                                type="submit"
+                                variant="destructive"
+                                disabled={processing}
+                                className="gap-1.5"
+                            >
+                                {processing ? (
+                                    <>
+                                        <Loader2 className="size-3.5 animate-spin mr-1" />
+                                        Menghapus...
+                                    </>
+                                ) : (
+                                    'Ya, Hapus Akun'
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </section>
     );
 }

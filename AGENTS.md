@@ -45,3 +45,13 @@ php artisan boost:install
 
 Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
 </laravel-boost-guidelines>
+
+# UI & Frontend Standardization Rules (MANDATORY)
+
+## 1. Alert, Popup, & Modal Standards
+- **DILARANG KERAS** menggunakan dialog native bawaan browser (`window.alert()`, `window.confirm()`, atau `window.prompt()`).
+- **WAJIB** menggunakan komponen standar dari **shadcn/ui**:
+  - Semua popup modal, konfirmasi tindakan, dan dialog info wajib menggunakan `Dialog` dari `@/Components/ui/dialog` (berbasis Radix UI).
+  - Struktur dialog wajib teratur menggunakan `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription`, dan `DialogFooter`.
+- **DILARANG** membuat modal/popup custom sendiri (misal dengan `div fixed/absolute` manual) atau memakai komponen modal legacy.
+- **Konsistensi UI/UX**: Seluruh dialog harus mematuhi tema warna CRM (Dark/Light mode), animasi halus (`zoom-in-95`, backdrop blur), dan accessibility (keyboard focus trap, ESC to close).

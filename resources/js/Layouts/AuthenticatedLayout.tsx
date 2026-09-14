@@ -2,6 +2,14 @@ import { Link, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode, useEffect, useState } from 'react';
 import { Button } from '@/Components/ui/button';
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/Components/ui/dialog';
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuGroup,
@@ -144,8 +152,10 @@ export default function Authenticated({
         badge: 'bg-primary text-primary-foreground'
     };
 
+    const [pendingMenu, setPendingMenu] = useState<string | null>(null);
+
     const handleMenuClick = (menuName: string) => {
-        alert(`Modul "${menuName}" siap dikembangkan selanjutnya sesuai flow role.`);
+        setPendingMenu(menuName);
     };
 
     // Navigation groups definition
@@ -285,8 +295,9 @@ export default function Authenticated({
                 }`}
             >
                 {/* Brand Header - Pinned at top */}
+                {/* Brand Header - Pinned at top */}
                 <div className={`h-16 border-b border-border/60 flex items-center shrink-0 transition-all duration-300 ${
-                    collapsed ? 'justify-center px-2' : 'justify-between px-5'
+                    collapsed ? 'justify-center px-0' : 'justify-between px-5'
                 }`}>
                     {!collapsed ? (
                         <>
@@ -319,8 +330,8 @@ export default function Authenticated({
                             </Button>
                         </>
                     ) : (
-                        <Link href={route('dashboard')} title="CASANUMA CRM - Dashboard">
-                            <div className="size-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold shadow-md shadow-primary/20 border border-primary/30 hover:scale-105 transition-transform">
+                        <Link href={route('dashboard')} title="CASANUMA CRM - Dashboard" className="flex items-center justify-center">
+                            <div className="size-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold shadow-md shadow-primary/20 border border-primary/30 hover:scale-105 transition-transform">
                                 <Building2 className="size-5" />
                             </div>
                         </Link>
@@ -343,16 +354,18 @@ export default function Authenticated({
                         </div>
                     </div>
                 ) : (
-                    <div className="my-2 flex justify-center shrink-0" title={`Role Aktif: ${currentRoleInfo.label}`}>
-                        <div className={`size-8 rounded-lg flex items-center justify-center border ${currentRoleInfo.color}`}>
-                            <Shield className="size-4" />
+                    <div className="my-2.5 flex justify-center items-center shrink-0 w-full" title={`Role Aktif: ${currentRoleInfo.label}`}>
+                        <div className={`size-10 rounded-xl flex items-center justify-center border shadow-2xs ${currentRoleInfo.color}`}>
+                            <Shield className="size-5" />
                         </div>
                     </div>
                 )}
 
                 {/* Dynamic Navigation Menus - Independently Scrollable ("Bisa di-roll") */}
-                <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar overscroll-contain py-2 space-y-4 ${
-                    collapsed ? 'px-1.5' : 'px-3'
+                <div className={`flex-1 min-h-0 overflow-y-auto overscroll-contain py-2 space-y-3 ${
+                    collapsed 
+                        ? 'px-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden' 
+                        : 'px-3 custom-scrollbar'
                 }`}>
                     {visibleNavGroups.map((group, groupIdx) => {
                         const visibleItems = group.items.filter((item) => item.visible);
@@ -365,9 +378,9 @@ export default function Authenticated({
                                         {group.groupName}
                                     </p>
                                 ) : (
-                                    <div className="my-2 border-t border-border/60 mx-2" title={group.groupName} />
+                                    <div className="my-2 border-t border-border/60 mx-4" title={group.groupName} />
                                 )}
-                                <div className="space-y-0.5">
+                                <div className="space-y-1">
                                     {visibleItems.map((item, itemIdx) => {
                                         const Icon = item.icon;
                                         const isItemActive = 'active' in item && item.active;
@@ -379,17 +392,17 @@ export default function Authenticated({
                                                     href={item.href}
                                                     onClick={() => setSidebarOpen(false)}
                                                     title={collapsed ? item.label : undefined}
-                                                    className={`flex items-center rounded-lg text-xs font-medium transition-all ${
+                                                    className={`flex items-center rounded-xl text-xs font-medium transition-all ${
                                                         collapsed 
                                                             ? 'justify-center size-10 mx-auto' 
-                                                            : 'gap-3 px-3 py-2'
+                                                            : 'w-full gap-3 px-3 py-2'
                                                     } ${
                                                         isItemActive
                                                             ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
                                                             : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
                                                     }`}
                                                 >
-                                                    <Icon className="size-4 shrink-0" />
+                                                    <Icon className="size-4.5 shrink-0" />
                                                     {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
                                                 </Link>
                                             );
@@ -404,13 +417,13 @@ export default function Authenticated({
                                                     item.action?.();
                                                 }}
                                                 title={collapsed ? item.label : undefined}
-                                                className={`w-full flex items-center rounded-lg text-xs font-medium text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all ${
+                                                className={`flex items-center rounded-xl text-xs font-medium text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all ${
                                                     collapsed 
                                                         ? 'justify-center size-10 mx-auto' 
-                                                        : 'gap-3 px-3 py-2 text-left'
+                                                        : 'w-full gap-3 px-3 py-2 text-left'
                                                 }`}
                                             >
-                                                <Icon className="size-4 shrink-0" />
+                                                <Icon className="size-4.5 shrink-0" />
                                                 {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
                                             </button>
                                         );
@@ -592,6 +605,41 @@ export default function Authenticated({
                     </div>
                 </main>
             </div>
+
+            {/* Standard shadcn Dialog for Menu Navigation */}
+            <Dialog open={!!pendingMenu} onOpenChange={(open) => !open && setPendingMenu(null)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader className="gap-3">
+                        <div className="flex items-center gap-3">
+                            <div className="size-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <Sparkles className="size-5" />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-lg font-bold">
+                                    Menu {pendingMenu}
+                                </DialogTitle>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Navigasi & Arsitektur CRM
+                                </p>
+                            </div>
+                        </div>
+                        <DialogDescription className="text-xs sm:text-sm text-foreground/80 leading-relaxed pt-1">
+                            Menu navigasi <strong className="text-foreground">"{pendingMenu}"</strong> telah terdaftar dalam arsitektur role Spatie dan siap dikembangkan lebih lanjut sesuai alur kerja operasional.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-3.5 text-xs text-muted-foreground flex items-center justify-between">
+                        <span>Aksesibilitas Role:</span>
+                        <span className="font-semibold text-primary">{currentRoleInfo.label}</span>
+                    </div>
+
+                    <DialogFooter className="gap-2 sm:gap-0 pt-1">
+                        <Button onClick={() => setPendingMenu(null)} className="w-full sm:w-auto font-medium">
+                            Mengerti
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

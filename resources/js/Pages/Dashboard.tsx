@@ -1,6 +1,15 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
 import { 
     Building2, 
@@ -56,8 +65,17 @@ export default function Dashboard() {
     const primaryRole = user?.roles?.[0] || 'sales_agent';
     const activeRole = roleInfo[primaryRole as keyof typeof roleInfo] || roleInfo.sales_agent;
 
-    const handleActionClick = (actionName: string) => {
-        alert(`Aksi "${actionName}" siap dihubungkan ke backend form & database!`);
+    const [selectedModule, setSelectedModule] = useState<{
+        title: string;
+        desc: string;
+        action: string;
+        actionText: string;
+        icon: React.ElementType;
+        iconColor: string;
+    } | null>(null);
+
+    const handleActionClick = (module: typeof moduleCards[0]) => {
+        setSelectedModule(module);
     };
 
     // Full catalog of module cards corresponding to system capabilities
@@ -243,7 +261,7 @@ export default function Dashboard() {
                                 <Card 
                                     key={idx} 
                                     className="hover:border-primary/50 transition-all duration-200 shadow-xs hover:shadow-md group cursor-pointer flex flex-col justify-between"
-                                    onClick={() => handleActionClick(module.action)}
+                                    onClick={() => handleActionClick(module)}
                                 >
                                     <CardHeader className="p-5 pb-3">
                                         <div className={`size-11 rounded-xl ${module.iconColor} flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shrink-0`}>
@@ -309,6 +327,52 @@ export default function Dashboard() {
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* 4. Dialog Integrasi Modul (Standard shadcn Dialog) */}
+                <Dialog open={!!selectedModule} onOpenChange={(open) => !open && setSelectedModule(null)}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader className="gap-3">
+                            <div className="flex items-center gap-3">
+                                {selectedModule && (
+                                    <div className={`size-12 rounded-2xl ${selectedModule.iconColor} flex items-center justify-center shrink-0`}>
+                                        <selectedModule.icon className="size-6" />
+                                    </div>
+                                )}
+                                <div>
+                                    <DialogTitle className="text-lg font-bold">
+                                        {selectedModule?.title}
+                                    </DialogTitle>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                        Integrasi Fitur & Arsitektur CRM
+                                    </p>
+                                </div>
+                            </div>
+                            <DialogDescription className="text-xs sm:text-sm text-foreground/80 leading-relaxed pt-1">
+                                Aksi <strong className="text-foreground">"{selectedModule?.action}"</strong> siap dihubungkan ke formulir backend, alur otorisasi role <strong className="text-primary">{activeRole.title}</strong>, dan basis data PostgreSQL CASANUMA CRM.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="rounded-xl border border-border/70 bg-muted/20 p-3.5 text-xs text-muted-foreground space-y-2">
+                            <div className="flex items-start justify-between gap-3">
+                                <span className="shrink-0">Tujuan Modul:</span>
+                                <span className="font-medium text-foreground text-right">{selectedModule?.desc}</span>
+                            </div>
+                            <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                                <span>Status Komponen:</span>
+                                <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                                    <CheckCircle2 className="size-3.5" />
+                                    Siap Dihubungkan
+                                </span>
+                            </div>
+                        </div>
+
+                        <DialogFooter className="gap-2 sm:gap-0 pt-1">
+                            <Button onClick={() => setSelectedModule(null)} className="w-full sm:w-auto font-medium">
+                                Mengerti
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </AuthenticatedLayout>
     );

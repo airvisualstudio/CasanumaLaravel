@@ -136,3 +136,64 @@ export function UnitStatusBadge({ status }: { status: UnitStatus }) {
   return <Badge variant="outline" className={item.className}>{item.label}</Badge>;
 }
 ```
+
+### 4.3. Standardisasi Modal & Popup (Wajib shadcn `Dialog`)
+> **PENTING / MANDATORY:** Semua popup, konfirmasi, dialog form, atau modal di seluruh sistem CRM **WAJIB** menggunakan komponen `Dialog` dari shadcn/ui (`@/Components/ui/dialog`).
+
+**Aturan Ketat:**
+- ❌ **DILARANG KERAS** menggunakan popup dialog bawaan browser (`window.alert()`, `window.confirm()`, atau `window.prompt()`).
+- ❌ **DILARANG** membuat modal custom sendiri (misal dengan `div` absolute/fixed manual) atau memakai modal legacy bawaan kit lama.
+- ❌ **DILARANG** memasang library popup pihak ketiga baru tanpa standarisasi.
+- ✅ **WAJIB** menggunakan komponen resmi:
+  - `Dialog`: Root container dengan state `open` dan `onOpenChange`.
+  - `DialogTrigger`: Pembungkus trigger button (jika menggunakan un-controlled flow).
+  - `DialogContent`: Kontainer modal (otomatis dilengkapi overlay backdrop blur, animasi masuk/keluar, dan tombol close `X`).
+  - `DialogHeader`, `DialogTitle`, `DialogDescription`: Struktur judul & deskripsi yang accessible (otomatis ARIA labeledby/describedby).
+  - `DialogFooter`: Kontainer tombol aksi (otomatis responsive alignment di mobile/desktop).
+
+**Manfaat Standarisasi:**
+1. **Accessibility (A11y):** Otomatis menangani keyboard trap (Tab / Shift+Tab), tombol ESC untuk close, dan pengembalian focus.
+2. **Animasi & Feel Konsisten:** Transisi `zoom-in-95`, `fade-in-0`, backdrop blur, dan tema Dark/Light terintegrasi sempurna.
+3. **Maintainability:** Desain modal di seluruh CRM (mulai dari hapus akun, form input booking, detail unit, hingga filter leads) memiliki radius, shadow, dan padding yang seragam.
+
+**Contoh Implementasi Standar:**
+```tsx
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/Components/ui/dialog';
+import { Button } from '@/Components/ui/button';
+
+export function BookingModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Konfirmasi Booking Unit</DialogTitle>
+          <DialogDescription>
+            Masukkan data tanda jadi konsumen untuk memblokir kavling pilihan.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="py-4">
+          {/* Form content */}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Batal
+          </Button>
+          <Button type="submit">
+            Simpan Booking
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
