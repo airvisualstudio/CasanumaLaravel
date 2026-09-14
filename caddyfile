@@ -1,0 +1,6 @@
+localhost {
+    root * public
+    encode zstd gzip
+    php_fastcgi 127.0.0.1:9000
+    file_server
+}
