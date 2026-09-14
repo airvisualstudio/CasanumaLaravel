@@ -59,6 +59,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/Components/ui/dialog';
+import AvatarCropperModal from '@/Components/AvatarCropperModal';
 
 interface UserData {
     id: number;
@@ -185,13 +186,8 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
     const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
     const [originalFileSize, setOriginalFileSize] = useState<number>(0);
     const [compressedFileSize, setCompressedFileSize] = useState<number | null>(null);
-    const [cropZoom, setCropZoom] = useState<number>(1);
-    const [cropPosition, setCropPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const cropContainerRef = useRef<HTMLDivElement>(null);
 
     // Form handling for Add/Edit
     const {
@@ -363,7 +359,6 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
         if (!file) return;
 
         if (!file.type.startsWith('image/')) {
-            alert('Silakan pilih file gambar (JPG, PNG, atau WEBP).');
             return;
         }
 
@@ -372,8 +367,6 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
         const reader = new FileReader();
         reader.onload = (event) => {
             setRawImageSrc(event.target?.result as string);
-            setCropZoom(1);
-            setCropPosition({ x: 0, y: 0 });
             setIsCropperOpen(true);
         };
         reader.readAsDataURL(file);
@@ -382,78 +375,11 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
         e.target.value = '';
     };
 
-    // Cropper Drag handlers
-    const handleMouseDown = (e: React.MouseEvent) => {
-        setIsDragging(true);
-        setDragStart({ x: e.clientX - cropPosition.x, y: e.clientY - cropPosition.y });
-    };
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDragging) return;
-        setCropPosition({
-            x: e.clientX - dragStart.x,
-            y: e.clientY - dragStart.y,
-        });
-    };
-
-    const handleMouseUp = () => {
-        setIsDragging(false);
-    };
-
-    // Apply crop & compress to standard 512x512 JPEG (< 200 KB)
-    const applyCropAndCompress = () => {
-        if (!rawImageSrc) return;
-
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-            const outputSize = 512;
-            const canvas = document.createElement('canvas');
-            canvas.width = outputSize;
-            canvas.height = outputSize;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
-
-            ctx.clearRect(0, 0, outputSize, outputSize);
-
-            // Container preview viewport size is 260px
-            const viewportSize = 260;
-            const scaleFactor = outputSize / viewportSize;
-
-            const baseScale = Math.max(viewportSize / img.naturalWidth, viewportSize / img.naturalHeight);
-            const effectiveScale = baseScale * cropZoom * scaleFactor;
-
-            const centerX = outputSize / 2 + cropPosition.x * scaleFactor;
-            const centerY = outputSize / 2 + cropPosition.y * scaleFactor;
-            const drawWidth = img.naturalWidth * effectiveScale;
-            const drawHeight = img.naturalHeight * effectiveScale;
-
-            ctx.drawImage(
-                img,
-                centerX - drawWidth / 2,
-                centerY - drawHeight / 2,
-                drawWidth,
-                drawHeight
-            );
-
-            // Compress to JPEG with 0.85 quality
-            canvas.toBlob((blob) => {
-                if (!blob) return;
-
-                const compressedFile = new File([blob], 'avatar.jpg', {
-                    type: 'image/jpeg',
-                    lastModified: Date.now(),
-                });
-
-                setFormData('avatar', compressedFile);
-                setFormData('remove_avatar', false);
-                setCompressedFileSize(blob.size);
-                setAvatarPreview(URL.createObjectURL(blob));
-                setIsCropperOpen(false);
-                setRawImageSrc(null);
-            }, 'image/jpeg', 0.85);
-        };
-        img.src = rawImageSrc;
+    const handleCropperComplete = (file: File, previewUrl: string, compressedSize: number) => {
+        setFormData('avatar', file);
+        setFormData('remove_avatar', false);
+        setAvatarPreview(previewUrl);
+        setCompressedFileSize(compressedSize);
     };
 
     const handleRemoveAvatar = () => {
@@ -1461,130 +1387,17 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                     </DialogContent>
                 </Dialog>
 
-                {/* 6. Dialog Modal Crop & Compress Foto Avatar (Standard shadcn Dialog) */}
-                <Dialog open={isCropperOpen} onOpenChange={(open) => !open && setIsCropperOpen(false)}>
-                    <DialogContent className="sm:max-w-md p-0 overflow-hidden">
-                        <DialogHeader className="p-5 pb-3 border-b border-border bg-muted/20">
-                            <div className="flex items-center gap-3">
-                                <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
-                                    <CropIcon className="size-5" />
-                                </div>
-                                <div>
-                                    <DialogTitle className="text-base font-bold">
-                                        Sesuaikan & Crop Foto Profil
-                                    </DialogTitle>
-                                    <DialogDescription className="text-xs">
-                                        Geser gambar dan atur zoom agar posisi wajah berada tepat di dalam lingkaran avatar.
-                                    </DialogDescription>
-                                </div>
-                            </div>
-                        </DialogHeader>
-
-                        <div className="p-5 space-y-4">
-                            {/* Interactive Crop Viewport with Circular Mask */}
-                            <div className="flex flex-col items-center">
-                                <div 
-                                    ref={cropContainerRef}
-                                    onMouseDown={handleMouseDown}
-                                    onMouseMove={handleMouseMove}
-                                    onMouseUp={handleMouseUp}
-                                    onMouseLeave={handleMouseUp}
-                                    className="relative size-65 rounded-2xl bg-black/90 overflow-hidden border-2 border-primary/50 cursor-grab active:cursor-grabbing select-none flex items-center justify-center shadow-inner"
-                                >
-                                    {rawImageSrc && (
-                                        <img
-                                            src={rawImageSrc}
-                                            alt="Crop target"
-                                            draggable={false}
-                                            style={{
-                                                transform: `translate(${cropPosition.x}px, ${cropPosition.y}px) scale(${cropZoom})`,
-                                                transformOrigin: 'center center',
-                                                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-                                            }}
-                                            className="max-w-none max-h-none pointer-events-none select-none"
-                                        />
-                                    )}
-
-                                    {/* Circular Crop Guide Overlay */}
-                                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                                        <div className="size-55 rounded-full border-2 border-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]"></div>
-                                    </div>
-
-                                    {/* Center helper crosshair */}
-                                    <div className="absolute size-2 bg-white/60 rounded-full pointer-events-none"></div>
-                                </div>
-
-                                <p className="text-[11px] text-muted-foreground mt-2">
-                                    💡 Klik dan geser gambar untuk mengatur posisi tengah.
-                                </p>
-                            </div>
-
-                            {/* Zoom Slider Controls */}
-                            <div className="space-y-1.5 p-3 rounded-xl border border-border/80 bg-muted/20">
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className="font-semibold text-foreground flex items-center gap-1.5">
-                                        <ZoomIn className="size-3.5 text-primary" />
-                                        <span>Perbesaran (Zoom): {cropZoom.toFixed(1)}x</span>
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setCropZoom(1);
-                                            setCropPosition({ x: 0, y: 0 });
-                                        }}
-                                        className="text-[11px] text-primary hover:underline flex items-center gap-1"
-                                    >
-                                        <RotateCcw className="size-3" />
-                                        <span>Reset</span>
-                                    </button>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <ZoomOut className="size-3.5 text-muted-foreground shrink-0" />
-                                    <input
-                                        type="range"
-                                        min="0.8"
-                                        max="3"
-                                        step="0.05"
-                                        value={cropZoom}
-                                        onChange={(e) => setCropZoom(parseFloat(e.target.value))}
-                                        className="w-full accent-primary h-1.5 bg-muted rounded-lg cursor-pointer"
-                                    />
-                                    <ZoomIn className="size-3.5 text-muted-foreground shrink-0" />
-                                </div>
-                            </div>
-
-                            {/* Compression notice */}
-                            <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-800 dark:text-emerald-300 space-y-1">
-                                <div className="flex items-center gap-1.5 font-bold">
-                                    <Sparkles className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                                    <span>Kompresi Otomatis Aktif</span>
-                                </div>
-                                <p className="text-[11px] text-emerald-700/90 dark:text-emerald-300/90 leading-relaxed">
-                                    Ukuran file asli: <strong>{formatFileSize(originalFileSize)}</strong>. Foto akan dipotong menjadi resolusi 512×512 dan otomatis dikompresi ke <strong>&lt; 200 KB</strong> berkualitas tajam.
-                                </p>
-                            </div>
-                        </div>
-
-                        <DialogFooter className="gap-2.5 sm:gap-3 p-4 border-t border-border bg-muted/20">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setIsCropperOpen(false)}
-                            >
-                                Batal
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={applyCropAndCompress}
-                                className="gap-1.5"
-                            >
-                                <Check className="size-4" />
-                                <span>Terapkan & Kompres Foto</span>
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* 6. Dialog Modal Crop & Compress Foto Avatar (Powered by react-easy-crop) */}
+                <AvatarCropperModal
+                    isOpen={isCropperOpen}
+                    imageSrc={rawImageSrc}
+                    originalFileSize={originalFileSize}
+                    onClose={() => {
+                        setIsCropperOpen(false);
+                        setRawImageSrc(null);
+                    }}
+                    onCropComplete={handleCropperComplete}
+                />
 
                 {/* 7. Dialog Detail Dossier Staf (Modal Profil Lengkap) */}
                 <Dialog open={!!userToView} onOpenChange={(open) => !open && setUserToView(null)}>
