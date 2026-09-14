@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -100,6 +101,13 @@ class UserController extends Controller
         $user = User::create($validated);
         $user->syncRoles([$role]);
 
+        ActivityLog::record(
+            'user_create',
+            "Menambahkan pengguna baru: {$user->name} ({$role})",
+            $user,
+            ['email' => $user->email, 'role' => $role]
+        );
+
         return back()->with('success', "Pengguna {$user->name} berhasil ditambahkan!");
     }
 
@@ -165,6 +173,13 @@ class UserController extends Controller
         $user->update($validated);
         $user->syncRoles([$role]);
 
+        ActivityLog::record(
+            'user_update',
+            "Memperbarui data pengguna: {$user->name}",
+            $user,
+            ['email' => $user->email, 'role' => $role]
+        );
+
         return back()->with('success', "Data pengguna {$user->name} berhasil diperbarui!");
     }
 
@@ -185,6 +200,13 @@ class UserController extends Controller
 
         $statusText = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
+        ActivityLog::record(
+            'status_toggle',
+            "Mengubah status akun {$user->name} menjadi {$statusText}",
+            $user,
+            ['is_active' => $user->is_active]
+        );
+
         return back()->with('success', "Status akun {$user->name} berhasil {$statusText}.");
     }
 
@@ -204,7 +226,15 @@ class UserController extends Controller
         }
 
         $userName = $user->name;
+        $userEmail = $user->email;
         $user->delete();
+
+        ActivityLog::record(
+            'user_delete',
+            "Menghapus akun pengguna: {$userName}",
+            null,
+            ['name' => $userName, 'email' => $userEmail]
+        );
 
         return back()->with('success', "Pengguna {$userName} berhasil dihapus.");
     }
@@ -225,6 +255,12 @@ class UserController extends Controller
         $user->update([
             'password' => Hash::make($validated['password']),
         ]);
+
+        ActivityLog::record(
+            'password_reset',
+            "Mereset password pengguna: {$user->name}",
+            $user
+        );
 
         return back()->with('success', "Password akun {$user->name} berhasil diperbarui!");
     }

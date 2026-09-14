@@ -47,10 +47,13 @@ import {
     Database,
     LucideIcon,
     PanelLeftClose,
-    PanelLeftOpen
+    PanelLeftOpen,
+    Activity,
+    Bot
 } from 'lucide-react';
 import { useAuthorization } from '@/hooks/useAuthorization';
 import { Toaster, toast } from '@/Components/ui/sonner';
+import { PageProps } from '@/types';
 
 interface AuthenticatedLayoutProps {
     header?: ReactNode;
@@ -76,7 +79,7 @@ export default function Authenticated({
     children,
 }: PropsWithChildren<AuthenticatedLayoutProps>) {
     const { user, can, isSuperAdmin } = useAuthorization();
-    const { flash } = usePage<{ flash?: { success?: string; error?: string } }>().props;
+    const { flash } = usePage<PageProps>().props;
     const [isDark, setIsDark] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [collapsed, setCollapsed] = useState(false);
@@ -266,6 +269,13 @@ export default function Authenticated({
                     href: route('users.index'),
                     active: isCurrent('users.*'),
                     visible: can('manage-users'),
+                },
+                {
+                    label: 'Activity Logs & Telegram',
+                    icon: Activity,
+                    href: route('settings.activity-logs.index'),
+                    active: isCurrent('settings.*'),
+                    visible: isSuperAdmin,
                 },
                 {
                     label: 'Hak Akses Role (Spatie)',

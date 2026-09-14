@@ -4,6 +4,7 @@ import { Label } from '@/Components/ui/label';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler, useRef } from 'react';
 import { CheckCircle2, Loader2, Lock } from 'lucide-react';
+import { toast } from '@/Components/ui/sonner';
 
 export default function UpdatePasswordForm({
     className = '',
@@ -32,8 +33,12 @@ export default function UpdatePasswordForm({
 
         put(route('password.update'), {
             preserveScroll: true,
-            onSuccess: () => reset(),
+            onSuccess: () => {
+                reset();
+                toast.success('Password berhasil diperbarui!');
+            },
             onError: (errors) => {
+                toast.error('Gagal memperbarui password. Silakan periksa formulir.');
                 if (errors.password) {
                     reset('password', 'password_confirmation');
                     passwordInput.current?.focus();

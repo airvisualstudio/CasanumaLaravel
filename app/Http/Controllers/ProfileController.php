@@ -67,6 +67,8 @@ class ProfileController extends Controller
 
         $user->save();
 
+        \App\Models\ActivityLog::record('profile_update', "Pengguna {$user->name} memperbarui profil mandiri", $user);
+
         return Redirect::route('profile.edit')->with('success', 'Profil Anda berhasil diperbarui!');
     }
 

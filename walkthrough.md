@@ -103,3 +103,69 @@ Semua akun menggunakan password bawaan: `password`
 - **Layout:** [`resources/js/Layouts/AuthenticatedLayout.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Layouts/AuthenticatedLayout.tsx) otomatis memfilter menu navbar (Unit, Leads, Booking, Keuangan) berdasarkan permission pengguna.
 - **Tech Stack Specification:** [`TECH_STACK.md`](file:///d:/90_ARCHIVE/nama-projek-lo/TECH_STACK.md) otomatis tersinkronisasi menampilkan `spatie/laravel-permission: 8.3.0`.
 
+---
+
+## 4. User Module Final Polish (100% Tuntas)
+
+### 4.1 Upload Avatar Preview, Batas 2MB & Revert ke Inisial
+- **Batas Ukuran & Format:** Divalidasi ketat di sisi klien (`handleFileSelect`) dan sisi backend (`max:2048`, `mimes:jpeg,png,jpg`). File > 2MB atau format selain JPG/PNG ditolak dengan pesan error yang jelas.
+- **Crop & Preview:** Pengguna dapat melihat preview hasil potongan foto sebelum menyimpan via `AvatarCropperModal`.
+- **Hapus Foto (Revert ke Inisial):** Disediakan tombol khusus "Hapus Foto (Gunakan Inisial)" serta tombol badge silang `X`. Ketika dihapus, sistem otomatis menampilkan avatar inisial nama dengan gradien warna brand CASANUMA CRM.
+
+### 4.2 Sanitasi Format Nomor WhatsApp (Backend Mutator)
+- Diterapkan Eloquent mutator di [`app/Models/User.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Models/User.php) via method `sanitizePhoneNumber()`.
+- Setiap input nomor telepon maupun kontak darurat (misal `0812...`, `+62 812...`, `812...`) otomatis dibersihkan dan distandarisasi ke format internasional `628xx` secara konsisten di seluruh aplikasi.
+
+### 4.3 Toolbar List User di Atas Tabel (Search & Filters)
+- **Search:** Input pencarian responsif untuk mencari berdasarkan nama, email, NIK, jabatan, dan no. WhatsApp.
+- **Filter Role:** Dropdown shadcn `Select` ("Semua Role", "Super Administrator", "Sales Manager", "Sales Agent", "Finance") dipadukan dengan pill buttons pintasan 1-klik.
+- **Filter Status:** Dropdown shadcn `Select` ("Semua Status", "Hanya Aktif", "Hanya Nonaktif").
+- **Tombol Reset:** Tombol "Reset" dinamis yang muncul otomatis saat filter atau pencarian aktif.
+
+### 4.4 Sistem Notifikasi Toast (shadcn Sonner)
+- Dipasang komponen [`sonner.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/ui/sonner.tsx) dan dipasang di root layout [`AuthenticatedLayout.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Layouts/AuthenticatedLayout.tsx) menggunakan `<Toaster richColors position="top-right" closeButton />`.
+- Otomatis bereaksi menangkap `flash.success` & `flash.error` dari Inertia controller, serta diintegrasikan ke seluruh event interaktif (tambah pengguna, perbarui data, hapus user, ganti status aktif, salin password, dan reset password).
+
+### 4.5 Hasil Pengujian & Build
+- **Frontend Build (`bun run build`):** Sukses dalam 1.56s tanpa error TypeScript.
+- **PHP Test Suite (`php artisan test`):** 48 test cases lolos (160 assertions).
+
+---
+
+## 5. Activity Logs & Integrasi Telegram (Settings Menu Superadmin)
+
+### 5.1 Penyimpanan Konfigurasi Dinamis di Database (`system_settings`)
+- Tabel `system_settings` menyimpan kredensial `telegram_bot_token`, `telegram_chat_id`, dan `telegram_notifications_enabled` secara dinamis tanpa perlu edit file `.env` manual di server.
+- Helper model [`SystemSetting.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Models/SystemSetting.php) dengan caching otomatis: `SystemSetting::get('telegram_bot_token')` dan `SystemSetting::set(...)`.
+
+### 5.2 Rekam Jejak Audit Otomatis (`activity_logs`)
+- Tabel `activity_logs` mencatat setiap aksi operasional pengguna:
+  - `user_create`: Saat superadmin menambah pengguna baru
+  - `user_update`: Saat data pengguna diperbarui
+  - `status_toggle`: Saat akun staf diaktifkan/dinonaktifkan
+  - `password_reset`: Saat superadmin mereset password
+  - `user_delete`: Saat akun staf dihapus
+  - `profile_update`: Saat staf mengupdate profil mandiri
+  - `telegram_config`: Saat konfigurasi bot Telegram diperbarui
+  - `telegram_test`: Riwayat uji coba koneksi bot Telegram
+- Helper statis [`ActivityLog::record(...)`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Models/ActivityLog.php) otomatis mencatat `user_id`, IP Address, User Agent, dan metadata JSON.
+
+### 5.3 Antarmuka Settings & Activity Logs ([`ActivityLogs.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Settings/ActivityLogs.tsx))
+- **Khusus Superadmin:** Dilindungi Spatie RBAC `role:superadmin` di route [`web.php`](file:///d:/90_ARCHIVE/nama-projek-lo/routes/web.php) (sales & finance otomatis di-block HTTP 403 Forbidden).
+- **Tab 1 - Activity Logs (Audit Trail):**
+  - KPI Cards: Total Log, Log Hari Ini, Staf Aktif Hari Ini, Status Bot Telegram.
+  - Toolbar Pencarian & Dropdown Kategori Aksi.
+  - Tabel interaktif lengkap dengan avatar aktor, badge aksi berwarna, deskripsi, IP address, waktu relatif, dan modal dialog shadcn untuk inspeksi metadata JSON.
+- **Tab 2 - Integrasi Telegram:**
+  - Status banner koneksi: *Terkoneksi* vs *Belum Dikonfigurasi*.
+  - Input Bot Token (dengan tombol toggle Show/Hide) & Chat ID tujuan.
+  - Tombol **"Test Connection"**: Mengirimkan pesan verifikasi langsung via [`TelegramService.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Services/TelegramService.php) ke Telegram dan memberikan umpan balik toast instan.
+  - Tombol **"Simpan Pengaturan"**: Menyimpan konfigurasi ke database.
+  - Panduan interaktif cara membuat bot via `@BotFather` dan mencari Chat ID via `@userinfobot`.
+
+### 5.4 Hasil Pengujian & Build
+- **Frontend Build (`bun run build`):** Berhasil 100% tanpa error TypeScript (`ActivityLogs-BJeMEH_F.js` ter-bundle dalam 1.97s).
+- **PHP Feature Tests (`php artisan test`):** **54 passed, 193 assertions** (termasuk 6 test cases di `ActivityLogTest.php` mencakup RBAC protection, DB saving, `Http::fake` success & failure handling, serta audit trail logging).
+
+
+

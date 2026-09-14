@@ -21,9 +21,11 @@ import {
     Image as ImageIcon, 
     Sparkles, 
     Lock,
-    Save
+    Save,
+    Trash2
 } from 'lucide-react';
 import AvatarCropperModal from '@/Components/AvatarCropperModal';
+import { toast } from '@/Components/ui/sonner';
 
 const roleBadges: Record<string, { label: string; color: string; dotColor: string }> = {
     superadmin: {
@@ -105,6 +107,20 @@ export default function UpdateProfileInformation({
         const file = e.target.files?.[0];
         if (!file) return;
 
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!allowedMimeTypes.includes(file.type)) {
+            toast.error('Format berkas tidak didukung. Harap pilih foto berformat JPG atau PNG.');
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+
+        const maxSizeBytes = 2 * 1024 * 1024; // 2MB
+        if (file.size > maxSizeBytes) {
+            toast.error('Ukuran berkas melebihi 2MB. Silakan pilih foto dengan ukuran maksimal 2MB.');
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+
         setOriginalFileSize(file.size);
         const reader = new FileReader();
         reader.onload = () => {
@@ -124,6 +140,7 @@ export default function UpdateProfileInformation({
         setAvatarPreview(previewUrl);
         setCompressedFileSize(compressedSize);
         setIsCropperOpen(false);
+        toast.success('Foto profil berhasil di-crop dan siap disimpan!');
     };
 
     const handleRemoveAvatar = () => {
@@ -134,6 +151,7 @@ export default function UpdateProfileInformation({
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
+        toast.info('Foto profil dihapus. Profil akan menggunakan avatar inisial nama.');
     };
 
     const formatFileSize = (bytes: number) => {
@@ -148,6 +166,12 @@ export default function UpdateProfileInformation({
         post(route('profile.update'), {
             preserveScroll: true,
             forceFormData: true,
+            onSuccess: () => {
+                toast.success('Informasi profil berhasil diperbarui!');
+            },
+            onError: () => {
+                toast.error('Gagal memperbarui profil. Periksa data pada formulir.');
+            },
         });
     };
 
@@ -276,14 +300,14 @@ export default function UpdateProfileInformation({
                                         type="button"
                                         onClick={handleRemoveAvatar}
                                         className="absolute -top-1 -right-1 size-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-xs hover:scale-110 transition-transform cursor-pointer"
-                                        title="Hapus foto"
+                                        title="Hapus foto (Kembali ke inisial)"
                                     >
                                         <X className="size-3" />
                                     </button>
                                 </div>
                             ) : (
-                                <div className="size-16 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground shrink-0">
-                                    <ImageIcon className="size-6 opacity-40" />
+                                <div className="size-16 rounded-full bg-linear-to-br from-primary/20 to-primary/5 text-primary font-bold text-xl flex items-center justify-center border-2 border-dashed border-primary/30 shrink-0 shadow-2xs">
+                                    {user.name ? user.name.charAt(0).toUpperCase() : <User className="size-6 opacity-40 text-muted-foreground" />}
                                 </div>
                             )}
 
@@ -291,7 +315,7 @@ export default function UpdateProfileInformation({
                                 <input 
                                     type="file" 
                                     ref={fileInputRef}
-                                    accept="image/jpeg,image/png,image/jpg,image/webp"
+                                    accept="image/jpeg,image/png,image/jpg"
                                     onChange={handleFileSelect}
                                     className="hidden" 
                                     id="self-avatar-upload"
@@ -305,6 +329,19 @@ export default function UpdateProfileInformation({
                                         <span>{avatarPreview ? 'Ganti & Crop Foto' : 'Unggah & Crop Foto'}</span>
                                     </label>
 
+                                    {avatarPreview && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleRemoveAvatar}
+                                            className="h-7 text-xs text-destructive hover:bg-destructive/10 gap-1 px-2.5"
+                                        >
+                                            <Trash2 className="size-3" />
+                                            <span>Hapus Foto (Gunakan Inisial)</span>
+                                        </Button>
+                                    )}
+
                                     {compressedFileSize && (
                                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                                             <Sparkles className="size-3" />
@@ -313,7 +350,7 @@ export default function UpdateProfileInformation({
                                     )}
                                 </div>
                                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                    Format: JPG, PNG, atau WebP. Gambar otomatis dipotong persegi lingkaran dan dikompresi menjadi ukuran optimal (&lt; 200KB).
+                                    Format: JPG atau PNG (Maksimal 2MB). Gambar otomatis dipotong lingkaran dan dikompresi optimal.
                                 </p>
                             </div>
                         </div>

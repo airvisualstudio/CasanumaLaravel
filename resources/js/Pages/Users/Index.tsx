@@ -598,20 +598,6 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                     </Button>
                 </div>
 
-                {/* Flash Messages */}
-                {flash?.success && (
-                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2.5 animate-in fade-in-50">
-                        <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                        <span className="font-medium">{flash.success}</span>
-                    </div>
-                )}
-                {(flash?.error || pageErrors.error) && (
-                    <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive flex items-center gap-2.5 animate-in fade-in-50">
-                        <AlertTriangle className="size-4 shrink-0" />
-                        <span className="font-medium">{flash?.error || pageErrors.error}</span>
-                    </div>
-                )}
-
                 {/* 2. Top Summary KPI Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <Card className="border-border/80 shadow-2xs">
@@ -669,85 +655,125 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                     </Card>
                 </div>
 
-                {/* 3. Filter & Search Controls */}
+                {/* 3. Filter & Search Controls Above Table */}
                 <Card className="border-border/80 shadow-xs">
-                    <CardContent className="p-4 space-y-4">
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                            {/* Role Filter Buttons */}
-                            <div className="flex flex-wrap items-center gap-1.5">
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedRoleFilter('all')}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                                        selectedRoleFilter === 'all'
-                                            ? 'bg-primary text-primary-foreground font-semibold shadow-2xs'
-                                            : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
-                                    }`}
-                                >
-                                    Semua ({roleCounts.all})
-                                </button>
-                                {availableRoles.map((role) => {
-                                    const info = roleBadges[role] || { label: role, dotColor: 'bg-primary' };
-                                    const count = roleCounts[role] || 0;
-                                    const isActive = selectedRoleFilter === role;
-
-                                    return (
-                                        <button
-                                            key={role}
-                                            type="button"
-                                            onClick={() => setSelectedRoleFilter(role)}
-                                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                                                isActive
-                                                    ? 'bg-primary text-primary-foreground font-semibold shadow-2xs'
-                                                    : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
-                                            }`}
-                                        >
-                                            <span className={`size-2 rounded-full ${isActive ? 'bg-primary-foreground' : info.dotColor}`} />
-                                            <span>{info.label}</span>
-                                            <span className={`text-[10px] ${isActive ? 'opacity-80' : 'text-muted-foreground'}`}>
-                                                ({count})
-                                            </span>
-                                        </button>
-                                    );
-                                })}
+                    <CardContent className="p-4 space-y-3">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            {/* Search Input for Name / Email */}
+                            <div className="relative flex-1">
+                                <Search className="size-4 text-muted-foreground absolute left-3 top-2.5 pointer-events-none" />
+                                <Input
+                                    type="text"
+                                    placeholder="Cari nama, email, NIK, jabatan, atau no WhatsApp..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-9 h-9 text-xs"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchQuery('')}
+                                        className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground cursor-pointer"
+                                    >
+                                        <X className="size-3.5" />
+                                    </button>
+                                )}
                             </div>
 
-                            {/* Search & Status Filter */}
-                            <div className="flex items-center gap-2 w-full lg:w-auto">
-                                <div className="relative flex-1 lg:w-72">
-                                    <Search className="size-4 text-muted-foreground absolute left-3 top-2.5 pointer-events-none" />
-                                    <Input
-                                        type="text"
-                                        placeholder="Cari nama, email, NIK, jabatan, no WA..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-9 h-9 text-xs"
-                                    />
-                                    {searchQuery && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setSearchQuery('')}
-                                            className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
-                                        >
-                                            <X className="size-3.5" />
-                                        </button>
-                                    )}
-                                </div>
+                            {/* Filter Dropdowns (Role & Status) */}
+                            <div className="flex flex-wrap items-center gap-2">
+                                {/* Role Select Filter */}
+                                <Select
+                                    value={selectedRoleFilter}
+                                    onValueChange={(val: any) => setSelectedRoleFilter(val)}
+                                >
+                                    <SelectTrigger className="w-[175px] h-9 text-xs bg-background">
+                                        <SelectValue placeholder="Semua Role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Semua Role ({roleCounts.all})</SelectItem>
+                                        {availableRoles.map((role) => (
+                                            <SelectItem key={role} value={role}>
+                                                {roleBadges[role]?.label || role} ({roleCounts[role] || 0})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
 
+                                {/* Status Select Filter */}
                                 <Select
                                     value={selectedStatusFilter}
                                     onValueChange={(val: any) => setSelectedStatusFilter(val)}
                                 >
                                     <SelectTrigger className="w-[145px] h-9 text-xs bg-background">
-                                        <SelectValue placeholder="Status Staf" />
+                                        <SelectValue placeholder="Status Akun" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">Semua Status</SelectItem>
-                                        <SelectItem value="active">Hanya Aktif</SelectItem>
-                                        <SelectItem value="inactive">Hanya Nonaktif</SelectItem>
+                                        <SelectItem value="active">Hanya Aktif ({activeUsersCount})</SelectItem>
+                                        <SelectItem value="inactive">Hanya Nonaktif ({users.length - activeUsersCount})</SelectItem>
                                     </SelectContent>
                                 </Select>
+
+                                {/* Reset button if filter active */}
+                                {(searchQuery !== '' || selectedRoleFilter !== 'all' || selectedStatusFilter !== 'all') && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setSelectedRoleFilter('all');
+                                            setSelectedStatusFilter('all');
+                                        }}
+                                        className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1"
+                                        title="Reset semua filter"
+                                    >
+                                        <RotateCcw className="size-3.5" />
+                                        <span>Reset</span>
+                                    </Button>
+                                )}
                             </div>
+                        </div>
+
+                        {/* Quick Role Filter Pills */}
+                        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/40">
+                            <span className="text-[11px] text-muted-foreground font-medium mr-1 hidden sm:inline">Pintasan Role:</span>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedRoleFilter('all')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                                    selectedRoleFilter === 'all'
+                                        ? 'bg-primary text-primary-foreground font-semibold shadow-2xs'
+                                        : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                                }`}
+                            >
+                                Semua ({roleCounts.all})
+                            </button>
+                            {availableRoles.map((role) => {
+                                const info = roleBadges[role] || { label: role, dotColor: 'bg-primary' };
+                                const count = roleCounts[role] || 0;
+                                const isActive = selectedRoleFilter === role;
+
+                                return (
+                                    <button
+                                        key={role}
+                                        type="button"
+                                        onClick={() => setSelectedRoleFilter(role)}
+                                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                                            isActive
+                                                ? 'bg-primary text-primary-foreground font-semibold shadow-2xs'
+                                                : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                                        }`}
+                                    >
+                                        <span className={`size-2 rounded-full ${isActive ? 'bg-primary-foreground' : info.dotColor}`} />
+                                        <span>{info.label}</span>
+                                        <span className={`text-[10px] ${isActive ? 'opacity-80' : 'text-muted-foreground'}`}>
+                                            ({count})
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </CardContent>
                 </Card>
@@ -760,7 +786,7 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                 Direktori Staf & Pengguna CRM
                             </CardTitle>
                             <CardDescription className="text-xs text-muted-foreground">
-                                Menampilkan {filteredUsers.length} dari total {users.length} staf terdaftar
+                                Menampilkan {filteredUsers.length} dari total {users.length} pengguna terdaftar
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
