@@ -1,200 +1,314 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { 
-    Activity, 
-    ArrowUpRight, 
-    CheckCircle2, 
-    Clock, 
-    Layers, 
-    ShieldCheck, 
-    Sparkles, 
+    Building2, 
     Users, 
-    Zap 
+    CreditCard, 
+    CheckCircle2, 
+    Shield, 
+    ArrowRight,
+    Home,
+    Building,
+    UserCog,
+    KeyRound,
+    Wallet,
+    FileSpreadsheet,
+    UserPlus,
+    CalendarCheck,
+    Sparkles,
+    ShieldCheck,
+    Settings
 } from 'lucide-react';
+import { useAuthorization } from '@/hooks/useAuthorization';
 
 export default function Dashboard() {
+    const { user, can, isSuperAdmin, isSalesManager, isSalesAgent, isFinance } = useAuthorization();
+
+    const roleInfo = {
+        superadmin: {
+            title: 'Super Administrator',
+            desc: 'Akses penuh ke seluruh konfigurasi sistem, database perumahan, pengelolaan role pengguna, dan analitik bisnis global.',
+            themeColor: 'border-purple-500/30 bg-purple-500/5 text-purple-600 dark:text-purple-400',
+            badgeBg: 'bg-purple-600 text-white',
+        },
+        sales_manager: {
+            title: 'Sales Manager',
+            desc: 'Supervisi pipeline penjualan, monitoring kinerja sales agent, distribusi alokasi leads baru, dan persetujuan pengajuan booking kavling.',
+            themeColor: 'border-blue-500/30 bg-blue-500/5 text-blue-600 dark:text-blue-400',
+            badgeBg: 'bg-blue-600 text-white',
+        },
+        sales_agent: {
+            title: 'Sales Agent',
+            desc: 'Pengelolaan prospek leads pribadi, update progres follow-up konsumen, cek ketersediaan kavling unit, dan pembuatan tanda jadi (booking fee).',
+            themeColor: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400',
+            badgeBg: 'bg-emerald-600 text-white',
+        },
+        finance: {
+            title: 'Finance & KPR Staff',
+            desc: 'Validasi bukti pembayaran booking & DP, penerbitan tanda terima SPR, pemantauan berkas KPR bank, dan rekonsiliasi arus kas perumahan.',
+            themeColor: 'border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-400',
+            badgeBg: 'bg-amber-600 text-white',
+        },
+    };
+
+    const primaryRole = user?.roles?.[0] || 'sales_agent';
+    const activeRole = roleInfo[primaryRole as keyof typeof roleInfo] || roleInfo.sales_agent;
+
+    const handleActionClick = (actionName: string) => {
+        alert(`Aksi "${actionName}" siap dihubungkan ke backend form & database!`);
+    };
+
+    // Full catalog of module cards corresponding to system capabilities
+    const moduleCards = [
+        {
+            title: 'Unit & Kavling',
+            desc: 'Pantau stok kavling, tipe rumah (LB/LT), dan ketersediaan unit per cluster.',
+            icon: Home,
+            iconColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+            actionText: 'Buka Modul Unit',
+            visible: can('view-units'),
+            action: 'Katalog Unit & Kavling',
+        },
+        {
+            title: 'Cluster & Site Plan',
+            desc: 'Visual denah master cluster, status kavling, dan pembagian blok perumahan.',
+            icon: Building,
+            iconColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
+            actionText: 'Buka Site Plan',
+            visible: can('create-units') || can('edit-units'),
+            action: 'Cluster & Site Plan',
+        },
+        {
+            title: 'Pipeline Leads CRM',
+            desc: 'Catat data prospek baru, update status follow-up konsumen, dan jadwalkan survei.',
+            icon: Users,
+            iconColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+            actionText: 'Buka Pipeline Leads',
+            visible: can('view-leads'),
+            action: 'Pipeline Leads',
+        },
+        {
+            title: 'Distribusi Leads Tim',
+            desc: 'Alokasikan kontak calon pembeli yang masuk dari iklan digital ke sales agent aktif.',
+            icon: UserPlus,
+            iconColor: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400',
+            actionText: 'Buka Distribusi',
+            visible: can('assign-leads'),
+            action: 'Distribusi Leads',
+        },
+        {
+            title: 'Booking Fee & SPR',
+            desc: 'Reservasi kavling, input bukti bayar tanda jadi, dan pembuatan form SPR konsumen.',
+            icon: CreditCard,
+            iconColor: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+            actionText: 'Buka Modul Booking',
+            visible: can('view-bookings'),
+            action: 'Booking & SPR',
+        },
+        {
+            title: 'Verifikasi Pembayaran',
+            desc: 'Validasi bukti transfer booking & uang muka kavling sebelum status unit diubah ke akad.',
+            icon: Wallet,
+            iconColor: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+            actionText: 'Buka Verifikasi Kas',
+            visible: can('verify-payments'),
+            action: 'Verifikasi Pembayaran',
+        },
+        {
+            title: 'Pemberkasan KPR Bank',
+            desc: 'Monitor kelengkapan dokumen KPR konsumen, status BI Checking (SLIK), dan SP3K bank rekanan.',
+            icon: FileSpreadsheet,
+            iconColor: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+            actionText: 'Buka Berkas KPR',
+            visible: can('view-finance'),
+            action: 'Pemberkasan KPR Bank',
+        },
+        {
+            title: 'Laporan Arus Kas',
+            desc: 'Rekapitulasi total omzet booking, penerimaan kas uang muka, dan proyeksi pencairan KPR.',
+            icon: CheckCircle2,
+            iconColor: 'bg-teal-500/10 text-teal-600 dark:text-teal-400',
+            actionText: 'Buka Laporan Kas',
+            visible: can('view-financial-summary'),
+            action: 'Laporan Arus Kas',
+        },
+        {
+            title: 'Kelola Pengguna & Role',
+            desc: 'Tambah akun karyawan baru, atur pembagian hak akses Spatie, dan monitor log sistem.',
+            icon: UserCog,
+            iconColor: 'bg-red-500/10 text-red-600 dark:text-red-400',
+            actionText: 'Buka Manajemen User',
+            visible: can('manage-users'),
+            action: 'Manajemen Pengguna',
+        },
+        {
+            title: 'Pengaturan Sistem',
+            desc: 'Konfigurasi parameter CRM, integrasi database, dan preferensi aplikasi perumahan.',
+            icon: Settings,
+            iconColor: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
+            actionText: 'Buka Pengaturan',
+            visible: can('manage-settings'),
+            action: 'Pengaturan Sistem',
+        },
+    ];
+
+    const visibleModules = moduleCards.filter((c) => c.visible);
+
+    // Adaptive grid column sizing so cards fluidly fill the screen without leaving empty gaps
+    const gridColsClass = 
+        visibleModules.length === 1 
+            ? 'grid-cols-1' 
+            : visibleModules.length === 2 
+            ? 'grid-cols-1 md:grid-cols-2' 
+            : visibleModules.length === 3 
+            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4';
+
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                            Dashboard Overview
-                        </h2>
+                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-heading">
+                            Workspace CRM Terpadu
+                        </h1>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                            Pantau performa aplikasi dan status integrasi ekosistem Anda.
+                            Sistem Manajemen Unit Perumahan, Pipeline Leads, dan Transaksi Booking.
                         </p>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Link href="/dashboard-test">
-                            <Button size="sm" variant="outline" className="gap-1.5">
-                                <Sparkles className="size-4 text-primary" />
-                                Buka Playground UI
-                            </Button>
-                        </Link>
+                        <span className={`px-2.5 py-1 text-xs font-bold uppercase rounded-lg border ${activeRole.themeColor}`}>
+                            {activeRole.title}
+                        </span>
                     </div>
                 </div>
             }
         >
-            <Head title="Dashboard" />
+            <Head title="Dashboard - CASANUMA CRM" />
 
-            <div className="space-y-6">
-                {/* Welcome Alert Card */}
-                <div className="rounded-xl border border-border bg-card p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-start gap-3.5">
-                        <div className="size-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="size-5" />
+            <div className="space-y-6 transition-all duration-300">
+                {/* 1. Welcome & Role Authority Banner (Fluid Width) */}
+                <Card className="border-border/80 shadow-md backdrop-blur-xs overflow-hidden relative transition-all duration-300 py-0 gap-0">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
+                    
+                    <CardHeader className="p-6 pb-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                                <Sparkles className="size-4" />
+                                <span>Selamat Datang Kembali</span>
+                            </div>
+                            <span className="text-[11px] text-muted-foreground font-medium">
+                                Akun Terdaftar: <span className="text-foreground font-semibold">{user?.email}</span>
+                            </span>
                         </div>
-                        <div className="space-y-1">
-                            <h3 className="text-base font-semibold">Anda Berhasil Masuk!</h3>
-                            <p className="text-xs text-muted-foreground max-w-xl">
-                                Halaman dashboard ini sudah dimigrasikan penuh menggunakan styling token 
-                                Shadcn UI + Tailwind v4. Semua komponen responsif dan mendukung dark mode otomatis.
-                            </p>
+                        <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight mt-1">
+                            Halo, {user?.name}! 👋
+                        </CardTitle>
+                        <CardDescription className="text-xs sm:text-sm text-foreground/80 max-w-3xl mt-1">
+                            {activeRole.desc}
+                        </CardDescription>
+                    </CardHeader>
+
+                    <div className="border-t border-border/50 px-6 py-3.5 flex flex-wrap items-center gap-5 text-xs text-muted-foreground bg-muted/10">
+                        <div className="flex items-center gap-2">
+                            <ShieldCheck className="size-4 text-primary" />
+                            <span>Role Terdaftar: <strong className="text-foreground font-medium">{user?.roles?.join(', ') || '-'}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <CheckCircle2 className="size-4 text-emerald-500" />
+                            <span>Hak Akses: <strong className="text-foreground font-medium">{user?.permissions?.length || 0} Permissions Aktif</strong></span>
                         </div>
                     </div>
+                </Card>
 
-                    <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-                            <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-                            Sistem Online
+                {/* 2. Modul Akses Cepat Sesuai Role (Fluid Responsive Grid) */}
+                <div className="transition-all duration-300">
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                            Modul Kerja Anda ({visibleModules.length} Modul Aktif)
+                        </h2>
+                        <span className="text-xs text-muted-foreground">
+                            Tampilan dinamis adaptif
                         </span>
                     </div>
+
+                    <div className={`grid ${gridColsClass} gap-4.5 transition-all duration-300`}>
+                        {visibleModules.map((module, idx) => {
+                            const Icon = module.icon;
+
+                            return (
+                                <Card 
+                                    key={idx} 
+                                    className="hover:border-primary/50 transition-all duration-200 shadow-xs hover:shadow-md group cursor-pointer flex flex-col justify-between"
+                                    onClick={() => handleActionClick(module.action)}
+                                >
+                                    <CardHeader className="p-5 pb-3">
+                                        <div className={`size-11 rounded-xl ${module.iconColor} flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shrink-0`}>
+                                            <Icon className="size-5" />
+                                        </div>
+                                        <CardTitle className="text-base font-semibold leading-tight">
+                                            {module.title}
+                                        </CardTitle>
+                                        <CardDescription className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                            {module.desc}
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="p-5 pt-0 mt-auto">
+                                        <div className="flex items-center text-xs font-semibold text-primary group-hover:translate-x-1 transition-transform">
+                                            <span>{module.actionText}</span>
+                                            <ArrowRight className="size-3.5 ml-1.5" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
+                    </div>
                 </div>
 
-                {/* Metric Statistics Cards */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-xs font-medium text-muted-foreground">
-                                Total Pengguna
-                            </CardTitle>
-                            <Users className="size-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold tracking-tight">1,248</div>
-                            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 mt-1 font-medium">
-                                <ArrowUpRight className="size-3" /> +12.5% dari bulan lalu
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-xs font-medium text-muted-foreground">
-                                Kecepatan HMR
-                            </CardTitle>
-                            <Zap className="size-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold tracking-tight">~380ms</div>
-                            <p className="text-[11px] text-muted-foreground mt-1">
-                                Didukung Vite 8 + Tailwind v4
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-xs font-medium text-muted-foreground">
-                                Keamanan Auth
-                            </CardTitle>
-                            <ShieldCheck className="size-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold tracking-tight">Sanctum</div>
-                            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 font-medium">
-                                Session & CSRF Terverifikasi
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-xs font-medium text-muted-foreground">
-                                Backend Response
-                            </CardTitle>
-                            <Activity className="size-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold tracking-tight">0.14ms</div>
-                            <p className="text-[11px] text-muted-foreground mt-1">
-                                Laravel 13 + PHP 8.5
-                            </p>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Additional Detail Grid */}
-                <div className="grid gap-6 md:grid-cols-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <Layers className="size-4 text-primary" />
-                                Stack Teknologi Proyek
-                            </CardTitle>
-                            <CardDescription>
-                                Ringkasan fondasi sistem yang aktif pada repositori ini.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/60 bg-muted/20 text-xs">
-                                <span className="font-medium">Laravel Framework</span>
-                                <span className="text-muted-foreground font-mono">v13.31.0</span>
+                {/* 3. Daftar Hak Akses Aktif (Permissions Badges) */}
+                <Card className="border-border/70 shadow-xs transition-all duration-300">
+                    <CardHeader className="p-4 pb-2">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <KeyRound className="size-4 text-primary" />
+                                <CardTitle className="text-sm font-semibold">
+                                    Daftar Permission Aktif untuk Akun Ini
+                                </CardTitle>
                             </div>
-                            <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/60 bg-muted/20 text-xs">
-                                <span className="font-medium">Inertia.js + React</span>
-                                <span className="text-muted-foreground font-mono">v2.0 (React 18)</span>
-                            </div>
-                            <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/60 bg-muted/20 text-xs">
-                                <span className="font-medium">Tailwind CSS</span>
-                                <span className="text-muted-foreground font-mono">v4.3.3 (Vite Plugin)</span>
-                            </div>
-                            <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/60 bg-muted/20 text-xs">
-                                <span className="font-medium">Shadcn UI Preset</span>
-                                <span className="text-muted-foreground font-mono">Radix Luma (OKLCH)</span>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <Clock className="size-4 text-primary" />
-                                Log Aktivitas Terakhir
-                            </CardTitle>
-                            <CardDescription>
-                                Riwayat perubahan arsitektur dan perbaikan sistem.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div className="flex items-start gap-3 text-xs">
-                                <span className="size-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                                <div>
-                                    <p className="font-medium">Rebuild Auth & Dashboard</p>
-                                    <p className="text-muted-foreground text-[11px]">Memasang Card, Input, Label, dan Checkbox Shadcn.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3 text-xs">
-                                <span className="size-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                                <div>
-                                    <p className="font-medium">Perbaikan Ziggy @routes</p>
-                                    <p className="text-muted-foreground text-[11px]">Menambahkan directive @routes di app.blade.php.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3 text-xs">
-                                <span className="size-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                                <div>
-                                    <p className="font-medium">Migrasi Penuh Tailwind v4</p>
-                                    <p className="text-muted-foreground text-[11px]">Memakai @tailwindcss/vite dan OKLCH palette tokens.</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                            <span className="text-[11px] text-muted-foreground">
+                                Dikelola via <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">spatie/laravel-permission</code>
+                            </span>
+                        </div>
+                        <CardDescription className="text-xs">
+                            Sidebar dan kartu modul secara otomatis menyesuaikan tampilan berdasarkan permissions berikut:
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-2">
+                        <div className="flex flex-wrap gap-1.5">
+                            {user?.permissions && user.permissions.length > 0 ? (
+                                user.permissions.map((perm) => (
+                                    <span
+                                        key={perm}
+                                        className="px-2 py-0.5 text-[11px] font-mono rounded-md bg-muted text-foreground border border-border/80"
+                                    >
+                                        ✓ {perm}
+                                    </span>
+                                ))
+                            ) : isSuperAdmin ? (
+                                <span className="px-2.5 py-1 text-xs font-semibold rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                                    ★ Super Administrator (Bypass all permissions - Akses Penuh)
+                                </span>
+                            ) : (
+                                <span className="text-xs text-muted-foreground italic">
+                                    Belum ada permission khusus yang terdaftar.
+                                </span>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         </AuthenticatedLayout>
     );

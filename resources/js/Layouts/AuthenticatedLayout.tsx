@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useState } from 'react';
+import { PropsWithChildren, ReactNode, useEffect, useState } from 'react';
 import { Button } from '@/Components/ui/button';
 import {
     DropdownMenu,
@@ -11,7 +11,7 @@ import {
     DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
 import { 
-    Sparkles, 
+    Building2,
     Sun, 
     Moon, 
     User as UserIcon, 
@@ -20,24 +20,90 @@ import {
     Menu, 
     X,
     ChevronDown,
-    FlaskConical
+    Home,
+    Users,
+    CreditCard,
+    Shield,
+    Wallet,
+    CheckCircle2,
+    Settings,
+    UserCog,
+    KeyRound,
+    Building,
+    FileSpreadsheet,
+    UserPlus,
+    CalendarCheck,
+    Layers,
+    ChevronRight,
+    Sparkles,
+    Database,
+    LucideIcon,
+    PanelLeftClose,
+    PanelLeftOpen
 } from 'lucide-react';
+import { useAuthorization } from '@/hooks/useAuthorization';
+
+interface AuthenticatedLayoutProps {
+    header?: ReactNode;
+}
+
+interface NavItem {
+    label: string;
+    icon: LucideIcon;
+    href?: string;
+    active?: boolean;
+    action?: () => void;
+    visible: boolean;
+}
+
+interface NavGroup {
+    groupName: string;
+    visible: boolean;
+    items: NavItem[];
+}
 
 export default function Authenticated({
     header,
     children,
-}: PropsWithChildren<{ header?: ReactNode }>) {
-    const user = usePage().props.auth.user;
+}: PropsWithChildren<AuthenticatedLayoutProps>) {
+    const { user, can, isSuperAdmin } = useAuthorization();
     const [isDark, setIsDark] = useState(false);
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [collapsed, setCollapsed] = useState(false);
 
-    const toggleTheme = () => {
-        setIsDark(!isDark);
-        if (!isDark) {
+    useEffect(() => {
+        const savedTheme = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+            setIsDark(true);
             document.documentElement.classList.add('dark');
         } else {
+            setIsDark(false);
             document.documentElement.classList.remove('dark');
         }
+
+        const savedCollapsed = localStorage.getItem('casanuma_sidebar_collapsed');
+        if (savedCollapsed === 'true') {
+            setCollapsed(true);
+        }
+    }, []);
+
+    const toggleTheme = () => {
+        const nextState = !isDark;
+        setIsDark(nextState);
+        if (nextState) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+    };
+
+    const toggleCollapsed = () => {
+        const nextState = !collapsed;
+        setCollapsed(nextState);
+        localStorage.setItem('casanuma_sidebar_collapsed', String(nextState));
     };
 
     const isCurrent = (name: string) => {
@@ -48,166 +114,484 @@ export default function Authenticated({
         }
     };
 
+    const roleConfig: Record<string, { label: string; color: string; badge: string }> = {
+        superadmin: {
+            label: 'Super Admin',
+            color: 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/30',
+            badge: 'bg-purple-600 text-white'
+        },
+        sales_manager: {
+            label: 'Sales Manager',
+            color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/30',
+            badge: 'bg-blue-600 text-white'
+        },
+        sales_agent: {
+            label: 'Sales Agent',
+            color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+            badge: 'bg-emerald-600 text-white'
+        },
+        finance: {
+            label: 'Finance Staff',
+            color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30',
+            badge: 'bg-amber-600 text-white'
+        },
+    };
+
+    const primaryRole = user?.roles?.[0] || 'sales_agent';
+    const currentRoleInfo = roleConfig[primaryRole] || {
+        label: primaryRole,
+        color: 'text-primary bg-primary/10 border-primary/25',
+        badge: 'bg-primary text-primary-foreground'
+    };
+
+    const handleMenuClick = (menuName: string) => {
+        alert(`Modul "${menuName}" siap dikembangkan selanjutnya sesuai flow role.`);
+    };
+
+    // Navigation groups definition
+    const navGroups: NavGroup[] = [
+        {
+            groupName: 'Utama',
+            visible: true,
+            items: [
+                {
+                    label: 'Dashboard',
+                    icon: LayoutDashboard,
+                    href: route('dashboard'),
+                    active: isCurrent('dashboard'),
+                    visible: true,
+                },
+            ],
+        },
+        {
+            groupName: 'Kavling & Properti',
+            visible: can('view-units'),
+            items: [
+                {
+                    label: 'Unit & Kavling',
+                    icon: Home,
+                    action: () => handleMenuClick('Unit & Kavling'),
+                    visible: can('view-units'),
+                },
+                {
+                    label: 'Cluster & Site Plan',
+                    icon: Building,
+                    action: () => handleMenuClick('Cluster & Site Plan'),
+                    visible: can('create-units') || can('edit-units'),
+                },
+            ],
+        },
+        {
+            groupName: 'Penjualan & Leads',
+            visible: can('view-leads') || can('view-bookings'),
+            items: [
+                {
+                    label: 'Pipeline Leads CRM',
+                    icon: Users,
+                    action: () => handleMenuClick('Pipeline Leads CRM'),
+                    visible: can('view-leads'),
+                },
+                {
+                    label: 'Follow Up & Aktivitas',
+                    icon: CalendarCheck,
+                    action: () => handleMenuClick('Follow Up & Aktivitas'),
+                    visible: can('view-leads'),
+                },
+                {
+                    label: 'Distribusi Leads',
+                    icon: UserPlus,
+                    action: () => handleMenuClick('Distribusi Leads'),
+                    visible: can('assign-leads'),
+                },
+                {
+                    label: 'Booking Fee & SPR',
+                    icon: CreditCard,
+                    action: () => handleMenuClick('Booking Fee & SPR'),
+                    visible: can('view-bookings'),
+                },
+            ],
+        },
+        {
+            groupName: 'Keuangan & Kas',
+            visible: can('view-finance'),
+            items: [
+                {
+                    label: 'Verifikasi Pembayaran',
+                    icon: CheckCircle2,
+                    action: () => handleMenuClick('Verifikasi Pembayaran'),
+                    visible: can('verify-payments'),
+                },
+                {
+                    label: 'Pemberkasan KPR Bank',
+                    icon: FileSpreadsheet,
+                    action: () => handleMenuClick('Pemberkasan KPR Bank'),
+                    visible: can('view-finance'),
+                },
+                {
+                    label: 'Laporan Arus Kas',
+                    icon: Wallet,
+                    action: () => handleMenuClick('Laporan Arus Kas'),
+                    visible: can('view-financial-summary'),
+                },
+            ],
+        },
+        {
+            groupName: 'Administrasi & Sistem',
+            visible: isSuperAdmin || can('manage-users'),
+            items: [
+                {
+                    label: 'Manajemen Pengguna',
+                    icon: UserCog,
+                    action: () => handleMenuClick('Manajemen Pengguna'),
+                    visible: can('manage-users'),
+                },
+                {
+                    label: 'Hak Akses Role (Spatie)',
+                    icon: KeyRound,
+                    action: () => handleMenuClick('Hak Akses Role'),
+                    visible: can('manage-roles'),
+                },
+                {
+                    label: 'Pengaturan Sistem',
+                    icon: Settings,
+                    action: () => handleMenuClick('Pengaturan Sistem'),
+                    visible: can('manage-settings'),
+                },
+            ],
+        },
+    ];
+
+    // Filter out groups that have no visible items
+    const visibleNavGroups = navGroups.filter(
+        (group) => group.visible && group.items.some((item) => item.visible)
+    );
+
     return (
-        <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
-            {/* Top Navbar */}
-            <nav className="border-b border-border/60 bg-card/70 backdrop-blur-md sticky top-0 z-40">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 justify-between items-center">
-                        {/* Logo & Desktop Nav */}
-                        <div className="flex items-center gap-8">
-                            <Link href="/" className="flex items-center gap-2 group">
-                                <div className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold border border-primary/20 group-hover:scale-105 transition-transform">
-                                    <Sparkles className="size-4.5" />
+        <div className="min-h-screen bg-background text-foreground flex flex-col lg:flex-row transition-colors duration-200">
+            {/* Mobile Sidebar Backdrop */}
+            {sidebarOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-background/80 backdrop-blur-xs lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
+            {/* SIDEBAR (Desktop Sticky Full-Height & Collapsible to Icon-Only) */}
+            <aside
+                className={`fixed inset-y-0 left-0 z-50 h-screen max-h-screen border-r border-border/70 bg-card flex flex-col transition-all duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:max-h-screen lg:shrink-0 lg:translate-x-0 ${
+                    collapsed ? 'lg:w-[72px]' : 'lg:w-64'
+                } ${
+                    sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0'
+                }`}
+            >
+                {/* Brand Header - Pinned at top */}
+                <div className={`h-16 border-b border-border/60 flex items-center shrink-0 transition-all duration-300 ${
+                    collapsed ? 'justify-center px-2' : 'justify-between px-5'
+                }`}>
+                    {!collapsed ? (
+                        <>
+                            <Link href={route('dashboard')} className="flex items-center gap-2.5 group overflow-hidden">
+                                <div className="size-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold shadow-md shadow-primary/20 border border-primary/30 group-hover:scale-105 transition-transform shrink-0">
+                                    <Building2 className="size-5" />
                                 </div>
-                                <span className="font-bold text-sm tracking-tight hidden sm:inline-block">
-                                    NamaProjek
-                                </span>
+                                <div className="flex flex-col truncate">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="font-extrabold text-sm tracking-tight font-heading">
+                                            CASANUMA
+                                        </span>
+                                        <span className="px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-wider rounded bg-primary/15 text-primary border border-primary/25">
+                                            CRM
+                                        </span>
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground leading-tight truncate">
+                                        Database Perumahan
+                                    </span>
+                                </div>
                             </Link>
 
-                            <div className="hidden sm:flex sm:items-center sm:gap-1">
-                                <Link href={route('dashboard')}>
-                                    <Button
-                                        variant={isCurrent('dashboard') ? 'secondary' : 'ghost'}
-                                        size="sm"
-                                        className="gap-2 font-medium"
-                                    >
-                                        <LayoutDashboard className="size-4" />
-                                        Dashboard
-                                    </Button>
-                                </Link>
-                                <Link href="/dashboard-test">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="gap-2 font-medium text-muted-foreground hover:text-foreground"
-                                    >
-                                        <FlaskConical className="size-4" />
-                                        Shadcn Test
-                                    </Button>
-                                </Link>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="lg:hidden size-8"
+                                onClick={() => setSidebarOpen(false)}
+                            >
+                                <X className="size-4" />
+                            </Button>
+                        </>
+                    ) : (
+                        <Link href={route('dashboard')} title="CASANUMA CRM - Dashboard">
+                            <div className="size-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold shadow-md shadow-primary/20 border border-primary/30 hover:scale-105 transition-transform">
+                                <Building2 className="size-5" />
                             </div>
-                        </div>
-
-                        {/* Right side actions */}
-                        <div className="hidden sm:flex sm:items-center sm:gap-3">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={toggleTheme}
-                                title="Toggle Theme"
-                            >
-                                {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-                            </Button>
-
-                            {/* User Profile Dropdown */}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="gap-2.5">
-                                        <div className="size-6 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center">
-                                            {user.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <span className="max-w-[120px] truncate text-xs font-medium">
-                                            {user.name}
-                                        </span>
-                                        <ChevronDown className="size-3.5 text-muted-foreground" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56" align="end">
-                                    <DropdownMenuLabel>
-                                        <div className="flex flex-col space-y-0.5">
-                                            <p className="text-xs font-semibold text-foreground">{user.name}</p>
-                                            <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
-                                        </div>
-                                    </DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuGroup>
-                                        <Link href={route('profile.edit')}>
-                                            <DropdownMenuItem>
-                                                <UserIcon className="size-4" />
-                                                <span>Profil Akun</span>
-                                            </DropdownMenuItem>
-                                        </Link>
-                                    </DropdownMenuGroup>
-                                    <DropdownMenuSeparator />
-                                    <Link href={route('logout')} method="post" as="button" className="w-full">
-                                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive w-full cursor-pointer">
-                                            <LogOut className="size-4" />
-                                            <span>Keluar (Logout)</span>
-                                        </DropdownMenuItem>
-                                    </Link>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-
-                        {/* Mobile menu button */}
-                        <div className="flex items-center gap-2 sm:hidden">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={toggleTheme}
-                            >
-                                {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            >
-                                {mobileMenuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
-                            </Button>
-                        </div>
-                    </div>
+                        </Link>
+                    )}
                 </div>
 
-                {/* Mobile Navigation Menu */}
-                {mobileMenuOpen && (
-                    <div className="sm:hidden border-t border-border p-4 space-y-3 bg-card">
-                        <div className="space-y-1">
-                            <Link href={route('dashboard')} className="block">
-                                <Button variant={isCurrent('dashboard') ? 'secondary' : 'ghost'} className="w-full justify-start gap-2">
-                                    <LayoutDashboard className="size-4" />
-                                    Dashboard
-                                </Button>
-                            </Link>
-                            <Link href="/dashboard-test" className="block">
-                                <Button variant="ghost" className="w-full justify-start gap-2">
-                                    <FlaskConical className="size-4" />
-                                    Shadcn Test
-                                </Button>
-                            </Link>
-                            <Link href={route('profile.edit')} className="block">
-                                <Button variant="ghost" className="w-full justify-start gap-2">
-                                    <UserIcon className="size-4" />
-                                    Profil
-                                </Button>
-                            </Link>
+                {/* Role Badge Banner in Sidebar - Pinned below header */}
+                {!collapsed ? (
+                    <div className="p-3 mx-3 my-2 rounded-xl border border-border/60 bg-muted/40 shrink-0 transition-all">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <Shield className="size-3.5 text-primary" />
+                                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                    Role Aktif:
+                                </span>
+                            </div>
+                            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-md border ${currentRoleInfo.color}`}>
+                                {currentRoleInfo.label}
+                            </span>
                         </div>
-                        <div className="pt-2 border-t border-border">
-                            <Link href={route('logout')} method="post" as="button" className="w-full">
-                                <Button variant="destructive" className="w-full justify-start gap-2">
-                                    <LogOut className="size-4" />
-                                    Keluar
-                                </Button>
-                            </Link>
+                    </div>
+                ) : (
+                    <div className="my-2 flex justify-center shrink-0" title={`Role Aktif: ${currentRoleInfo.label}`}>
+                        <div className={`size-8 rounded-lg flex items-center justify-center border ${currentRoleInfo.color}`}>
+                            <Shield className="size-4" />
                         </div>
                     </div>
                 )}
-            </nav>
 
-            {/* Header section */}
-            {header && (
-                <header className="border-b border-border/40 bg-card/40">
-                    <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-                        {header}
+                {/* Dynamic Navigation Menus - Independently Scrollable ("Bisa di-roll") */}
+                <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar overscroll-contain py-2 space-y-4 ${
+                    collapsed ? 'px-1.5' : 'px-3'
+                }`}>
+                    {visibleNavGroups.map((group, groupIdx) => {
+                        const visibleItems = group.items.filter((item) => item.visible);
+                        if (visibleItems.length === 0) return null;
+
+                        return (
+                            <div key={groupIdx} className="space-y-1">
+                                {!collapsed ? (
+                                    <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                                        {group.groupName}
+                                    </p>
+                                ) : (
+                                    <div className="my-2 border-t border-border/60 mx-2" title={group.groupName} />
+                                )}
+                                <div className="space-y-0.5">
+                                    {visibleItems.map((item, itemIdx) => {
+                                        const Icon = item.icon;
+                                        const isItemActive = 'active' in item && item.active;
+
+                                        if (item.href) {
+                                            return (
+                                                <Link
+                                                    key={itemIdx}
+                                                    href={item.href}
+                                                    onClick={() => setSidebarOpen(false)}
+                                                    title={collapsed ? item.label : undefined}
+                                                    className={`flex items-center rounded-lg text-xs font-medium transition-all ${
+                                                        collapsed 
+                                                            ? 'justify-center size-10 mx-auto' 
+                                                            : 'gap-3 px-3 py-2'
+                                                    } ${
+                                                        isItemActive
+                                                            ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                                                            : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+                                                    }`}
+                                                >
+                                                    <Icon className="size-4 shrink-0" />
+                                                    {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+                                                </Link>
+                                            );
+                                        }
+
+                                        return (
+                                            <button
+                                                key={itemIdx}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSidebarOpen(false);
+                                                    item.action?.();
+                                                }}
+                                                title={collapsed ? item.label : undefined}
+                                                className={`w-full flex items-center rounded-lg text-xs font-medium text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all ${
+                                                    collapsed 
+                                                        ? 'justify-center size-10 mx-auto' 
+                                                        : 'gap-3 px-3 py-2 text-left'
+                                                }`}
+                                            >
+                                                <Icon className="size-4 shrink-0" />
+                                                {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Sidebar Footer (User Account & Theme Toggle) - Pinned at bottom */}
+                <div className={`border-t border-border/60 bg-muted/20 shrink-0 mt-auto ${
+                    collapsed ? 'p-2 flex flex-col items-center gap-2' : 'p-3 space-y-2'
+                }`}>
+                    {!collapsed ? (
+                        <>
+                            <div className="flex items-center justify-between px-2">
+                                <div className="flex items-center gap-2 truncate">
+                                    <div className="size-7 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center border border-primary/20 shrink-0">
+                                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                    </div>
+                                    <div className="truncate text-left">
+                                        <p className="text-xs font-semibold text-foreground truncate">{user?.name}</p>
+                                        <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
+                                    </div>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
+                                    onClick={toggleTheme}
+                                    title={isDark ? 'Mode Terang' : 'Mode Gelap'}
+                                >
+                                    {isDark ? <Sun className="size-3.5 text-amber-400" /> : <Moon className="size-3.5" />}
+                                </Button>
+                            </div>
+
+                            <Link href={route('logout')} method="post" as="button" className="w-full">
+                                <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive h-8">
+                                    <LogOut className="size-3.5" />
+                                    <span>Keluar (Logout)</span>
+                                </Button>
+                            </Link>
+                        </>
+                    ) : (
+                        <>
+                            <div 
+                                className="size-8 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center border border-primary/20"
+                                title={`${user?.name} (${user?.email})`}
+                            >
+                                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 text-muted-foreground hover:text-foreground"
+                                onClick={toggleTheme}
+                                title={isDark ? 'Mode Terang' : 'Mode Gelap'}
+                            >
+                                {isDark ? <Sun className="size-3.5 text-amber-400" /> : <Moon className="size-3.5" />}
+                            </Button>
+                            <Link href={route('logout')} method="post" as="button" title="Keluar (Logout)">
+                                <Button variant="ghost" size="icon" className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                    <LogOut className="size-4" />
+                                </Button>
+                            </Link>
+                        </>
+                    )}
+                </div>
+            </aside>
+
+            {/* MAIN CONTENT AREA */}
+            <div className="flex-1 flex flex-col min-w-0">
+                {/* Top Navbar */}
+                <header className="h-16 border-b border-border/60 bg-card/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6">
+                    {/* Left: Mobile Toggle, Desktop Collapse Toggle & Page Title */}
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        {/* Mobile Drawer Toggle */}
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="lg:hidden size-9"
+                            onClick={() => setSidebarOpen(true)}
+                        >
+                            <Menu className="size-5" />
+                        </Button>
+
+                        {/* Desktop Sidebar Collapse Toggle */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hidden lg:flex size-9 text-muted-foreground hover:text-foreground hover:bg-muted"
+                            onClick={toggleCollapsed}
+                            title={collapsed ? "Perluas Sidebar" : "Minimize Sidebar (Icon Only)"}
+                        >
+                            {collapsed ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}
+                        </Button>
+
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-foreground font-heading">
+                                CASANUMA Portal
+                            </span>
+                            <span className="text-muted-foreground text-xs hidden sm:inline">/</span>
+                            <span className="text-xs text-muted-foreground hidden sm:inline">
+                                Multi-Role CRM
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Right: PostgreSQL Status Badge & User Dropdown */}
+                    <div className="flex items-center gap-3">
+                        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                            <Database className="size-3" />
+                            <span>PostgreSQL Connected</span>
+                        </div>
+
+                        {/* User Profile Dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="gap-2 pl-2 pr-2.5 py-1.5 h-auto">
+                                    <div className="size-6 rounded-full bg-primary/15 text-primary font-bold text-[11px] flex items-center justify-center border border-primary/20">
+                                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                    </div>
+                                    <div className="hidden sm:flex flex-col items-start text-left">
+                                        <span className="max-w-[100px] truncate text-xs font-semibold leading-tight">
+                                            {user?.name || 'User'}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground font-medium leading-tight">
+                                            {currentRoleInfo.label}
+                                        </span>
+                                    </div>
+                                    <ChevronDown className="size-3 text-muted-foreground" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56" align="end">
+                                <DropdownMenuLabel>
+                                    <div className="flex flex-col space-y-1">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-xs font-semibold text-foreground">{user?.name}</p>
+                                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase ${currentRoleInfo.color}`}>
+                                                {currentRoleInfo.label}
+                                            </span>
+                                        </div>
+                                        <p className="text-[11px] text-muted-foreground truncate">{user?.email}</p>
+                                    </div>
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuGroup>
+                                    <Link href={route('profile.edit')}>
+                                        <DropdownMenuItem>
+                                            <UserIcon className="size-4" />
+                                            <span>Pengaturan Profil</span>
+                                        </DropdownMenuItem>
+                                    </Link>
+                                </DropdownMenuGroup>
+                                <DropdownMenuSeparator />
+                                <Link href={route('logout')} method="post" as="button" className="w-full">
+                                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive w-full cursor-pointer">
+                                        <LogOut className="size-4" />
+                                        <span>Keluar (Logout)</span>
+                                    </DropdownMenuItem>
+                                </Link>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </header>
-            )}
 
-            {/* Main view container */}
-            <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-                {children}
-            </main>
+                {/* Subheader if provided */}
+                {header && (
+                    <div className="border-b border-border/40 bg-card/40 px-4 py-4 sm:px-6 lg:px-8">
+                        {header}
+                    </div>
+                )}
+
+                {/* Main Content Area */}
+                <main className="flex-1 p-4 sm:p-6 lg:p-8 transition-all duration-300">
+                    <div className="w-full max-w-[1550px] mx-auto transition-all duration-300">
+                        {children}
+                    </div>
+                </main>
+            </div>
         </div>
     );
 }
