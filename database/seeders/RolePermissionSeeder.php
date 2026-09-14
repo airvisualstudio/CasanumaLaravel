@@ -48,6 +48,7 @@ class RolePermissionSeeder extends Seeder
             'view-finance',
             'verify-payments',
             'issue-invoices',
+            'manage-kpr',
 
             // System & User Management
             'manage-users',
@@ -81,6 +82,7 @@ class RolePermissionSeeder extends Seeder
             'create-bookings',
             'edit-bookings',
             'approve-bookings',
+            'cancel-bookings',
         ]);
 
         // Sales Agent: Create & manage own leads, view units, create bookings
@@ -95,7 +97,7 @@ class RolePermissionSeeder extends Seeder
             'create-bookings',
         ]);
 
-        // Finance: View bookings, verify payments, financial summary, issue invoices
+        // Finance: View bookings, verify payments, financial summary, issue invoices, manage KPR
         $financeRole = Role::firstOrCreate(['name' => 'finance', 'guard_name' => 'web']);
         $financeRole->syncPermissions([
             'view-dashboard',
@@ -104,6 +106,8 @@ class RolePermissionSeeder extends Seeder
             'view-finance',
             'verify-payments',
             'issue-invoices',
+            'manage-kpr',
+            'approve-bookings',
         ]);
     }
 }

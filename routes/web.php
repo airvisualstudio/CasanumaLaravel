@@ -1,10 +1,18 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\ClusterController;
+use App\Http\Controllers\DeveloperController;
 use App\Http\Controllers\GeneralSettingController;
+use App\Http\Controllers\HousingProjectController;
+use App\Http\Controllers\HousingUnitController;
+use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PropertyMasterController;
+use App\Http\Controllers\SiteplanController;
+use App\Http\Controllers\UnitTypeController;
 use App\Http\Controllers\UserController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -43,72 +51,86 @@ Route::middleware(['auth', 'role:superadmin'])->group(function () {
 
 // Master Properti: Developer & Proyek Perumahan
 Route::middleware(['auth', 'can:view-units'])->group(function () {
-    Route::get('/properties', [\App\Http\Controllers\PropertyMasterController::class, 'index'])->name('properties.index');
+    Route::get('/properties', [PropertyMasterController::class, 'index'])->name('properties.index');
 
     Route::middleware('can:create-units')->group(function () {
-        Route::post('/developers', [\App\Http\Controllers\DeveloperController::class, 'store'])->name('developers.store');
-        Route::match(['put', 'post'], '/developers/{developer}', [\App\Http\Controllers\DeveloperController::class, 'update'])->name('developers.update');
-        Route::delete('/developers/{developer}', [\App\Http\Controllers\DeveloperController::class, 'destroy'])->name('developers.destroy');
+        Route::post('/developers', [DeveloperController::class, 'store'])->name('developers.store');
+        Route::match(['put', 'post'], '/developers/{developer}', [DeveloperController::class, 'update'])->name('developers.update');
+        Route::delete('/developers/{developer}', [DeveloperController::class, 'destroy'])->name('developers.destroy');
 
-        Route::post('/housing-projects', [\App\Http\Controllers\HousingProjectController::class, 'store'])->name('housing-projects.store');
-        Route::match(['put', 'post'], '/housing-projects/{housingProject}', [\App\Http\Controllers\HousingProjectController::class, 'update'])->name('housing-projects.update');
-        Route::delete('/housing-projects/{housingProject}', [\App\Http\Controllers\HousingProjectController::class, 'destroy'])->name('housing-projects.destroy');
+        Route::post('/housing-projects', [HousingProjectController::class, 'store'])->name('housing-projects.store');
+        Route::match(['put', 'post'], '/housing-projects/{housingProject}', [HousingProjectController::class, 'update'])->name('housing-projects.update');
+        Route::delete('/housing-projects/{housingProject}', [HousingProjectController::class, 'destroy'])->name('housing-projects.destroy');
     });
 
     // Cluster & Site Plan
-    Route::get('/clusters', [\App\Http\Controllers\ClusterController::class, 'index'])->name('clusters.index');
+    Route::get('/clusters', [ClusterController::class, 'index'])->name('clusters.index');
     Route::middleware('can:create-units')->group(function () {
-        Route::post('/clusters', [\App\Http\Controllers\ClusterController::class, 'store'])->name('clusters.store');
-        Route::put('/clusters/{cluster}', [\App\Http\Controllers\ClusterController::class, 'update'])->name('clusters.update');
-        Route::delete('/clusters/{cluster}', [\App\Http\Controllers\ClusterController::class, 'destroy'])->name('clusters.destroy');
+        Route::post('/clusters', [ClusterController::class, 'store'])->name('clusters.store');
+        Route::put('/clusters/{cluster}', [ClusterController::class, 'update'])->name('clusters.update');
+        Route::delete('/clusters/{cluster}', [ClusterController::class, 'destroy'])->name('clusters.destroy');
 
-        Route::post('/unit-types', [\App\Http\Controllers\UnitTypeController::class, 'store'])->name('unit-types.store');
-        Route::match(['put', 'post'], '/unit-types/{unitType}', [\App\Http\Controllers\UnitTypeController::class, 'update'])->name('unit-types.update');
-        Route::delete('/unit-types/{unitType}', [\App\Http\Controllers\UnitTypeController::class, 'destroy'])->name('unit-types.destroy');
+        Route::post('/unit-types', [UnitTypeController::class, 'store'])->name('unit-types.store');
+        Route::match(['put', 'post'], '/unit-types/{unitType}', [UnitTypeController::class, 'update'])->name('unit-types.update');
+        Route::delete('/unit-types/{unitType}', [UnitTypeController::class, 'destroy'])->name('unit-types.destroy');
     });
 
     // Unit & Kavling
-    Route::get('/units', [\App\Http\Controllers\HousingUnitController::class, 'index'])->name('units.index');
+    Route::get('/units', [HousingUnitController::class, 'index'])->name('units.index');
     Route::middleware('can:create-units')->group(function () {
-        Route::post('/units', [\App\Http\Controllers\HousingUnitController::class, 'store'])->name('units.store');
-        Route::put('/units/{housingUnit}', [\App\Http\Controllers\HousingUnitController::class, 'update'])->name('units.update');
-        Route::patch('/units/{housingUnit}/status', [\App\Http\Controllers\HousingUnitController::class, 'updateStatus'])->name('units.update-status');
-        Route::delete('/units/{housingUnit}', [\App\Http\Controllers\HousingUnitController::class, 'destroy'])->name('units.destroy');
+        Route::post('/units', [HousingUnitController::class, 'store'])->name('units.store');
+        Route::put('/units/{housingUnit}', [HousingUnitController::class, 'update'])->name('units.update');
+        Route::patch('/units/{housingUnit}/status', [HousingUnitController::class, 'updateStatus'])->name('units.update-status');
+        Route::delete('/units/{housingUnit}', [HousingUnitController::class, 'destroy'])->name('units.destroy');
     });
 
     // Interactive Siteplan Map
-    Route::get('/siteplan', [\App\Http\Controllers\SiteplanController::class, 'index'])->name('siteplan.index');
-    Route::post('/siteplan/upload-svg', [\App\Http\Controllers\SiteplanController::class, 'uploadSvg'])->name('siteplan.upload-svg');
+    Route::get('/siteplan', [SiteplanController::class, 'index'])->name('siteplan.index');
+    Route::post('/siteplan/upload-svg', [SiteplanController::class, 'uploadSvg'])->name('siteplan.upload-svg');
 });
 
 // Penjualan & Leads CRM
 Route::middleware(['auth', 'can:view-leads'])->group(function () {
-    Route::get('/leads', [\App\Http\Controllers\LeadController::class, 'index'])->name('leads.index');
+    Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
 
     Route::middleware('can:create-leads')->group(function () {
-        Route::post('/leads', [\App\Http\Controllers\LeadController::class, 'store'])->name('leads.store');
+        Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
     });
 
     Route::middleware('can:edit-leads')->group(function () {
-        Route::put('/leads/{lead}', [\App\Http\Controllers\LeadController::class, 'update'])->name('leads.update');
-        Route::patch('/leads/{lead}/status', [\App\Http\Controllers\LeadController::class, 'updateStatus'])->name('leads.update-status');
+        Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+        Route::patch('/leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.update-status');
     });
 
     Route::middleware('can:delete-leads')->group(function () {
-        Route::delete('/leads/{lead}', [\App\Http\Controllers\LeadController::class, 'destroy'])->name('leads.destroy');
+        Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
     });
 });
 
 // Transaksi Booking Fee & SPR
 Route::middleware(['auth', 'can:view-bookings'])->group(function () {
-    Route::get('/bookings', [\App\Http\Controllers\BookingController::class, 'index'])->name('bookings.index');
+    Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
 
     Route::middleware('can:create-bookings')->group(function () {
-        Route::post('/bookings', [\App\Http\Controllers\BookingController::class, 'store'])->name('bookings.store');
+        Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+        Route::post('/bookings/{booking}/payments', [BookingController::class, 'addPayment'])->name('bookings.payments.store');
+    });
+
+    Route::middleware('can:approve-bookings')->group(function () {
+        Route::post('/bookings/{booking}/approve', [BookingController::class, 'approve'])->name('bookings.approve');
+        Route::patch('/bookings/{booking}/complete', [BookingController::class, 'completeTransaction'])->name('bookings.complete');
     });
 
     Route::middleware('can:cancel-bookings')->group(function () {
-        Route::post('/bookings/{booking}/cancel', [\App\Http\Controllers\BookingController::class, 'cancel'])->name('bookings.cancel');
+        Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+    });
+
+    Route::middleware('can:verify-payments')->group(function () {
+        Route::patch('/bookings/payments/{payment}/verify', [BookingController::class, 'verifyPayment'])->name('bookings.payments.verify');
+    });
+
+    Route::middleware('can:manage-kpr')->group(function () {
+        Route::post('/bookings/{booking}/kpr', [BookingController::class, 'updateKpr'])->name('bookings.kpr.update');
     });
 });
 

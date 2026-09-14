@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Booking;
+use App\Models\BookingPayment;
 use App\Models\Cluster;
 use App\Models\Developer;
 use App\Models\HousingProject;
@@ -21,9 +22,13 @@ class BookingAndSiteplanTest extends TestCase
     use RefreshDatabase;
 
     protected User $superAdmin;
+
     protected HousingProject $project;
+
     protected Cluster $cluster;
+
     protected HousingUnit $unit;
+
     protected Lead $lead;
 
     protected function setUp(): void
@@ -94,7 +99,13 @@ class BookingAndSiteplanTest extends TestCase
             'lead_id' => $this->lead->id,
             'housing_unit_id' => $this->unit->id,
             'payment_scheme' => 'kpr',
+            'base_price' => 450000000,
+            'additional_price' => 10000000,
+            'discount_amount' => 5000000,
+            'legal_fees' => 15000000,
             'booking_fee' => 5000000,
+            'dp_amount' => 45000000,
+            'dp_installments_count' => 2,
             'transaction_date' => now()->toDateString(),
             'transfer_proof' => $file,
             'notes' => 'Booking tanda jadi unit A1/05',
@@ -102,21 +113,109 @@ class BookingAndSiteplanTest extends TestCase
 
         $response->assertRedirect();
 
-        // 1. Verify booking record created
+        // 1. Verify booking record created with calculated financial structure
         $this->assertDatabaseHas('bookings', [
             'lead_id' => $this->lead->id,
             'housing_unit_id' => $this->unit->id,
             'payment_scheme' => 'kpr',
-            'status' => 'confirmed',
+            'base_price' => 450000000,
+            'total_price' => 470000000,
+            'booking_fee' => 5000000,
         ]);
 
-        // 2. Verify unit status updated to booked
+        // 2. Verify initial payment schedule created for booking fee
+        $this->assertDatabaseHas('booking_payments', [
+            'payment_type' => 'booking_fee',
+            'amount_due' => 5000000,
+        ]);
+
+        // 3. Verify unit status updated to booked
         $this->unit->refresh();
         $this->assertEquals('booked', $this->unit->status);
 
-        // 3. Verify lead status updated to booking
+        // 4. Verify lead status updated to booking
         $this->lead->refresh();
         $this->assertEquals('booking', $this->lead->status);
+    }
+
+    public function test_booking_approval_issues_spr_number_and_generates_dp_schedule(): void
+    {
+        $salesAgent = User::factory()->create();
+        $salesAgent->assignRole('sales_agent');
+
+        $booking = Booking::create([
+            'booking_code' => 'BK-PENDING-001',
+            'lead_id' => $this->lead->id,
+            'housing_unit_id' => $this->unit->id,
+            'sales_id' => $salesAgent->id,
+            'payment_scheme' => 'kpr',
+            'base_price' => 450000000,
+            'total_price' => 450000000,
+            'booking_fee' => 5000000,
+            'dp_amount' => 45000000,
+            'dp_installments_count' => 2,
+            'remaining_amount' => 405000000,
+            'transaction_date' => now()->toDateString(),
+            'status' => 'pending_approval',
+        ]);
+
+        $response = $this->actingAs($this->superAdmin)->post(route('bookings.approve', $booking->id));
+        $response->assertRedirect();
+
+        $booking->refresh();
+        $this->assertNotNull($booking->spr_number);
+        $this->assertEquals('kpr_process', $booking->status);
+
+        // Verify KPR Application created
+        $this->assertDatabaseHas('kpr_applications', [
+            'booking_id' => $booking->id,
+            'current_stage' => 'document_collection',
+        ]);
+
+        // Verify DP payment schedule generated
+        $this->assertDatabaseHas('booking_payments', [
+            'booking_id' => $booking->id,
+            'payment_type' => 'down_payment',
+            'term_name' => 'Uang Muka (DP) Termin 1',
+        ]);
+    }
+
+    public function test_finance_can_verify_payment(): void
+    {
+        $finance = User::factory()->create();
+        $finance->assignRole('finance');
+
+        $booking = Booking::create([
+            'booking_code' => 'BK-PAY-001',
+            'lead_id' => $this->lead->id,
+            'housing_unit_id' => $this->unit->id,
+            'sales_id' => $this->superAdmin->id,
+            'payment_scheme' => 'cash',
+            'base_price' => 450000000,
+            'total_price' => 450000000,
+            'booking_fee' => 5000000,
+            'transaction_date' => now()->toDateString(),
+            'status' => 'approved',
+        ]);
+
+        $payment = BookingPayment::create([
+            'booking_id' => $booking->id,
+            'payment_number' => 'KW-TEST-001',
+            'payment_type' => 'down_payment',
+            'term_name' => 'Uang Muka DP 1',
+            'amount_due' => 20000000,
+            'due_date' => now()->toDateString(),
+            'amount_paid' => 20000000,
+            'payment_date' => now()->toDateString(),
+            'status' => 'pending_verification',
+        ]);
+
+        $response = $this->actingAs($finance)->patch(route('bookings.payments.verify', $payment->id));
+        $response->assertRedirect();
+
+        $payment->refresh();
+        $this->assertEquals('verified', $payment->status);
+        $this->assertEquals($finance->id, $payment->verified_by);
     }
 
     public function test_booking_cancellation_restores_unit_to_available(): void
@@ -127,18 +226,23 @@ class BookingAndSiteplanTest extends TestCase
             'housing_unit_id' => $this->unit->id,
             'sales_id' => $this->superAdmin->id,
             'payment_scheme' => 'cash',
+            'base_price' => 450000000,
+            'total_price' => 450000000,
             'booking_fee' => 10000000,
             'transaction_date' => now()->toDateString(),
-            'status' => 'confirmed',
+            'status' => 'approved',
         ]);
 
         $this->unit->update(['status' => 'booked']);
 
-        $response = $this->actingAs($this->superAdmin)->post(route('bookings.cancel', $booking->id));
+        $response = $this->actingAs($this->superAdmin)->post(route('bookings.cancel', $booking->id), [
+            'reason' => 'Konsumen mengundurkan diri.',
+        ]);
         $response->assertRedirect();
 
         $booking->refresh();
         $this->assertEquals('cancelled', $booking->status);
+        $this->assertEquals('Konsumen mengundurkan diri.', $booking->rejection_reason);
 
         $this->unit->refresh();
         $this->assertEquals('available', $this->unit->status);
