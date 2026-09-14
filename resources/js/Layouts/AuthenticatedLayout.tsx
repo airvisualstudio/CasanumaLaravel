@@ -252,7 +252,8 @@ export default function Authenticated({
                 {
                     label: 'Manajemen Pengguna',
                     icon: UserCog,
-                    action: () => handleMenuClick('Manajemen Pengguna'),
+                    href: route('users.index'),
+                    active: isCurrent('users.*'),
                     visible: can('manage-users'),
                 },
                 {

@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import {
@@ -75,6 +75,10 @@ export default function Dashboard() {
     } | null>(null);
 
     const handleActionClick = (module: typeof moduleCards[0]) => {
+        if ('href' in module && (module as any).href) {
+            router.visit((module as any).href);
+            return;
+        }
         setSelectedModule(module);
     };
 
@@ -160,6 +164,7 @@ export default function Dashboard() {
             actionText: 'Buka Manajemen User',
             visible: can('manage-users'),
             action: 'Manajemen Pengguna',
+            href: route('users.index'),
         },
         {
             title: 'Pengaturan Sistem',
