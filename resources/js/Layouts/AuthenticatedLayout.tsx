@@ -199,9 +199,10 @@ export default function Authenticated({
             visible: can('view-units'),
             items: [
                 {
-                    label: 'Unit & Kavling',
-                    icon: Home,
-                    action: () => handleMenuClick('Unit & Kavling'),
+                    label: 'Developer & Proyek',
+                    icon: Building2,
+                    href: route('properties.index'),
+                    active: isCurrent('properties.*'),
                     visible: can('view-units'),
                 },
                 {
@@ -209,6 +210,12 @@ export default function Authenticated({
                     icon: Building,
                     action: () => handleMenuClick('Cluster & Site Plan'),
                     visible: can('create-units') || can('edit-units'),
+                },
+                {
+                    label: 'Unit & Kavling',
+                    icon: Home,
+                    action: () => handleMenuClick('Unit & Kavling'),
+                    visible: can('view-units'),
                 },
             ],
         },

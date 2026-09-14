@@ -41,4 +41,19 @@ Route::middleware(['auth', 'role:superadmin'])->group(function () {
     });
 });
 
+// Master Properti: Developer & Proyek Perumahan
+Route::middleware(['auth', 'can:view-units'])->group(function () {
+    Route::get('/properties', [\App\Http\Controllers\PropertyMasterController::class, 'index'])->name('properties.index');
+
+    Route::middleware('can:create-units')->group(function () {
+        Route::post('/developers', [\App\Http\Controllers\DeveloperController::class, 'store'])->name('developers.store');
+        Route::match(['put', 'post'], '/developers/{developer}', [\App\Http\Controllers\DeveloperController::class, 'update'])->name('developers.update');
+        Route::delete('/developers/{developer}', [\App\Http\Controllers\DeveloperController::class, 'destroy'])->name('developers.destroy');
+
+        Route::post('/housing-projects', [\App\Http\Controllers\HousingProjectController::class, 'store'])->name('housing-projects.store');
+        Route::match(['put', 'post'], '/housing-projects/{housingProject}', [\App\Http\Controllers\HousingProjectController::class, 'update'])->name('housing-projects.update');
+        Route::delete('/housing-projects/{housingProject}', [\App\Http\Controllers\HousingProjectController::class, 'destroy'])->name('housing-projects.destroy');
+    });
+});
+
 require __DIR__.'/auth.php';
