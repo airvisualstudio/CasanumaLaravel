@@ -140,6 +140,7 @@ interface Props {
         status?: string;
         sales_id?: string;
     };
+    isAgentOnly?: boolean;
 }
 
 const SOURCE_OPTIONS = [
@@ -160,8 +161,21 @@ export default function LeadsIndex({
     salesUsers,
     stats,
     filters,
+    isAgentOnly = false,
 }: Props) {
-    const { can } = useAuthorization();
+    const { user, can, isSuperAdmin, isSalesManager, isSalesAgent } = useAuthorization();
+
+    const canEditLead = (lead: LeadData) => {
+        if (!can('edit-leads')) return false;
+        if (isSuperAdmin || isSalesManager) return true;
+        if (isSalesAgent) return Number(lead.sales_id) === Number(user?.id);
+        return false;
+    };
+
+    const canDeleteLead = (lead: LeadData) => {
+        if (!can('delete-leads')) return false;
+        return isSuperAdmin || isSalesManager;
+    };
 
     // Filters state
     const [search, setSearch] = useState(filters?.search || '');
@@ -186,7 +200,7 @@ export default function LeadsIndex({
     const leadForm = useForm({
         housing_project_id: projects[0]?.id?.toString() || '',
         developer_id: projects[0]?.developer_id?.toString() || '',
-        sales_id: 'none',
+        sales_id: isAgentOnly ? user?.id?.toString() || 'none' : 'none',
         name: '',
         whatsapp: '',
         email: '',
@@ -204,7 +218,7 @@ export default function LeadsIndex({
                 search: search || undefined,
                 project_id: projectId !== 'all' ? projectId : undefined,
                 status: statusFilter !== 'all' ? statusFilter : undefined,
-                sales_id: salesFilter !== 'all' ? salesFilter : undefined,
+                sales_id: !isAgentOnly && salesFilter !== 'all' ? salesFilter : undefined,
             },
             {
                 preserveState: true,
@@ -229,7 +243,7 @@ export default function LeadsIndex({
         leadForm.setData({
             housing_project_id: defaultProject?.id?.toString() || '',
             developer_id: defaultProject?.developer_id?.toString() || '',
-            sales_id: salesUsers[0]?.id?.toString() || 'none',
+            sales_id: isAgentOnly ? user?.id?.toString() || 'none' : (salesUsers[0]?.id?.toString() || 'none'),
             name: '',
             whatsapp: '',
             email: '',
@@ -244,11 +258,12 @@ export default function LeadsIndex({
 
     // Open Edit Modal
     const handleOpenEdit = (lead: LeadData) => {
+        if (!canEditLead(lead)) return;
         setEditingLead(lead);
         leadForm.setData({
             housing_project_id: lead.housing_project_id.toString(),
             developer_id: lead.developer_id ? lead.developer_id.toString() : '',
-            sales_id: lead.sales_id ? lead.sales_id.toString() : 'none',
+            sales_id: lead.sales_id ? lead.sales_id.toString() : (isAgentOnly ? user?.id?.toString() || 'none' : 'none'),
             name: lead.name,
             whatsapp: lead.whatsapp,
             email: lead.email || '',
@@ -265,7 +280,7 @@ export default function LeadsIndex({
         e.preventDefault();
         const payload = {
             ...leadForm.data,
-            sales_id: leadForm.data.sales_id === 'none' ? null : leadForm.data.sales_id,
+            sales_id: isAgentOnly ? user?.id : (leadForm.data.sales_id === 'none' ? null : leadForm.data.sales_id),
         };
 
         if (editingLead) {
@@ -281,6 +296,7 @@ export default function LeadsIndex({
 
     // Quick Status Change
     const openQuickStatus = (lead: LeadData) => {
+        if (!canEditLead(lead)) return;
         setTargetLeadForStatus(lead);
         setSelectedNewStatus(lead.status);
         setStatusModalOpen(true);
@@ -300,6 +316,7 @@ export default function LeadsIndex({
 
     // Delete
     const confirmDelete = (lead: LeadData) => {
+        if (!canDeleteLead(lead)) return;
         setLeadToDelete(lead);
         setDeleteDialogOpen(true);
     };
@@ -474,11 +491,11 @@ export default function LeadsIndex({
                 {/* Filter & Search Panel */}
                 <Card className="shadow-none border-border/80">
                     <CardContent className="p-4 space-y-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                        <div className={cn('grid grid-cols-1 sm:grid-cols-2 gap-3', isAgentOnly ? 'lg:grid-cols-5' : 'lg:grid-cols-6')}>
                             <div className="relative lg:col-span-2">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Cari nama, No WhatsApp, atau email..."
+                                    placeholder="Cari nama, No WhatsApp, NIK, atau email..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleApplyFilter()}
@@ -524,6 +541,22 @@ export default function LeadsIndex({
                                 </Select>
                             </div>
 
+                            {!isAgentOnly && (
+                                <div>
+                                    <Select value={salesFilter} onValueChange={setSalesFilter}>
+                                        <SelectTrigger className="h-10 bg-background">
+                                            <SelectValue placeholder="Semua Sales" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">Semua Sales Marketing</SelectItem>
+                                            {salesUsers.map((s) => (
+                                                <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
                             <div className="flex items-center gap-2">
                                 <Button
                                     onClick={handleApplyFilter}
@@ -532,7 +565,7 @@ export default function LeadsIndex({
                                     <Filter className="size-3.5" />
                                     Filter
                                 </Button>
-                                {(search || projectId !== 'all' || statusFilter !== 'all' || salesFilter !== 'all') && (
+                                {(search || projectId !== 'all' || statusFilter !== 'all' || (!isAgentOnly && salesFilter !== 'all')) && (
                                     <Button
                                         variant="outline"
                                         onClick={handleResetFilters}
@@ -638,35 +671,41 @@ export default function LeadsIndex({
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
-                                                <button
-                                                    onClick={() => openQuickStatus(lead)}
-                                                    className="cursor-pointer transition-opacity hover:opacity-80"
-                                                    title="Klik untuk ubah tahapan status"
-                                                >
-                                                    {renderStatusBadge(lead.status)}
-                                                </button>
+                                                {canEditLead(lead) ? (
+                                                    <button
+                                                        onClick={() => openQuickStatus(lead)}
+                                                        className="cursor-pointer transition-opacity hover:opacity-80"
+                                                        title="Klik untuk ubah tahapan status"
+                                                    >
+                                                        {renderStatusBadge(lead.status)}
+                                                    </button>
+                                                ) : (
+                                                    <div>{renderStatusBadge(lead.status)}</div>
+                                                )}
                                             </TableCell>
                                             <TableCell className="max-w-[180px] truncate text-xs text-muted-foreground">
                                                 {lead.notes || '-'}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-1.5">
-                                                    {can('edit-leads') && (
+                                                    {canEditLead(lead) && (
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
                                                             onClick={() => handleOpenEdit(lead)}
                                                             className="size-8 text-muted-foreground hover:text-foreground"
+                                                            title="Edit Data Konsumen"
                                                         >
                                                             <Edit2 className="size-3.5" />
                                                         </Button>
                                                     )}
-                                                    {can('delete-leads') && (
+                                                    {canDeleteLead(lead) && (
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
                                                             onClick={() => confirmDelete(lead)}
                                                             className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                            title="Hapus Data Konsumen"
                                                         >
                                                             <Trash2 className="size-3.5" />
                                                         </Button>
@@ -770,8 +809,9 @@ export default function LeadsIndex({
                                     <Select
                                         value={leadForm.data.sales_id}
                                         onValueChange={(val) => leadForm.setData('sales_id', val)}
+                                        disabled={isAgentOnly}
                                     >
-                                        <SelectTrigger id="lead_sales" className="h-10">
+                                        <SelectTrigger id="lead_sales" className="h-10 bg-background">
                                             <SelectValue placeholder="Pilih Sales Marketing" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -783,6 +823,11 @@ export default function LeadsIndex({
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    {isAgentOnly && (
+                                        <p className="text-[11px] text-muted-foreground">
+                                            Otomatis terikat pada akun marketing Anda ({user?.name}).
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 

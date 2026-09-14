@@ -55,38 +55,38 @@ Route::middleware(['auth', 'can:view-units'])->group(function () {
 
     Route::middleware('can:create-units')->group(function () {
         Route::post('/developers', [DeveloperController::class, 'store'])->name('developers.store');
-        Route::match(['put', 'post'], '/developers/{developer}', [DeveloperController::class, 'update'])->name('developers.update');
-        Route::delete('/developers/{developer}', [DeveloperController::class, 'destroy'])->name('developers.destroy');
-
         Route::post('/housing-projects', [HousingProjectController::class, 'store'])->name('housing-projects.store');
+        Route::post('/clusters', [ClusterController::class, 'store'])->name('clusters.store');
+        Route::post('/unit-types', [UnitTypeController::class, 'store'])->name('unit-types.store');
+        Route::post('/units', [HousingUnitController::class, 'store'])->name('units.store');
+        Route::post('/siteplan/upload-svg', [SiteplanController::class, 'uploadSvg'])->name('siteplan.upload-svg');
+    });
+
+    Route::middleware('can:edit-units')->group(function () {
+        Route::match(['put', 'post'], '/developers/{developer}', [DeveloperController::class, 'update'])->name('developers.update');
         Route::match(['put', 'post'], '/housing-projects/{housingProject}', [HousingProjectController::class, 'update'])->name('housing-projects.update');
+        Route::put('/clusters/{cluster}', [ClusterController::class, 'update'])->name('clusters.update');
+        Route::match(['put', 'post'], '/unit-types/{unitType}', [UnitTypeController::class, 'update'])->name('unit-types.update');
+        Route::put('/units/{housingUnit}', [HousingUnitController::class, 'update'])->name('units.update');
+        Route::patch('/units/{housingUnit}/status', [HousingUnitController::class, 'updateStatus'])->name('units.update-status');
+    });
+
+    Route::middleware('can:delete-units')->group(function () {
+        Route::delete('/developers/{developer}', [DeveloperController::class, 'destroy'])->name('developers.destroy');
         Route::delete('/housing-projects/{housingProject}', [HousingProjectController::class, 'destroy'])->name('housing-projects.destroy');
+        Route::delete('/clusters/{cluster}', [ClusterController::class, 'destroy'])->name('clusters.destroy');
+        Route::delete('/unit-types/{unitType}', [UnitTypeController::class, 'destroy'])->name('unit-types.destroy');
+        Route::delete('/units/{housingUnit}', [HousingUnitController::class, 'destroy'])->name('units.destroy');
     });
 
     // Cluster & Site Plan
     Route::get('/clusters', [ClusterController::class, 'index'])->name('clusters.index');
-    Route::middleware('can:create-units')->group(function () {
-        Route::post('/clusters', [ClusterController::class, 'store'])->name('clusters.store');
-        Route::put('/clusters/{cluster}', [ClusterController::class, 'update'])->name('clusters.update');
-        Route::delete('/clusters/{cluster}', [ClusterController::class, 'destroy'])->name('clusters.destroy');
-
-        Route::post('/unit-types', [UnitTypeController::class, 'store'])->name('unit-types.store');
-        Route::match(['put', 'post'], '/unit-types/{unitType}', [UnitTypeController::class, 'update'])->name('unit-types.update');
-        Route::delete('/unit-types/{unitType}', [UnitTypeController::class, 'destroy'])->name('unit-types.destroy');
-    });
 
     // Unit & Kavling
     Route::get('/units', [HousingUnitController::class, 'index'])->name('units.index');
-    Route::middleware('can:create-units')->group(function () {
-        Route::post('/units', [HousingUnitController::class, 'store'])->name('units.store');
-        Route::put('/units/{housingUnit}', [HousingUnitController::class, 'update'])->name('units.update');
-        Route::patch('/units/{housingUnit}/status', [HousingUnitController::class, 'updateStatus'])->name('units.update-status');
-        Route::delete('/units/{housingUnit}', [HousingUnitController::class, 'destroy'])->name('units.destroy');
-    });
 
     // Interactive Siteplan Map
     Route::get('/siteplan', [SiteplanController::class, 'index'])->name('siteplan.index');
-    Route::post('/siteplan/upload-svg', [SiteplanController::class, 'uploadSvg'])->name('siteplan.upload-svg');
 });
 
 // Penjualan & Leads CRM
@@ -121,9 +121,7 @@ Route::middleware(['auth', 'can:view-bookings'])->group(function () {
         Route::patch('/bookings/{booking}/complete', [BookingController::class, 'completeTransaction'])->name('bookings.complete');
     });
 
-    Route::middleware('can:cancel-bookings')->group(function () {
-        Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
-    });
+    Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
 
     Route::middleware('can:verify-payments')->group(function () {
         Route::patch('/bookings/payments/{payment}/verify', [BookingController::class, 'verifyPayment'])->name('bookings.payments.verify');

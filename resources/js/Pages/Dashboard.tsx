@@ -92,6 +92,7 @@ export default function Dashboard() {
             actionText: 'Buka Modul Unit',
             visible: can('view-units'),
             action: 'Katalog Unit & Kavling',
+            href: route('units.index'),
         },
         {
             title: 'Cluster & Site Plan',
@@ -101,6 +102,7 @@ export default function Dashboard() {
             actionText: 'Buka Site Plan',
             visible: can('create-units') || can('edit-units'),
             action: 'Cluster & Site Plan',
+            href: route('clusters.index'),
         },
         {
             title: 'Pipeline Leads CRM',
@@ -110,6 +112,7 @@ export default function Dashboard() {
             actionText: 'Buka Pipeline Leads',
             visible: can('view-leads'),
             action: 'Pipeline Leads',
+            href: route('leads.index'),
         },
         {
             title: 'Distribusi Leads Tim',
@@ -128,6 +131,7 @@ export default function Dashboard() {
             actionText: 'Buka Modul Booking',
             visible: can('view-bookings'),
             action: 'Booking & SPR',
+            href: route('bookings.index'),
         },
         {
             title: 'Verifikasi Pembayaran',
@@ -172,8 +176,9 @@ export default function Dashboard() {
             icon: Settings,
             iconColor: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
             actionText: 'Buka Pengaturan',
-            visible: can('manage-settings'),
+            visible: isSuperAdmin,
             action: 'Pengaturan Sistem',
+            href: route('settings.general.index'),
         },
     ];
 

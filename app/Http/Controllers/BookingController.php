@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,6 +22,9 @@ class BookingController extends Controller
 {
     public function index(Request $request): Response
     {
+        $user = $request->user();
+        $isAgentOnly = $user->hasRole('sales_agent') && ! $user->hasRole(['superadmin', 'sales_manager', 'finance']);
+
         $projects = HousingProject::orderBy('name')->get(['id', 'name']);
 
         $query = Booking::with([
@@ -33,6 +37,16 @@ class BookingController extends Controller
             'payments.verifier:id,name',
             'kprApplication',
         ]);
+
+        $statsBase = Booking::query();
+
+        // RBAC Data Scoping:
+        // Sales Agent ONLY sees bookings where they are the assigned sales PIC
+        // Superadmin, Sales Manager, and Finance can view across all sales agents
+        if ($isAgentOnly) {
+            $query->where('sales_id', $user->id);
+            $statsBase->where('sales_id', $user->id);
+        }
 
         if ($request->filled('project_id') && $request->project_id !== 'all') {
             $query->whereHas('unit.cluster', function ($q) use ($request) {
@@ -66,16 +80,18 @@ class BookingController extends Controller
 
         $bookings = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
 
-        // Summary Stats
+        // Summary Stats (Scoped to personal bookings if sales agent, global if manager/super/finance)
         $stats = [
-            'total' => Booking::whereNotIn('status', ['cancelled'])->count(),
-            'pending_approval' => Booking::where('status', 'pending_approval')->count(),
-            'total_fee' => (float) Booking::whereNotIn('status', ['cancelled'])->sum('booking_fee'),
-            'total_turnover' => (float) Booking::whereIn('status', ['approved', 'in_payment', 'kpr_process', 'ready_for_akad', 'completed'])->sum('total_price'),
-            'kpr_count' => Booking::whereNotIn('status', ['cancelled'])->where('payment_scheme', 'kpr')->count(),
-            'cash_count' => Booking::whereNotIn('status', ['cancelled'])->where('payment_scheme', 'cash')->count(),
-            'cash_bertahap_count' => Booking::whereNotIn('status', ['cancelled'])->where('payment_scheme', 'cash_bertahap')->count(),
-            'pending_payments_count' => BookingPayment::where('status', 'pending_verification')->count(),
+            'total' => (clone $statsBase)->whereNotIn('status', ['cancelled'])->count(),
+            'pending_approval' => (clone $statsBase)->where('status', 'pending_approval')->count(),
+            'total_fee' => (float) (clone $statsBase)->whereNotIn('status', ['cancelled'])->sum('booking_fee'),
+            'total_turnover' => (float) (clone $statsBase)->whereIn('status', ['approved', 'in_payment', 'kpr_process', 'ready_for_akad', 'completed'])->sum('total_price'),
+            'kpr_count' => (clone $statsBase)->whereNotIn('status', ['cancelled'])->where('payment_scheme', 'kpr')->count(),
+            'cash_count' => (clone $statsBase)->whereNotIn('status', ['cancelled'])->where('payment_scheme', 'cash')->count(),
+            'cash_bertahap_count' => (clone $statsBase)->whereNotIn('status', ['cancelled'])->where('payment_scheme', 'cash_bertahap')->count(),
+            'pending_payments_count' => $isAgentOnly
+                ? BookingPayment::whereHas('booking', fn ($b) => $b->where('sales_id', $user->id))->where('status', 'pending_verification')->count()
+                : BookingPayment::where('status', 'pending_verification')->count(),
         ];
 
         // Available units for modal booking creation
@@ -85,14 +101,20 @@ class BookingController extends Controller
             ->orderBy('unit_number')
             ->get(['id', 'cluster_id', 'unit_type_id', 'block', 'unit_number', 'unit_code', 'base_price']);
 
-        // Active leads eligible for booking
-        $leads = Lead::orderBy('name')->get([
+        // Active leads eligible for booking (Agent only sees their own leads)
+        $leadsQuery = Lead::orderBy('name');
+        if ($isAgentOnly) {
+            $leadsQuery->where('sales_id', $user->id);
+        }
+        $leads = $leadsQuery->get([
             'id', 'name', 'whatsapp', 'email', 'housing_project_id', 'nik', 'npwp', 'job_type', 'monthly_income',
         ]);
 
-        $salesUsers = User::role(['sales_agent', 'sales_manager', 'superadmin'])
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
+        $salesUsers = $isAgentOnly
+            ? User::where('id', $user->id)->get(['id', 'name', 'email'])
+            : User::role(['sales_agent', 'sales_manager', 'superadmin'])
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']);
 
         return Inertia::render('Bookings/Index', [
             'bookings' => $bookings,
@@ -102,11 +124,17 @@ class BookingController extends Controller
             'salesUsers' => $salesUsers,
             'stats' => $stats,
             'filters' => $request->only(['search', 'project_id', 'payment_scheme', 'status']),
+            'isAgentOnly' => $isAgentOnly,
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        $isAgentOnly = $user->hasRole('sales_agent') && ! $user->hasRole(['superadmin', 'sales_manager']);
+
+        Gate::authorize('create', Booking::class);
+
         $validated = $request->validate([
             'lead_id' => 'required|exists:leads,id',
             'housing_unit_id' => 'required|exists:housing_units,id',
@@ -123,6 +151,14 @@ class BookingController extends Controller
             'transfer_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'notes' => 'nullable|string',
         ]);
+
+        // Authorize lead access: Sales Agent can only create bookings for leads assigned to them
+        $lead = Lead::findOrFail($validated['lead_id']);
+        Gate::authorize('view', $lead);
+
+        if ($isAgentOnly) {
+            $validated['sales_id'] = $user->id;
+        }
 
         $unit = HousingUnit::findOrFail($validated['housing_unit_id']);
         if ($unit->status !== 'available') {
@@ -236,11 +272,9 @@ class BookingController extends Controller
 
     public function approve(Request $request, Booking $booking): RedirectResponse
     {
-        $user = $request->user();
+        Gate::authorize('approve', $booking);
 
-        if (! $user->can('approve-bookings') && ! $user->hasRole(['sales_manager', 'finance', 'superadmin'])) {
-            return redirect()->back()->with('error', 'Anda tidak memiliki hak akses untuk menyetujui transaksi ini.');
-        }
+        $user = $request->user();
 
         DB::transaction(function () use ($user, $booking) {
             $updates = [];
@@ -327,6 +361,8 @@ class BookingController extends Controller
 
     public function cancel(Request $request, Booking $booking): RedirectResponse
     {
+        Gate::authorize('cancel', $booking);
+
         $validated = $request->validate([
             'reason' => 'nullable|string|max:500',
         ]);
@@ -355,6 +391,8 @@ class BookingController extends Controller
 
     public function addPayment(Request $request, Booking $booking): RedirectResponse
     {
+        Gate::authorize('addPayment', $booking);
+
         $validated = $request->validate([
             'payment_type' => 'required|in:booking_fee,down_payment,installment,bank_disbursement,pelunasan',
             'term_name' => 'required|string|max:100',
@@ -405,10 +443,9 @@ class BookingController extends Controller
 
     public function verifyPayment(Request $request, BookingPayment $payment): RedirectResponse
     {
+        Gate::authorize('verifyPayment', $payment);
+
         $user = $request->user();
-        if (! $user->can('verify-payments') && ! $user->hasRole(['finance', 'superadmin'])) {
-            return redirect()->back()->with('error', 'Hanya Finance atau Superadmin yang dapat memverifikasi pembayaran.');
-        }
 
         DB::transaction(function () use ($user, $payment) {
             $payment->update([
@@ -431,10 +468,9 @@ class BookingController extends Controller
 
     public function updateKpr(Request $request, Booking $booking): RedirectResponse
     {
+        Gate::authorize('manageKpr', $booking);
+
         $user = $request->user();
-        if (! $user->can('manage-kpr') && ! $user->hasRole(['finance', 'sales_manager', 'superadmin'])) {
-            return redirect()->back()->with('error', 'Anda tidak memiliki hak akses untuk memperbarui berkas KPR.');
-        }
 
         $validated = $request->validate([
             'bank_name' => 'required|string|max:80',
@@ -487,6 +523,8 @@ class BookingController extends Controller
 
     public function completeTransaction(Booking $booking): RedirectResponse
     {
+        Gate::authorize('approve', $booking);
+
         DB::transaction(function () use ($booking) {
             $booking->update(['status' => 'completed']);
 

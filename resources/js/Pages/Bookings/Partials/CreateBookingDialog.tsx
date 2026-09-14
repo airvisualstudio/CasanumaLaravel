@@ -21,6 +21,7 @@ import {
 import { Card, CardContent } from '@/Components/ui/card';
 import { useForm } from '@inertiajs/react';
 import { CreditCard, Upload, Loader2, DollarSign, Home, User, X } from 'lucide-react';
+import { useAuthorization } from '@/hooks/useAuthorization';
 
 interface CreateBookingDialogProps {
     open: boolean;
@@ -37,6 +38,9 @@ export default function CreateBookingDialog({
     leads,
     salesUsers,
 }: CreateBookingDialogProps) {
+    const { user, isSuperAdmin, isSalesManager } = useAuthorization();
+    const canAssignSales = isSuperAdmin || isSalesManager;
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [selectedProofName, setSelectedProofName] = useState<string | null>(null);
 
@@ -187,23 +191,31 @@ export default function CreateBookingDialog({
                     {/* Marketing & Payment Scheme */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <Label className="text-xs font-semibold">Sales Marketing</Label>
-                            <Select
-                                value={bookingForm.data.sales_id}
-                                onValueChange={(val) => bookingForm.setData('sales_id', val)}
-                            >
-                                <SelectTrigger className="h-10 mt-1 bg-background">
-                                    <SelectValue placeholder="Pilih marketing..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">Otomatis User Saya Sendiri</SelectItem>
-                                    {salesUsers.map((s) => (
-                                        <SelectItem key={s.id} value={s.id.toString()}>
-                                            {s.name} ({s.email})
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <Label className="text-xs font-semibold">Sales Marketing (PIC)</Label>
+                            {canAssignSales ? (
+                                <Select
+                                    value={bookingForm.data.sales_id}
+                                    onValueChange={(val) => bookingForm.setData('sales_id', val)}
+                                >
+                                    <SelectTrigger className="h-10 mt-1 bg-background">
+                                        <SelectValue placeholder="Pilih marketing..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">Otomatis User Saya Sendiri</SelectItem>
+                                        {salesUsers.map((s) => (
+                                            <SelectItem key={s.id} value={s.id.toString()}>
+                                                {s.name} ({s.email})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <Input
+                                    value={`${user?.name || 'Saya Sendiri'} (${user?.email || ''})`}
+                                    disabled
+                                    className="h-10 mt-1 bg-muted/60 text-foreground font-medium text-xs cursor-not-allowed"
+                                />
+                            )}
                         </div>
 
                         <div>

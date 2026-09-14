@@ -160,7 +160,8 @@ export default function UnitsIndex({
     stats,
     filters,
 }: Props) {
-    const { can } = useAuthorization();
+    const { can, isSuperAdmin } = useAuthorization();
+    const hasUnitActions = isSuperAdmin || can('edit-units') || can('delete-units');
 
     // Filters state
     const [search, setSearch] = useState(filters?.search || '');
@@ -591,13 +592,15 @@ export default function UnitsIndex({
                                     <TableHead>Harga Dasar (Cash/KPR)</TableHead>
                                     <TableHead>Status Unit</TableHead>
                                     <TableHead>SVG Element ID</TableHead>
-                                    <TableHead className="w-[120px] text-right">Aksi</TableHead>
+                                    {hasUnitActions && (
+                                        <TableHead className="w-[120px] text-right">Aksi</TableHead>
+                                    )}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {units.data.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                                        <TableCell colSpan={hasUnitActions ? 8 : 7} className="text-center py-12 text-muted-foreground">
                                             Tidak ada unit kavling yang sesuai dengan pencarian / filter.
                                         </TableCell>
                                     </TableRow>
@@ -645,13 +648,19 @@ export default function UnitsIndex({
                                                 </span>
                                             </TableCell>
                                             <TableCell>
-                                                <button
-                                                    onClick={() => openQuickStatusChange(unit)}
-                                                    className="cursor-pointer transition-opacity hover:opacity-80"
-                                                    title="Klik untuk ubah status cepat"
-                                                >
-                                                    {renderStatusBadge(unit.status)}
-                                                </button>
+                                                {can('edit-units') ? (
+                                                    <button
+                                                        onClick={() => openQuickStatusChange(unit)}
+                                                        className="cursor-pointer transition-opacity hover:opacity-80"
+                                                        title="Klik untuk ubah status cepat"
+                                                    >
+                                                        {renderStatusBadge(unit.status)}
+                                                    </button>
+                                                ) : (
+                                                    <div className="cursor-default">
+                                                        {renderStatusBadge(unit.status)}
+                                                    </div>
+                                                )}
                                             </TableCell>
                                             <TableCell>
                                                 {unit.svg_element_id ? (
@@ -663,30 +672,32 @@ export default function UnitsIndex({
                                                     <span className="text-xs text-muted-foreground italic">Belum dipetakan</span>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-1.5">
-                                                    {can('edit-units') && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => handleOpenEdit(unit)}
-                                                            className="size-8 text-muted-foreground hover:text-foreground"
-                                                        >
-                                                            <Edit2 className="size-3.5" />
-                                                        </Button>
-                                                    )}
-                                                    {can('delete-units') && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => confirmDelete(unit)}
-                                                            className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                        >
-                                                            <Trash2 className="size-3.5" />
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </TableCell>
+                                            {hasUnitActions && (
+                                                <TableCell className="text-right">
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        {can('edit-units') && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => handleOpenEdit(unit)}
+                                                                className="size-8 text-muted-foreground hover:text-foreground"
+                                                            >
+                                                                <Edit2 className="size-3.5" />
+                                                            </Button>
+                                                        )}
+                                                        {can('delete-units') && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => confirmDelete(unit)}
+                                                                className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                            >
+                                                                <Trash2 className="size-3.5" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                            )}
                                         </TableRow>
                                     ))
                                 )}

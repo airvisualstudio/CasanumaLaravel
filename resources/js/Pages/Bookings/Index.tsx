@@ -17,7 +17,6 @@ import {
     Phone,
     XCircle,
     UserCheck,
-    Layers,
     Receipt,
     Printer,
     Landmark,
@@ -226,6 +225,7 @@ interface Props {
         payment_scheme?: string;
         status?: string;
     };
+    isAgentOnly?: boolean;
 }
 
 export default function BookingsIndex({
@@ -236,8 +236,9 @@ export default function BookingsIndex({
     salesUsers,
     stats,
     filters,
+    isAgentOnly,
 }: Props) {
-    const { can, isSuperAdmin, isFinance, isSalesManager } = useAuthorization();
+    const { user, can, isSuperAdmin, isFinance, isSalesManager, isSalesAgent } = useAuthorization();
 
     // Filters
     const [search, setSearch] = useState(filters?.search || '');
@@ -395,18 +396,15 @@ export default function BookingsIndex({
                         <p className="text-sm text-muted-foreground mt-1">
                             Manajemen alur transaksi properti menyeluruh: Uang Tanda Jadi, approval berjenjang, jadwal angsuran DP, dan pemantauan KPR perbankan.
                         </p>
+                        {isAgentOnly && (
+                            <div className="flex items-center gap-2 mt-2 px-3 py-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs font-medium w-fit">
+                                <ShieldCheck className="size-3.5 shrink-0" />
+                                <span>Scope Data Terkunci: Menampilkan transaksi booking yang Anda tangani.</span>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => router.get(route('siteplan.index'))}
-                            className="h-10 px-4 gap-2 border-primary/40 text-primary hover:bg-primary/10"
-                        >
-                            <Layers className="size-4" />
-                            Peta Siteplan Kavling
-                        </Button>
-
                         {can('create-bookings') && (
                             <Button
                                 onClick={() => setCreateDialogOpen(true)}
@@ -707,7 +705,12 @@ export default function BookingsIndex({
                                                         <ChevronRight className="size-3.5" />
                                                     </Button>
 
-                                                    {booking.status !== 'cancelled' && (can('cancel-bookings') || isSalesManager || isSuperAdmin) && (
+                                                    {booking.status !== 'cancelled' && (
+                                                        can('cancel-bookings') ||
+                                                        isSalesManager ||
+                                                        isSuperAdmin ||
+                                                        (Number(booking.sales_id) === Number(user?.id) && booking.status === 'pending_approval')
+                                                    ) && (
                                                         <Button
                                                             size="sm"
                                                             variant="ghost"

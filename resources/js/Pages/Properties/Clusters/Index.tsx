@@ -112,7 +112,8 @@ interface Props {
 }
 
 export default function ClustersIndex({ clusters, unitTypes, projects, filters }: Props) {
-    const { can } = useAuthorization();
+    const { can, isSuperAdmin } = useAuthorization();
+    const hasClusterActions = isSuperAdmin || can('edit-units') || can('delete-units');
     const [activeTab, setActiveTab] = useState<'clusters' | 'unit_types'>(
         (filters?.tab as 'clusters' | 'unit_types') || 'clusters'
     );
@@ -479,13 +480,15 @@ export default function ClustersIndex({ clusters, unitTypes, projects, filters }
                                         <TableHead>Jumlah Unit</TableHead>
                                         <TableHead>Deskripsi</TableHead>
                                         <TableHead>Status</TableHead>
-                                        <TableHead className="w-[110px] text-right">Aksi</TableHead>
+                                        {hasClusterActions && (
+                                            <TableHead className="w-[110px] text-right">Aksi</TableHead>
+                                        )}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredClusters.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                                            <TableCell colSpan={hasClusterActions ? 8 : 7} className="text-center py-10 text-muted-foreground">
                                                 Tidak ada data cluster yang sesuai kriteria pencarian.
                                             </TableCell>
                                         </TableRow>
@@ -524,30 +527,32 @@ export default function ClustersIndex({ clusters, unitTypes, projects, filters }
                                                         {cluster.is_active ? 'Aktif' : 'Non-Aktif'}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-1.5">
-                                                        {can('edit-units') && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => handleOpenEditCluster(cluster)}
-                                                                className="size-8 text-muted-foreground hover:text-foreground"
-                                                            >
-                                                                <Edit2 className="size-3.5" />
-                                                            </Button>
-                                                        )}
-                                                        {can('delete-units') && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => confirmDelete('cluster', cluster.id, cluster.name)}
-                                                                className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                            >
-                                                                <Trash2 className="size-3.5" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
+                                                {hasClusterActions && (
+                                                    <TableCell className="text-right">
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            {can('edit-units') && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => handleOpenEditCluster(cluster)}
+                                                                    className="size-8 text-muted-foreground hover:text-foreground"
+                                                                >
+                                                                    <Edit2 className="size-3.5" />
+                                                                </Button>
+                                                            )}
+                                                            {can('delete-units') && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => confirmDelete('cluster', cluster.id, cluster.name)}
+                                                                    className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                                >
+                                                                    <Trash2 className="size-3.5" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                )}
                                             </TableRow>
                                         ))
                                     )}
@@ -580,13 +585,15 @@ export default function ClustersIndex({ clusters, unitTypes, projects, filters }
                                         <TableHead>Listrik</TableHead>
                                         <TableHead>Brosur / Denah</TableHead>
                                         <TableHead>Total Unit</TableHead>
-                                        <TableHead className="w-[110px] text-right">Aksi</TableHead>
+                                        {hasClusterActions && (
+                                            <TableHead className="w-[110px] text-right">Aksi</TableHead>
+                                        )}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredUnitTypes.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
+                                            <TableCell colSpan={hasClusterActions ? 9 : 8} className="text-center py-10 text-muted-foreground">
                                                 Tidak ada data tipe unit yang sesuai kriteria.
                                             </TableCell>
                                         </TableRow>
@@ -656,30 +663,32 @@ export default function ClustersIndex({ clusters, unitTypes, projects, filters }
                                                         {unitType.units_count ?? 0} Unit
                                                     </span>
                                                 </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-1.5">
-                                                        {can('edit-units') && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => handleOpenEditUnitType(unitType)}
-                                                                className="size-8 text-muted-foreground hover:text-foreground"
-                                                            >
-                                                                <Edit2 className="size-3.5" />
-                                                            </Button>
-                                                        )}
-                                                        {can('delete-units') && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => confirmDelete('unit_type', unitType.id, unitType.name)}
-                                                                className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                            >
-                                                                <Trash2 className="size-3.5" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
+                                                {hasClusterActions && (
+                                                    <TableCell className="text-right">
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            {can('edit-units') && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => handleOpenEditUnitType(unitType)}
+                                                                    className="size-8 text-muted-foreground hover:text-foreground"
+                                                                >
+                                                                    <Edit2 className="size-3.5" />
+                                                                </Button>
+                                                            )}
+                                                            {can('delete-units') && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => confirmDelete('unit_type', unitType.id, unitType.name)}
+                                                                    className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                                >
+                                                                    <Trash2 className="size-3.5" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                )}
                                             </TableRow>
                                         ))
                                     )}
