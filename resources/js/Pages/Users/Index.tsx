@@ -98,7 +98,7 @@ interface UserData {
     created_at: string;
 }
 
-interface PageProps {
+interface UsersIndexProps {
     users: UserData[];
     availableRoles: string[];
     flash?: {
@@ -179,8 +179,8 @@ function UserAvatar({
     );
 }
 
-export default function UsersIndex({ users, availableRoles }: PageProps) {
-    const { auth, flash, errors: pageErrors } = usePage<PageProps>().props;
+export default function UsersIndex({ users, availableRoles }: UsersIndexProps) {
+    const { auth, flash, errors: pageErrors } = usePage<UsersIndexProps>().props;
     const currentUserId = auth.user.id;
 
     // Search & Filter state

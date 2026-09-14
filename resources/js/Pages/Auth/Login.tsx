@@ -4,9 +4,10 @@ import { Label } from '@/Components/ui/label';
 import { Checkbox } from '@/Components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/Components/ui/card';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
 import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail, UserCheck } from 'lucide-react';
+import { PageProps } from '@/types';
 
 export default function Login({
     status,
@@ -15,6 +16,8 @@ export default function Login({
     status?: string;
     canResetPassword?: boolean;
 }) {
+    const { app_settings } = usePage<PageProps>().props;
+    const appName = app_settings?.app_name || 'CASANUMA CRM';
     const [showPassword, setShowPassword] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -33,7 +36,7 @@ export default function Login({
 
     return (
         <GuestLayout>
-            <Head title="Masuk Portal - CASANUMA CRM" />
+            <Head title={`Masuk Portal - ${appName}`} />
 
             <Card className="border-border/80 shadow-xl shadow-primary/5 backdrop-blur-xs">
                 <CardHeader className="flex flex-col items-center text-center space-y-1.5 pb-4">

@@ -79,10 +79,17 @@ export default function Authenticated({
     children,
 }: PropsWithChildren<AuthenticatedLayoutProps>) {
     const { user, can, isSuperAdmin } = useAuthorization();
-    const { flash } = usePage<PageProps>().props;
+    const { flash, app_settings } = usePage<PageProps>().props;
     const [isDark, setIsDark] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [collapsed, setCollapsed] = useState(false);
+
+    const appName = app_settings?.app_name || 'CASANUMA CRM';
+    const companyName = app_settings?.company_name || 'PT Casanuma Modern Living';
+    const activeLogoUrl = isDark
+        ? (app_settings?.logo_dark_url || app_settings?.logo_light_url)
+        : (app_settings?.logo_light_url || app_settings?.logo_dark_url);
+    const faviconUrl = app_settings?.favicon_url;
 
     useEffect(() => {
         if (flash?.success) {
@@ -271,10 +278,17 @@ export default function Authenticated({
                     visible: can('manage-users'),
                 },
                 {
+                    label: 'Branding & Identitas App',
+                    icon: Settings,
+                    href: route('settings.general.index'),
+                    active: isCurrent('settings.general.*'),
+                    visible: isSuperAdmin,
+                },
+                {
                     label: 'Activity Logs & Telegram',
                     icon: Activity,
                     href: route('settings.activity-logs.index'),
-                    active: isCurrent('settings.*'),
+                    active: isCurrent('settings.activity-logs.*'),
                     visible: isSuperAdmin,
                 },
                 {
@@ -282,12 +296,6 @@ export default function Authenticated({
                     icon: KeyRound,
                     action: () => handleMenuClick('Hak Akses Role'),
                     visible: can('manage-roles'),
-                },
-                {
-                    label: 'Pengaturan Sistem',
-                    icon: Settings,
-                    action: () => handleMenuClick('Pengaturan Sistem'),
-                    visible: can('manage-settings'),
                 },
             ],
         },
@@ -317,27 +325,27 @@ export default function Authenticated({
                 }`}
             >
                 {/* Brand Header - Pinned at top */}
-                {/* Brand Header - Pinned at top */}
                 <div className={`h-16 border-b border-border/60 flex items-center shrink-0 transition-all duration-300 ${
                     collapsed ? 'justify-center px-0' : 'justify-between px-5'
                 }`}>
                     {!collapsed ? (
                         <>
                             <Link href={route('dashboard')} className="flex items-center gap-2.5 group overflow-hidden">
-                                <div className="size-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold shadow-md shadow-primary/20 border border-primary/30 group-hover:scale-105 transition-transform shrink-0">
-                                    <Building2 className="size-5" />
-                                </div>
-                                <div className="flex flex-col truncate">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="font-extrabold text-sm tracking-tight font-heading">
-                                            CASANUMA
-                                        </span>
-                                        <span className="px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-wider rounded bg-primary/15 text-primary border border-primary/25">
-                                            CRM
-                                        </span>
+                                {activeLogoUrl ? (
+                                    <div className="h-9 max-w-[110px] flex items-center shrink-0">
+                                        <img src={activeLogoUrl} alt={appName} className="h-8 max-w-[110px] object-contain group-hover:scale-105 transition-transform" />
                                     </div>
+                                ) : (
+                                    <div className="size-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold shadow-md shadow-primary/20 border border-primary/30 group-hover:scale-105 transition-transform shrink-0">
+                                        <Building2 className="size-5" />
+                                    </div>
+                                )}
+                                <div className="flex flex-col truncate">
+                                    <span className="font-extrabold text-sm tracking-tight font-heading truncate text-foreground">
+                                        {appName}
+                                    </span>
                                     <span className="text-[10px] text-muted-foreground leading-tight truncate">
-                                        Database Perumahan
+                                        {companyName}
                                     </span>
                                 </div>
                             </Link>
@@ -352,10 +360,16 @@ export default function Authenticated({
                             </Button>
                         </>
                     ) : (
-                        <Link href={route('dashboard')} title="CASANUMA CRM - Dashboard" className="flex items-center justify-center">
-                            <div className="size-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold shadow-md shadow-primary/20 border border-primary/30 hover:scale-105 transition-transform">
-                                <Building2 className="size-5" />
-                            </div>
+                        <Link href={route('dashboard')} title={`${appName} - Dashboard`} className="flex items-center justify-center">
+                            {faviconUrl || activeLogoUrl ? (
+                                <div className="size-10 rounded-xl bg-muted/40 border border-border/60 flex items-center justify-center overflow-hidden p-1.5 hover:scale-105 transition-transform shadow-2xs">
+                                    <img src={faviconUrl || activeLogoUrl!} alt={appName} className="size-7 object-contain" />
+                                </div>
+                            ) : (
+                                <div className="size-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold shadow-md shadow-primary/20 border border-primary/30 hover:scale-105 transition-transform">
+                                    <Building2 className="size-5" />
+                                </div>
+                            )}
                         </Link>
                     )}
                 </div>
@@ -578,12 +592,12 @@ export default function Authenticated({
                         </Button>
 
                         <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-foreground font-heading">
-                                CASANUMA Portal
+                            <span className="text-sm font-semibold text-foreground font-heading truncate max-w-[200px]">
+                                {appName}
                             </span>
                             <span className="text-muted-foreground text-xs hidden sm:inline">/</span>
-                            <span className="text-xs text-muted-foreground hidden sm:inline">
-                                Multi-Role CRM
+                            <span className="text-xs text-muted-foreground hidden sm:inline truncate max-w-[240px]">
+                                {companyName}
                             </span>
                         </div>
                     </div>

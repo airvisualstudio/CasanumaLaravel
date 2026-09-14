@@ -4,7 +4,15 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        @php
+            $dynamicAppName = \App\Models\AppSetting::get('app_name', config('app.name', 'CASANUMA CRM'));
+            $dynamicFavicon = \App\Models\AppSetting::get('favicon');
+        @endphp
+        <title inertia>{{ $dynamicAppName }}</title>
+
+        @if($dynamicFavicon)
+            <link rel="icon" href="{{ asset('storage/' . $dynamicFavicon) }}">
+        @endif
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">

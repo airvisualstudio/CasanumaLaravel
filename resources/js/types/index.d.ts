@@ -22,12 +22,25 @@ export interface User {
     permissions?: string[];
 }
 
+export interface AppSettings {
+    app_name: string;
+    company_name: string;
+    app_description: string;
+    logo_light?: string | null;
+    logo_light_url?: string | null;
+    logo_dark?: string | null;
+    logo_dark_url?: string | null;
+    favicon?: string | null;
+    favicon_url?: string | null;
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
     auth: {
         user: User;
     };
+    app_settings?: AppSettings;
     flash?: {
         success?: string;
         error?: string;
