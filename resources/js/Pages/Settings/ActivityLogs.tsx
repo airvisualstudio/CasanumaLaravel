@@ -444,8 +444,8 @@ export default function ActivityLogsIndex({
                         </Card>
 
                         {/* Activity Logs Table */}
-                        <Card className="border-border/80 shadow-md overflow-hidden">
-                            <CardHeader className="p-5 pb-3 border-b border-border/50 bg-muted/10 flex flex-row items-center justify-between">
+                        <Card className="border-border/80 shadow-md overflow-hidden py-0 gap-0">
+                            <CardHeader className="px-5 py-4 !pb-4 border-b border-border/50 bg-muted/10 flex flex-row items-center justify-between">
                                 <div>
                                     <CardTitle className="text-base font-semibold">
                                         Rekam Jejak Operasional Sistem (Audit Trail)
