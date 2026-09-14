@@ -77,4 +77,22 @@ Route::middleware(['auth', 'can:view-units'])->group(function () {
     });
 });
 
+// Penjualan & Leads CRM
+Route::middleware(['auth', 'can:view-leads'])->group(function () {
+    Route::get('/leads', [\App\Http\Controllers\LeadController::class, 'index'])->name('leads.index');
+
+    Route::middleware('can:create-leads')->group(function () {
+        Route::post('/leads', [\App\Http\Controllers\LeadController::class, 'store'])->name('leads.store');
+    });
+
+    Route::middleware('can:edit-leads')->group(function () {
+        Route::put('/leads/{lead}', [\App\Http\Controllers\LeadController::class, 'update'])->name('leads.update');
+        Route::patch('/leads/{lead}/status', [\App\Http\Controllers\LeadController::class, 'updateStatus'])->name('leads.update-status');
+    });
+
+    Route::middleware('can:delete-leads')->group(function () {
+        Route::delete('/leads/{lead}', [\App\Http\Controllers\LeadController::class, 'destroy'])->name('leads.destroy');
+    });
+});
+
 require __DIR__.'/auth.php';

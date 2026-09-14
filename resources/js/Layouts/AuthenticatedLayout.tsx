@@ -228,7 +228,8 @@ export default function Authenticated({
                 {
                     label: 'Pipeline Leads CRM',
                     icon: Users,
-                    action: () => handleMenuClick('Pipeline Leads CRM'),
+                    href: route('leads.index'),
+                    active: isCurrent('leads.*'),
                     visible: can('view-leads'),
                 },
                 {
