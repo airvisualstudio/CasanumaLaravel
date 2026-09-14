@@ -47,32 +47,32 @@
 ### Installed NPM Packages
 | Package | Version | Type | Description |
 | :--- | :--- | :--- | :--- |
-| `@fontsource-variable/inter` | 5.3.0 | `dependency` | Self-host the Inter font in a neatly bundled NPM package. |
-| `@fontsource-variable/public-sans` | 5.3.0 | `dependency` | Self-host the Public Sans font in a neatly bundled NPM package. |
-| `@headlessui/react` | 2.2.10 | `devDependency` | A set of completely unstyled, fully accessible UI components for React, designed to integrate beautifully with Tailwind CSS. |
-| `@inertiajs/react` | 2.3.28 | `devDependency` | The React adapter for Inertia.js |
+| `@fontsource-variable/inter` | 5.3.0 | `dependency` | Frontend dependency |
+| `@fontsource-variable/public-sans` | 5.3.0 | `dependency` | Frontend dependency |
+| `@headlessui/react` | 2.2.10 | `devDependency` | Build & developer tooling |
+| `@inertiajs/react` | 2.3.28 | `devDependency` | Build & developer tooling |
 | `@laravel/multiplex` | 0.4.3 | `optionalDependency` | Optional dependency |
-| `@phosphor-icons/react` | 2.1.10 | `dependency` | A clean and friendly icon family for React |
-| `@tailwindcss/vite` | 4.3.3 | `devDependency` | A utility-first CSS framework for rapidly building custom user interfaces. |
-| `@types/node` | 18.19.130 | `devDependency` | TypeScript definitions for node |
-| `@types/react` | 18.3.31 | `devDependency` | TypeScript definitions for react |
-| `@types/react-dom` | 18.3.7 | `devDependency` | TypeScript definitions for react-dom |
-| `@vitejs/plugin-react` | 4.7.0 | `devDependency` | The default Vite plugin for React projects |
-| `autoprefixer` | 10.6.0 | `devDependency` | Parse CSS and add vendor prefixes to CSS rules using values from the Can I Use website |
-| `class-variance-authority` | 0.7.1 | `dependency` | Class Variance Authority 🧬 |
-| `cn` | 0.3.0 | `dependency` | Fast, small, compiled class-name merging for Tailwind CSS. Drop-in replacement for clsx + tailwind-merge. |
-| `concurrently` | 10.0.5 | `devDependency` | Run commands concurrently |
-| `laravel-vite-plugin` | 3.2.0 | `devDependency` | Laravel plugin for Vite. |
-| `lucide-react` | 1.45.0 | `dependency` | A Lucide icon library package for React applications. |
-| `postcss` | 8.5.28 | `devDependency` | Tool for transforming styles with JS plugins |
+| `@phosphor-icons/react` | 2.1.10 | `dependency` | Frontend dependency |
+| `@tailwindcss/vite` | 4.3.3 | `devDependency` | Build & developer tooling |
+| `@types/node` | 18.19.130 | `devDependency` | Build & developer tooling |
+| `@types/react` | 18.3.31 | `devDependency` | Build & developer tooling |
+| `@types/react-dom` | 18.3.7 | `devDependency` | Build & developer tooling |
+| `@vitejs/plugin-react` | 4.7.0 | `devDependency` | Build & developer tooling |
+| `autoprefixer` | 10.6.0 | `devDependency` | Build & developer tooling |
+| `class-variance-authority` | 0.7.1 | `dependency` | Frontend dependency |
+| `cn` | 0.3.0 | `dependency` | Frontend dependency |
+| `concurrently` | 10.0.5 | `devDependency` | Build & developer tooling |
+| `laravel-vite-plugin` | 3.2.0 | `devDependency` | Build & developer tooling |
+| `lucide-react` | 1.45.0 | `dependency` | Frontend dependency |
+| `postcss` | 8.5.28 | `devDependency` | Build & developer tooling |
 | `radix-ui` | 1.6.7 | `dependency` | Frontend dependency |
-| `react` | 18.3.1 | `devDependency` | React is a JavaScript library for building user interfaces. |
-| `react-dom` | 18.3.1 | `devDependency` | React package for working with the DOM. |
-| `shadcn` | 4.21.0 | `dependency` | Add components to your apps. |
-| `tailwindcss` | 4.3.3 | `devDependency` | A utility-first CSS framework for rapidly building custom user interfaces. |
-| `tw-animate-css` | 1.4.0 | `dependency` | TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`. |
-| `typescript` | 5.9.3 | `devDependency` | TypeScript is a language for application scale JavaScript development |
-| `vite` | 8.3.0 | `devDependency` | Native-ESM powered web dev build tool |
+| `react` | 18.3.1 | `devDependency` | Build & developer tooling |
+| `react-dom` | 18.3.1 | `devDependency` | Build & developer tooling |
+| `shadcn` | 4.21.0 | `dependency` | Frontend dependency |
+| `tailwindcss` | 4.3.3 | `devDependency` | Build & developer tooling |
+| `tw-animate-css` | 1.4.0 | `dependency` | Frontend dependency |
+| `typescript` | 5.9.3 | `devDependency` | Build & developer tooling |
+| `vite` | 8.3.0 | `devDependency` | Build & developer tooling |
 
 ---
 
