@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'telegram' => [
+        'verify_ssl' => env('TELEGRAM_VERIFY_SSL', false),
+    ],
+
 ];

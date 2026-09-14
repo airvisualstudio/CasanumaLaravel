@@ -26,12 +26,17 @@ class ActivityLogTest extends TestCase
     {
         $admin = User::where('email', 'admin@casanuma.com')->first();
 
-        $response = $this->actingAs($admin)->get('/settings/activity-logs');
+        // Create an activity log with authenticated user to test eager loading relation
+        $this->actingAs($admin);
+        ActivityLog::record('test.action', 'Testing eager loading with user and roles', $admin);
+
+        $response = $this->get('/settings/activity-logs');
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('Settings/ActivityLogs')
-            ->has('logs')
+            ->has('logs.data')
+            ->where('logs.data.0.user.email', $admin->email)
             ->has('kpi')
             ->has('telegramConfig')
         );

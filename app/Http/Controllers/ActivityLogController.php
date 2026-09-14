@@ -17,7 +17,7 @@ class ActivityLogController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = ActivityLog::with('user:id,name,email,avatar,roles')
+        $query = ActivityLog::with(['user:id,name,email,avatar', 'user.roles:id,name'])
             ->orderBy('id', 'desc');
 
         if ($request->filled('search')) {

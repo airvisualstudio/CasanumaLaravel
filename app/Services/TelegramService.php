@@ -30,7 +30,15 @@ class TelegramService
         }
 
         try {
-            $response = Http::timeout(10)->post("https://api.telegram.org/bot{$token}/sendMessage", [
+            $httpClient = Http::timeout(10);
+
+            // Bypass SSL verification in development/local environments or when verify_ssl is disabled
+            // This prevents Windows cURL error 60 (self-signed cert in chain / missing cacert.pem)
+            if (! app()->isProduction() || ! config('services.telegram.verify_ssl', true)) {
+                $httpClient = $httpClient->withoutVerifying();
+            }
+
+            $response = $httpClient->post("https://api.telegram.org/bot{$token}/sendMessage", [
                 'chat_id' => $chat,
                 'text' => $text,
                 'parse_mode' => $parseMode,
