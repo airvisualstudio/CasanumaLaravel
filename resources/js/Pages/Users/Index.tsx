@@ -74,6 +74,7 @@ import {
 import { Calendar } from '@/Components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
 import AvatarCropperModal from '@/Components/AvatarCropperModal';
+import { toast } from '@/Components/ui/sonner';
 
 interface UserData {
     id: number;
@@ -383,7 +384,17 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (!file.type.startsWith('image/')) {
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!allowedMimeTypes.includes(file.type)) {
+            toast.error('Format berkas tidak didukung. Harap pilih foto berformat JPG atau PNG.');
+            e.target.value = '';
+            return;
+        }
+
+        const maxSizeBytes = 2 * 1024 * 1024; // 2MB
+        if (file.size > maxSizeBytes) {
+            toast.error('Ukuran berkas melebihi 2MB. Silakan pilih foto dengan ukuran maksimal 2MB.');
+            e.target.value = '';
             return;
         }
 
@@ -405,6 +416,7 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
         setFormData('remove_avatar', false);
         setAvatarPreview(previewUrl);
         setCompressedFileSize(compressedSize);
+        toast.success('Foto berhasil dipotong dan siap disimpan!');
     };
 
     const handleRemoveAvatar = () => {
@@ -415,6 +427,7 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
+        toast.info('Foto avatar dihapus. Sistem akan menggunakan avatar inisial nama.');
     };
 
     const handleFormSubmit: FormEventHandler = (e) => {
@@ -424,20 +437,39 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
             post(route('users.update', editingUser.id), {
                 forceFormData: true,
                 preserveScroll: true,
-                onSuccess: () => closeFormDialog(),
+                onSuccess: () => {
+                    closeFormDialog();
+                    toast.success(`Data pengguna ${formData.name} berhasil diperbarui!`);
+                },
+                onError: () => {
+                    toast.error('Gagal memperbarui pengguna. Silakan periksa formulir.');
+                },
             });
         } else {
             post(route('users.store'), {
                 forceFormData: true,
                 preserveScroll: true,
-                onSuccess: () => closeFormDialog(),
+                onSuccess: () => {
+                    closeFormDialog();
+                    toast.success(`Pengguna ${formData.name} berhasil ditambahkan!`);
+                },
+                onError: () => {
+                    toast.error('Gagal menambahkan pengguna. Silakan periksa formulir.');
+                },
             });
         }
     };
 
     const handleToggleStatus = (user: UserData) => {
+        const nextStatus = !user.is_active;
         router.patch(route('users.toggle-status', user.id), {}, {
             preserveScroll: true,
+            onSuccess: () => {
+                toast.success(`Status akun ${user.name} diubah menjadi ${nextStatus ? 'Aktif' : 'Nonaktif'}.`);
+            },
+            onError: () => {
+                toast.error('Gagal memperbarui status akun.');
+            },
         });
     };
 
@@ -447,10 +479,17 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
 
     const handleDeleteUser = () => {
         if (!userToDelete) return;
+        const targetName = userToDelete.name;
 
         destroyUser(route('users.destroy', userToDelete.id), {
             preserveScroll: true,
-            onSuccess: () => setUserToDelete(null),
+            onSuccess: () => {
+                setUserToDelete(null);
+                toast.success(`Pengguna ${targetName} berhasil dihapus.`);
+            },
+            onError: () => {
+                toast.error('Gagal menghapus pengguna.');
+            },
         });
     };
 
@@ -498,6 +537,7 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
         if (resetPasswordData.password) {
             navigator.clipboard.writeText(resetPasswordData.password);
             setPasswordCopied(true);
+            toast.success('Password sementara berhasil disalin ke clipboard!');
             setTimeout(() => setPasswordCopied(false), 2000);
         }
     };
@@ -515,6 +555,7 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
             {
                 preserveScroll: true,
                 onSuccess: () => {
+                    toast.success(`Password untuk ${userToResetPassword.name} berhasil direset!`);
                     setUserToResetPassword(null);
                     setResetPasswordData({ password: '', password_confirmation: '' });
                     setResetPasswordProcessing(false);
@@ -522,6 +563,7 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                 onError: (errs) => {
                     setResetPasswordErrors(errs);
                     setResetPasswordProcessing(false);
+                    toast.error('Gagal mereset password. Pastikan memenuhi standar keamanan.');
                 },
             }
         );
@@ -1156,15 +1198,15 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                                         <button
                                                             type="button"
                                                             onClick={handleRemoveAvatar}
-                                                            className="absolute -top-1 -right-1 size-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-xs hover:scale-110 transition-transform"
-                                                            title="Hapus foto"
+                                                            className="absolute -top-1 -right-1 size-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-xs hover:scale-110 transition-transform cursor-pointer"
+                                                            title="Hapus foto (Kembali ke inisial)"
                                                         >
                                                             <X className="size-3" />
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    <div className="size-16 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground shrink-0">
-                                                        <ImageIcon className="size-6 opacity-40" />
+                                                    <div className="size-16 rounded-full bg-linear-to-br from-primary/20 to-primary/5 text-primary font-bold text-xl flex items-center justify-center border-2 border-dashed border-primary/30 shrink-0 shadow-2xs">
+                                                        {formData.name ? formData.name.charAt(0).toUpperCase() : <UserIcon className="size-6 opacity-40 text-muted-foreground" />}
                                                     </div>
                                                 )}
 
@@ -1172,7 +1214,7 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                                     <input 
                                                         type="file" 
                                                         ref={fileInputRef}
-                                                        accept="image/jpeg,image/png,image/jpg,image/webp"
+                                                        accept="image/jpeg,image/png,image/jpg"
                                                         onChange={handleFileSelect}
                                                         className="hidden" 
                                                         id="avatar-upload"
@@ -1186,6 +1228,19 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                                             <span>{avatarPreview ? 'Ganti & Crop Foto' : 'Unggah & Crop Foto'}</span>
                                                         </label>
 
+                                                        {avatarPreview && (
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={handleRemoveAvatar}
+                                                                className="h-7 text-xs text-destructive hover:bg-destructive/10 gap-1 px-2.5"
+                                                            >
+                                                                <Trash2 className="size-3" />
+                                                                <span>Hapus Foto (Gunakan Inisial)</span>
+                                                            </Button>
+                                                        )}
+
                                                         {compressedFileSize && (
                                                             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                                                                 <Sparkles className="size-3" />
@@ -1194,7 +1249,7 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                                         )}
                                                     </div>
                                                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                                        Pilih foto dari komputer. Anda dapat mengatur crop dan zoom. Gambar berukuran &gt; 2MB otomatis dikompresi menjadi ukuran optimal.
+                                                        Format: JPG atau PNG (Maks. 2MB). Foto dapat di-crop dan diposisikan dengan presisi sebelum disimpan.
                                                     </p>
                                                 </div>
                                             </div>

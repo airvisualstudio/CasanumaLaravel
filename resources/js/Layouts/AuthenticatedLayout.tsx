@@ -50,6 +50,7 @@ import {
     PanelLeftOpen
 } from 'lucide-react';
 import { useAuthorization } from '@/hooks/useAuthorization';
+import { Toaster, toast } from '@/Components/ui/sonner';
 
 interface AuthenticatedLayoutProps {
     header?: ReactNode;
@@ -75,9 +76,19 @@ export default function Authenticated({
     children,
 }: PropsWithChildren<AuthenticatedLayoutProps>) {
     const { user, can, isSuperAdmin } = useAuthorization();
+    const { flash } = usePage<{ flash?: { success?: string; error?: string } }>().props;
     const [isDark, setIsDark] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [collapsed, setCollapsed] = useState(false);
+
+    useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme');
@@ -688,6 +699,9 @@ export default function Authenticated({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* shadcn Sonner Toast Notification Center */}
+            <Toaster richColors position="top-right" closeButton />
         </div>
     );
 }

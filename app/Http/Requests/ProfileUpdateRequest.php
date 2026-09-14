@@ -26,7 +26,7 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
-            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
             'remove_avatar' => ['nullable', 'boolean'],
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:1000'],
@@ -49,8 +49,8 @@ class ProfileUpdateRequest extends FormRequest
             'email.email' => 'Format alamat email tidak valid.',
             'email.unique' => 'Alamat email ini sudah terdaftar di sistem.',
             'avatar.image' => 'Berkas avatar harus berupa gambar.',
-            'avatar.mimes' => 'Format avatar yang didukung: JPEG, PNG, JPG, WEBP.',
-            'avatar.max' => 'Ukuran avatar tidak boleh melebihi 10MB.',
+            'avatar.mimes' => 'Format avatar yang didukung: JPG, JPEG, PNG.',
+            'avatar.max' => 'Ukuran avatar tidak boleh melebihi 2MB.',
         ];
     }
 }

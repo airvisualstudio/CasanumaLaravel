@@ -60,12 +60,12 @@ class UserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', Password::defaults()],
             'role' => ['required', 'string', 'exists:roles,name'],
-            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:1000'],
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
@@ -77,7 +77,15 @@ class UserController extends Controller
             'bank_name' => ['nullable', 'string', 'max:100'],
             'bank_account_number' => ['nullable', 'string', 'max:50'],
             'bank_account_holder' => ['nullable', 'string', 'max:255'],
-        ]);
+        ];
+
+        $messages = [
+            'avatar.image' => 'Berkas avatar harus berupa gambar.',
+            'avatar.mimes' => 'Format avatar yang didukung: JPG, JPEG, PNG.',
+            'avatar.max' => 'Ukuran avatar tidak boleh melebihi 2MB.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
 
         if ($request->hasFile('avatar')) {
             $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
@@ -100,12 +108,12 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): RedirectResponse
     {
-        $validated = $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', Password::defaults()],
             'role' => ['required', 'string', 'exists:roles,name'],
-            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:1000'],
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
@@ -117,7 +125,15 @@ class UserController extends Controller
             'bank_name' => ['nullable', 'string', 'max:100'],
             'bank_account_number' => ['nullable', 'string', 'max:50'],
             'bank_account_holder' => ['nullable', 'string', 'max:255'],
-        ]);
+        ];
+
+        $messages = [
+            'avatar.image' => 'Berkas avatar harus berupa gambar.',
+            'avatar.mimes' => 'Format avatar yang didukung: JPG, JPEG, PNG.',
+            'avatar.max' => 'Ukuran avatar tidak boleh melebihi 2MB.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
 
         if ($request->hasFile('avatar')) {
             if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {

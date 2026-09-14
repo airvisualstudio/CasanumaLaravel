@@ -105,7 +105,7 @@ class UserManagementTest extends TestCase
         $response->assertRedirect();
         $this->assertDatabaseHas('users', [
             'email' => 'doni@casanuma.com',
-            'phone' => '081299887766',
+            'phone' => '6281299887766',
             'employee_id' => 'CSN-SLS-010',
             'bank_name' => 'BCA',
             'bank_account_number' => '1234567890',
@@ -155,7 +155,7 @@ class UserManagementTest extends TestCase
             'id' => $sales->id,
             'name' => 'Sales Dipromosikan',
             'position' => 'Senior Sales Manager',
-            'phone' => '082199998888',
+            'phone' => '6282199998888',
         ]);
 
         $sales->refresh();
@@ -247,5 +247,60 @@ class UserManagementTest extends TestCase
         ]);
 
         $response->assertForbidden();
+    }
+
+    public function test_user_creation_rejects_avatar_greater_than_2mb(): void
+    {
+        $admin = User::where('email', 'admin@casanuma.com')->first();
+        $largeAvatar = UploadedFile::fake()->create('large.jpg', 2560, 'image/jpeg');
+
+        $response = $this->actingAs($admin)->post('/users', [
+            'name' => 'Ukuran Besar',
+            'email' => 'besar@casanuma.com',
+            'password' => 'password123',
+            'role' => 'sales_agent',
+            'avatar' => $largeAvatar,
+        ]);
+
+        $response->assertSessionHasErrors('avatar');
+    }
+
+    public function test_superadmin_can_remove_avatar_from_user(): void
+    {
+        Storage::fake('public');
+        $admin = User::where('email', 'admin@casanuma.com')->first();
+        $user = User::factory()->create(['avatar' => 'avatars/sample.jpg']);
+        Storage::disk('public')->put('avatars/sample.jpg', 'fake content');
+
+        $response = $this->actingAs($admin)->put("/users/{$user->id}", [
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => 'sales_agent',
+            'remove_avatar' => true,
+        ]);
+
+        $response->assertRedirect();
+        $user->refresh();
+        $this->assertNull($user->avatar);
+        Storage::disk('public')->assertMissing('avatars/sample.jpg');
+    }
+
+    public function test_phone_number_is_automatically_sanitized_to_628_on_user_creation(): void
+    {
+        $admin = User::where('email', 'admin@casanuma.com')->first();
+
+        $response = $this->actingAs($admin)->post('/users', [
+            'name' => 'Budi Santoso',
+            'email' => 'budi.santoso@casanuma.com',
+            'password' => 'password123',
+            'role' => 'sales_agent',
+            'phone' => '0857-1234-5678',
+            'emergency_contact_phone' => '+62 813-9876-5432',
+        ]);
+
+        $response->assertRedirect();
+        $user = User::where('email', 'budi.santoso@casanuma.com')->first();
+        $this->assertSame('6285712345678', $user->phone);
+        $this->assertSame('6281398765432', $user->emergency_contact_phone);
     }
 }

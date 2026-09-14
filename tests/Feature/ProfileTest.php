@@ -125,13 +125,46 @@ class ProfileTest extends TestCase
         $user->refresh();
 
         $this->assertSame('Updated Name', $user->name);
-        $this->assertSame('089876543210', $user->phone);
+        $this->assertSame('6289876543210', $user->phone);
         $this->assertSame('Jl. Kenanga Blok C No. 5', $user->address);
         $this->assertSame('Dewi Safitri', $user->emergency_contact_name);
-        $this->assertSame('081122334455', $user->emergency_contact_phone);
+        $this->assertSame('6281122334455', $user->emergency_contact_phone);
         $this->assertSame('BCA', $user->bank_name);
         $this->assertSame('5432109876', $user->bank_account_number);
         $this->assertSame('Updated Name', $user->bank_account_holder);
+    }
+
+    public function test_phone_number_is_automatically_sanitized_to_628_format(): void
+    {
+        $user = User::factory()->create();
+
+        // Testing different phone formats: 08xx, +628xx, 8xx
+        $this->actingAs($user)->patch('/profile', [
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => '0812-3456-7890',
+            'emergency_contact_phone' => '+62 878-1122-3344',
+        ]);
+
+        $user->refresh();
+        $this->assertSame('6281234567890', $user->phone);
+        $this->assertSame('6287811223344', $user->emergency_contact_phone);
+    }
+
+    public function test_profile_avatar_upload_rejects_files_larger_than_2mb(): void
+    {
+        $user = User::factory()->create();
+
+        // 2.5 MB file (2560 KB > 2048 KB)
+        $largeAvatar = \Illuminate\Http\UploadedFile::fake()->create('large.jpg', 2560, 'image/jpeg');
+
+        $response = $this->actingAs($user)->patch('/profile', [
+            'name' => $user->name,
+            'email' => $user->email,
+            'avatar' => $largeAvatar,
+        ]);
+
+        $response->assertSessionHasErrors('avatar');
     }
 
     public function test_user_cannot_modify_restricted_administrative_fields(): void
