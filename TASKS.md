@@ -24,8 +24,11 @@
 - [x] **USER-02:** Strict Spatie Middleware Lock (`role:superadmin` throwing HTTP 403 for sales_agent, sales_manager, finance).
 - [x] **USER-03:** Data Table shadcn UI ([`table.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/ui/table.tsx)) & User List ([`Users/Index.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Users/Index.tsx)) with live search, role filters, active status filter, and quick WhatsApp link.
 - [x] **USER-04:** Tabbed Add/Edit User Dialog (Account, Personal Info, Work Info, Bank Account) & Dossier Detail Dialog strictly using shadcn `Dialog`.
-- [x] **USER-05:** Database migration & seeder for extended user fields (avatar, phone, address, emergency contact, employee_id, position, join_date, is_active, bank info).
-- [x] **QA-USER:** Automated Feature Test Suite ([`UserManagementTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/UserManagementTest.php)) passing with 12 test cases & 41 assertions.
+- [x] **USER-05:** Database migration & seeder for extended user fields (avatar, phone, address, emergency contact, employee_id, position, join_date, is_active, bank info) with client-side image cropping & auto-compression < 200KB.
+- [x] **USER-06:** Force Reset Password oleh Superadmin di tabel User Management & Dossier modal dengan generator password acak, copy button, dan dialog shadcn `Dialog`.
+- [x] **USER-07:** Self-service Ganti Password dan Settings/Profile di dropdown profil topbar & sidebar footer dengan anchor navigation (`Profile/Edit.tsx`).
+- [x] **USER-08:** Standardisasi Dropdown shadcn `Select` & Date Picker `Calendar` + `Popover` (tanpa native HTML `<select>` / `<input type="date">`).
+- [x] **QA-USER:** Automated Feature Test Suite ([`UserManagementTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/UserManagementTest.php)) passing dengan 14 test cases & 44 assertions (Total aplikasi: 41 passed, 130 assertions).
 - [ ] **DB-04:** Migrations & Seeders for Housing Inventory:
   - Table `clusters` (nama, deskripsi, lokasi, total_unit).
   - Table `unit_types` (tipe_nama, lb, lt, spesifikasi_bangunan, denah_url).

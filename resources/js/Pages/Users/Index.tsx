@@ -36,7 +36,9 @@ import {
     Crop as CropIcon,
     ZoomIn,
     ZoomOut,
-    RotateCcw
+    RotateCcw,
+    Copy,
+    EyeOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
@@ -198,6 +200,17 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
     const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
     const [originalFileSize, setOriginalFileSize] = useState<number>(0);
     const [compressedFileSize, setCompressedFileSize] = useState<number | null>(null);
+
+    // Force Reset Password states (Superadmin)
+    const [userToResetPassword, setUserToResetPassword] = useState<UserData | null>(null);
+    const [resetPasswordData, setResetPasswordData] = useState({
+        password: '',
+        password_confirmation: '',
+    });
+    const [resetPasswordErrors, setResetPasswordErrors] = useState<Record<string, string>>({});
+    const [resetPasswordProcessing, setResetPasswordProcessing] = useState(false);
+    const [showResetPassword, setShowResetPassword] = useState(false);
+    const [passwordCopied, setPasswordCopied] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -454,6 +467,64 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
         if (bytes < 1024) return bytes + ' B';
         if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
         return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    };
+
+    const openResetPasswordDialog = (user: UserData) => {
+        setUserToResetPassword(user);
+        setResetPasswordData({
+            password: '',
+            password_confirmation: '',
+        });
+        setResetPasswordErrors({});
+        setShowResetPassword(false);
+        setPasswordCopied(false);
+    };
+
+    const generateRandomPassword = () => {
+        const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%';
+        let generated = 'Casa-';
+        for (let i = 0; i < 8; i++) {
+            generated += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        setResetPasswordData({
+            password: generated,
+            password_confirmation: generated,
+        });
+        setResetPasswordErrors({});
+        setShowResetPassword(true);
+    };
+
+    const handleCopyPassword = () => {
+        if (resetPasswordData.password) {
+            navigator.clipboard.writeText(resetPasswordData.password);
+            setPasswordCopied(true);
+            setTimeout(() => setPasswordCopied(false), 2000);
+        }
+    };
+
+    const handleResetPasswordSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!userToResetPassword) return;
+
+        setResetPasswordProcessing(true);
+        setResetPasswordErrors({});
+
+        router.patch(
+            route('users.reset-password', userToResetPassword.id),
+            resetPasswordData,
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setUserToResetPassword(null);
+                    setResetPasswordData({ password: '', password_confirmation: '' });
+                    setResetPasswordProcessing(false);
+                },
+                onError: (errs) => {
+                    setResetPasswordErrors(errs);
+                    setResetPasswordProcessing(false);
+                },
+            }
+        );
     };
 
     return (
@@ -818,6 +889,16 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                                             className="text-muted-foreground hover:text-primary"
                                                         >
                                                             <Eye className="size-3.5" />
+                                                        </Button>
+
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon-sm"
+                                                            onClick={() => openResetPasswordDialog(user)}
+                                                            title={`Reset Password ${user.name}`}
+                                                            className="text-muted-foreground hover:text-amber-500"
+                                                        >
+                                                            <KeyRound className="size-3.5" />
                                                         </Button>
 
                                                         <Button
@@ -1595,6 +1676,19 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                     </Button>
                                     <Button
                                         type="button"
+                                        variant="outline"
+                                        onClick={() => {
+                                            const u = userToView;
+                                            setUserToView(null);
+                                            openResetPasswordDialog(u);
+                                        }}
+                                        className="gap-2 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400"
+                                    >
+                                        <KeyRound className="size-3.5" />
+                                        <span>Reset Password</span>
+                                    </Button>
+                                    <Button
+                                        type="button"
                                         onClick={() => {
                                             const u = userToView;
                                             setUserToView(null);
@@ -1665,6 +1759,146 @@ export default function UsersIndex({ users, availableRoles }: PageProps) {
                                 <span>Ya, Hapus Pengguna</span>
                             </Button>
                         </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* 9. Dialog Force Reset Password (Superadmin Only - Standard shadcn Dialog) */}
+                <Dialog open={!!userToResetPassword} onOpenChange={(open) => !open && setUserToResetPassword(null)}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader className="gap-2">
+                            <div className="flex items-center gap-2 text-primary">
+                                <div className="size-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                    <KeyRound className="size-5" />
+                                </div>
+                                <div>
+                                    <DialogTitle className="text-base font-bold">
+                                        Reset Password Pengguna
+                                    </DialogTitle>
+                                    <DialogDescription className="text-xs text-muted-foreground">
+                                        Atur password baru untuk staf jika mereka lupa akses login.
+                                    </DialogDescription>
+                                </div>
+                            </div>
+                        </DialogHeader>
+
+                        {userToResetPassword && (
+                            <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+                                <div className="p-3 rounded-xl border border-border/80 bg-muted/20 space-y-1">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="text-muted-foreground">Nama Pengguna:</span>
+                                        <span className="font-semibold text-foreground">{userToResetPassword.name}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="text-muted-foreground">Email Login:</span>
+                                        <span className="font-mono text-muted-foreground">{userToResetPassword.email}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="text-muted-foreground">Peran / Role:</span>
+                                        <span className="font-semibold uppercase text-[11px] text-primary">{userToResetPassword.roles.join(', ')}</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="reset-new-password" className="text-xs font-semibold">
+                                                Password Baru
+                                            </Label>
+                                            <button
+                                                type="button"
+                                                onClick={generateRandomPassword}
+                                                className="text-[11px] font-medium text-primary hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                            >
+                                                <Sparkles className="size-3" />
+                                                <span>Generate Acak</span>
+                                            </button>
+                                        </div>
+                                        <div className="relative">
+                                            <Lock className="size-4 text-muted-foreground absolute left-3 top-2.5" />
+                                            <Input
+                                                id="reset-new-password"
+                                                type={showResetPassword ? 'text' : 'password'}
+                                                value={resetPasswordData.password}
+                                                onChange={(e) => setResetPasswordData({ ...resetPasswordData, password: e.target.value })}
+                                                placeholder="Minimal 8 karakter"
+                                                className="pl-9 pr-16 text-xs font-mono"
+                                            />
+                                            <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+                                                {resetPasswordData.password && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleCopyPassword}
+                                                        title="Salin Password"
+                                                        className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors"
+                                                    >
+                                                        {passwordCopied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+                                                    </button>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowResetPassword(!showResetPassword)}
+                                                    title={showResetPassword ? 'Sembunyikan' : 'Lihat'}
+                                                    className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors"
+                                                >
+                                                    {showResetPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {resetPasswordErrors.password && (
+                                            <p className="text-xs font-medium text-destructive">{resetPasswordErrors.password}</p>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="reset-confirm-password" className="text-xs font-semibold">
+                                            Konfirmasi Password Baru
+                                        </Label>
+                                        <div className="relative">
+                                            <Lock className="size-4 text-muted-foreground absolute left-3 top-2.5" />
+                                            <Input
+                                                id="reset-confirm-password"
+                                                type={showResetPassword ? 'text' : 'password'}
+                                                value={resetPasswordData.password_confirmation}
+                                                onChange={(e) => setResetPasswordData({ ...resetPasswordData, password_confirmation: e.target.value })}
+                                                placeholder="Ketik ulang password baru"
+                                                className="pl-9 text-xs font-mono"
+                                            />
+                                        </div>
+                                        {resetPasswordErrors.password_confirmation && (
+                                            <p className="text-xs font-medium text-destructive">{resetPasswordErrors.password_confirmation}</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <DialogFooter className="gap-2.5 sm:gap-3 pt-3 border-t border-border">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setUserToResetPassword(null)}
+                                        disabled={resetPasswordProcessing}
+                                    >
+                                        Batal
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={resetPasswordProcessing}
+                                        className="gap-2"
+                                    >
+                                        {resetPasswordProcessing ? (
+                                            <>
+                                                <Loader2 className="size-3.5 animate-spin" />
+                                                <span>Menyimpan...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <KeyRound className="size-3.5" />
+                                                <span>Simpan Password Baru</span>
+                                            </>
+                                        )}
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        )}
                     </DialogContent>
                 </Dialog>
             </div>

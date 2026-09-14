@@ -217,4 +217,35 @@ class UserManagementTest extends TestCase
             'id' => $admin->id,
         ]);
     }
+
+    public function test_superadmin_can_force_reset_user_password(): void
+    {
+        $admin = User::where('email', 'admin@casanuma.com')->first();
+        $sales = User::where('email', 'sales@casanuma.com')->first();
+
+        $newPassword = 'NewSecretPassword2026!';
+
+        $response = $this->actingAs($admin)->patch("/users/{$sales->id}/reset-password", [
+            'password' => $newPassword,
+            'password_confirmation' => $newPassword,
+        ]);
+
+        $response->assertRedirect();
+        $sales->refresh();
+
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check($newPassword, $sales->password));
+    }
+
+    public function test_non_superadmin_cannot_force_reset_user_password(): void
+    {
+        $sales = User::where('email', 'sales@casanuma.com')->first();
+        $finance = User::where('email', 'finance@casanuma.com')->first();
+
+        $response = $this->actingAs($sales)->patch("/users/{$finance->id}/reset-password", [
+            'password' => 'HackerPassword123!',
+            'password_confirmation' => 'HackerPassword123!',
+        ]);
+
+        $response->assertForbidden();
+    }
 }

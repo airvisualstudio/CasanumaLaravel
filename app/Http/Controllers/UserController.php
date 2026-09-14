@@ -192,4 +192,24 @@ class UserController extends Controller
 
         return back()->with('success', "Pengguna {$userName} berhasil dihapus.");
     }
+
+    /**
+     * Force reset a user's password (Superadmin only).
+     */
+    public function resetPassword(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'password.required' => 'Password baru wajib diisi.',
+            'password.min' => 'Password minimal terdiri dari 8 karakter.',
+            'password.confirmed' => 'Konfirmasi password baru tidak cocok.',
+        ]);
+
+        $user->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return back()->with('success', "Password akun {$user->name} berhasil diperbarui!");
+    }
 }

@@ -442,15 +442,27 @@ export default function Authenticated({
                     {!collapsed ? (
                         <>
                             <div className="flex items-center justify-between px-2">
-                                <div className="flex items-center gap-2 truncate">
-                                    <div className="size-7 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center border border-primary/20 shrink-0">
-                                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                                    </div>
+                                <Link 
+                                    href={route('profile.edit')}
+                                    className="flex items-center gap-2 truncate group hover:opacity-85 transition-opacity"
+                                    title="Buka Pengaturan Profil & Password"
+                                >
+                                    {user?.avatar_url ? (
+                                        <img
+                                            src={user.avatar_url}
+                                            alt={user.name}
+                                            className="size-7 rounded-full object-cover border border-primary/30 shrink-0"
+                                        />
+                                    ) : (
+                                        <div className="size-7 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center border border-primary/20 shrink-0">
+                                            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                        </div>
+                                    )}
                                     <div className="truncate text-left">
-                                        <p className="text-xs font-semibold text-foreground truncate">{user?.name}</p>
+                                        <p className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">{user?.name}</p>
                                         <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
                                     </div>
-                                </div>
+                                </Link>
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -462,21 +474,42 @@ export default function Authenticated({
                                 </Button>
                             </div>
 
-                            <Link href={route('logout')} method="post" as="button" className="w-full">
-                                <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive h-8">
-                                    <LogOut className="size-3.5" />
-                                    <span>Keluar (Logout)</span>
-                                </Button>
-                            </Link>
+                            <div className="grid grid-cols-2 gap-1.5 pt-1">
+                                <Link href={route('profile.edit')} className="w-full">
+                                    <Button variant="ghost" size="sm" className="w-full justify-center gap-1.5 text-[11px] h-7 px-2 text-muted-foreground hover:text-foreground">
+                                        <Settings className="size-3" />
+                                        <span>Settings</span>
+                                    </Button>
+                                </Link>
+                                <Link href={route('logout')} method="post" as="button" className="w-full">
+                                    <Button variant="ghost" size="sm" className="w-full justify-center gap-1.5 text-[11px] h-7 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                        <LogOut className="size-3" />
+                                        <span>Keluar</span>
+                                    </Button>
+                                </Link>
+                            </div>
                         </>
                     ) : (
                         <>
-                            <div 
-                                className="size-8 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center border border-primary/20"
-                                title={`${user?.name} (${user?.email})`}
+                            <Link
+                                href={route('profile.edit')}
+                                title={`Profil: ${user?.name} (Buka Pengaturan)`}
+                                className="hover:scale-105 transition-transform"
                             >
-                                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                            </div>
+                                {user?.avatar_url ? (
+                                    <img
+                                        src={user.avatar_url}
+                                        alt={user.name}
+                                        className="size-8 rounded-full object-cover border border-primary/30"
+                                    />
+                                ) : (
+                                    <div 
+                                        className="size-8 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center border border-primary/20"
+                                    >
+                                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                    </div>
+                                )}
+                            </Link>
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -545,9 +578,17 @@ export default function Authenticated({
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" className="gap-2 pl-2 pr-2.5 py-1.5 h-auto">
-                                    <div className="size-6 rounded-full bg-primary/15 text-primary font-bold text-[11px] flex items-center justify-center border border-primary/20">
-                                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                                    </div>
+                                    {user?.avatar_url ? (
+                                        <img
+                                            src={user.avatar_url}
+                                            alt={user.name}
+                                            className="size-6 rounded-full object-cover border border-primary/30 shrink-0"
+                                        />
+                                    ) : (
+                                        <div className="size-6 rounded-full bg-primary/15 text-primary font-bold text-[11px] flex items-center justify-center border border-primary/20 shrink-0">
+                                            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                        </div>
+                                    )}
                                     <div className="hidden sm:flex flex-col items-start text-left">
                                         <span className="max-w-[100px] truncate text-xs font-semibold leading-tight">
                                             {user?.name || 'User'}
@@ -559,7 +600,7 @@ export default function Authenticated({
                                     <ChevronDown className="size-3 text-muted-foreground" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56" align="end">
+                            <DropdownMenuContent className="w-60" align="end">
                                 <DropdownMenuLabel>
                                     <div className="flex flex-col space-y-1">
                                         <div className="flex items-center justify-between">
@@ -574,15 +615,21 @@ export default function Authenticated({
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
                                     <Link href={route('profile.edit')}>
-                                        <DropdownMenuItem>
-                                            <UserIcon className="size-4" />
-                                            <span>Pengaturan Profil</span>
+                                        <DropdownMenuItem className="cursor-pointer gap-2">
+                                            <Settings className="size-4 text-muted-foreground" />
+                                            <span>Settings / Profil Akun</span>
+                                        </DropdownMenuItem>
+                                    </Link>
+                                    <Link href={route('profile.edit') + '#password'}>
+                                        <DropdownMenuItem className="cursor-pointer gap-2">
+                                            <KeyRound className="size-4 text-amber-500" />
+                                            <span>Ganti Password Sendiri</span>
                                         </DropdownMenuItem>
                                     </Link>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <Link href={route('logout')} method="post" as="button" className="w-full">
-                                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive w-full cursor-pointer">
+                                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive w-full cursor-pointer gap-2">
                                         <LogOut className="size-4" />
                                         <span>Keluar (Logout)</span>
                                     </DropdownMenuItem>

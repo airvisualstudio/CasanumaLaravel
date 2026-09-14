@@ -41,15 +41,16 @@ Seluruh file dokumentasi Markdown (`.md`) dalam repositori telah **diperiksa, di
 | **[`ARCHITECTURE.md`](file:///d:/90_ARCHIVE/nama-projek-lo/ARCHITECTURE.md)** | **Cetak Biru Arsitektur:**<br>• Diperbarui ke **Laravel 12**, **PHP 8.5**, dan **PostgreSQL 16+** (`casanuma_crm`).<br>• Diagram aliran data otorisasi Spatie RBAC via Inertia Middleware.<br>• Kontrak otorisasi frontend dengan hook `useAuthorization`. |
 | **[`PRD.md`](file:///d:/90_ARCHIVE/nama-projek-lo/PRD.md)** | **Kebutuhan Produk & Persona:**<br>• Target persona diselaraskan dengan 4 role Spatie aktif.<br>• Bagian NFR (Non-Functional Requirements) diperbarui mencakup standarisasi UI shadcn Dialog, Select, Calendar, dan layout responsif simetris. |
 | **[`README.md`](file:///d:/90_ARCHIVE/nama-projek-lo/README.md)** | **Dokumentasi Proyek Utama:**<br>• Dirombak total dari skeleton default Laravel menjadi dokumentasi **CASANUMA CRM**.<br>• Kredensial akun uji untuk 4 role (`admin@casanuma.com`, `manager@...`, `sales@...`, `finance@...`).<br>• Panduan setup PostgreSQL, Bun, migrasi, dan pengujian otomasi. |
-| **[`TASKS.md`](file:///d:/90_ARCHIVE/nama-projek-lo/TASKS.md)** | **Roadmap & Pelacakan Sprint:**<br>• **Phase 1 (Database, Auth, Roles, Seeders):** Ditandai `COMPLETED [x]`.<br>• **Phase 2 (Design System, User Management Full CRUD, Cropping, Select/Calendar):** Ditandai berjalan sesuai kemajuan kode saat ini. |
+| **[`TASKS.md`](file:///d:/90_ARCHIVE/nama-projek-lo/TASKS.md)** | **Roadmap & Pelacakan Sprint:**<br>• **Phase 1 (Database, Auth, Roles, Seeders):** Ditandai `COMPLETED [x]`.<br>• **Phase 2 (Design System, User Management Full CRUD, Cropping, Force Reset Password, Self-Service Profile/Password):** Selesai 100% dan siap melangkah ke Master Properti! |
 | **[`TECH_STACK.md`](file:///d:/90_ARCHIVE/nama-projek-lo/TECH_STACK.md)** | **Spesifikasi Stack Teknologi:**<br>• Diperbarui ke **PostgreSQL 16+** (menggantikan keterangan lama MySQL).<br>• Dicatat Bun sebagai pengelola dependensi dan bundler production. |
-| **[`walkthrough.md`](file:///d:/90_ARCHIVE/nama-projek-lo/walkthrough.md)** | **Log Rekam Jejak:**<br>• Mencatat seluruh riwayat migrasi dialog, pembersihan alert, penyetelan sidebar, cropping avatar, hingga migrasi ke shadcn Select & Calendar. |
+| **[`walkthrough.md`](file:///d:/90_ARCHIVE/nama-projek-lo/walkthrough.md)** | **Log Rekam Jejak:**<br>• Mencatat seluruh riwayat migrasi dialog, pembersihan alert, penyetelan sidebar, cropping avatar, migrasi Select/Calendar, hingga fitur Force Reset Password & Self-Service Profile. |
 
 ---
 
 ### Hasil Verifikasi Sistem
 
-- **Build Frontend (`bun run build`):** Berhasil 100% tanpa error TypeScript (kompilasi chunk `Index-mOYf4ZQR.js`, `app-CIb6IhC3.js`).
-- **Pengujian Backend (`php artisan test`):** 39 test lolos (127 assertions).
-- **Integritas Kode:** Semua berkas dokumentasi telah mencerminkan keadaan codebase terkini secara presisi.
+- **Build Frontend (`bun run build`):** Berhasil 100% tanpa error TypeScript (`Edit-D-8oFX-3.js`, `Index-D8LaqFD3.js`, `AuthenticatedLayout-CRAROx9v.js`).
+- **Pengujian Backend (`php artisan test`):** 41 test lolos (130 assertions).
+- **Integritas Kode:** Seluruh fitur modul pengguna (User Management) telah tuntas 100% dan siap melangkah ke Master Properti.
+
 

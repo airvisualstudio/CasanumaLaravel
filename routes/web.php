@@ -26,6 +26,7 @@ Route::middleware(['auth', 'role:superadmin'])->group(function () {
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::match(['put', 'post'], '/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::patch('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+    Route::patch('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 });
 
