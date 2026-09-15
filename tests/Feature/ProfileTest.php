@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -156,7 +157,7 @@ class ProfileTest extends TestCase
         $user = User::factory()->create();
 
         // 2.5 MB file (2560 KB > 2048 KB)
-        $largeAvatar = \Illuminate\Http\UploadedFile::fake()->create('large.jpg', 2560, 'image/jpeg');
+        $largeAvatar = UploadedFile::fake()->create('large.jpg', 2560, 'image/jpeg');
 
         $response = $this->actingAs($user)->patch('/profile', [
             'name' => $user->name,

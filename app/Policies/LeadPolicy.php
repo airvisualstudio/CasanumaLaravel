@@ -90,4 +90,25 @@ class LeadPolicy
     {
         return $user->can('assign-leads') && $user->hasRole(['sales_manager', 'superadmin']);
     }
+
+    /**
+     * Determine whether the user can view and add internal notes/comments on the lead's follow-up history.
+     * Only Superadmin, Sales Manager, and the assigned Sales PIC can view and participate.
+     */
+    public function manageInternalNotes(User $user, Lead $lead): bool
+    {
+        if ($user->hasRole('superadmin')) {
+            return true;
+        }
+
+        if ($user->hasRole('sales_manager')) {
+            return true;
+        }
+
+        if ($user->hasRole('sales_agent')) {
+            return (int) $lead->sales_id === (int) $user->id;
+        }
+
+        return false;
+    }
 }

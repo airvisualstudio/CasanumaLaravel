@@ -692,7 +692,7 @@ export default function PropertiesIndex({
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     {dev.is_active ? (
-                                                        <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-[11px]">
+                                                        <Badge className="bg-emerald-600 text-white text-[11px]">
                                                             Aktif
                                                         </Badge>
                                                     ) : (
@@ -910,12 +910,12 @@ export default function PropertiesIndex({
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     {proj.status === 'active' && (
-                                                        <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-[11px]">
+                                                        <Badge className="bg-emerald-600 text-white text-[11px]">
                                                             Penjualan Aktif
                                                         </Badge>
                                                     )}
                                                     {proj.status === 'planning' && (
-                                                        <Badge className="bg-amber-600 hover:bg-amber-600 text-white text-[11px]">
+                                                        <Badge className="bg-amber-600 text-white text-[11px]">
                                                             Perencanaan
                                                         </Badge>
                                                     )}

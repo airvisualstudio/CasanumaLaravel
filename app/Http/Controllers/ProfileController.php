@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\ActivityLog;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -67,7 +68,7 @@ class ProfileController extends Controller
 
         $user->save();
 
-        \App\Models\ActivityLog::record('profile_update', "Pengguna {$user->name} memperbarui profil mandiri", $user);
+        ActivityLog::record('profile_update', "Pengguna {$user->name} memperbarui profil mandiri", $user);
 
         return Redirect::route('profile.edit')->with('success', 'Profil Anda berhasil diperbarui!');
     }

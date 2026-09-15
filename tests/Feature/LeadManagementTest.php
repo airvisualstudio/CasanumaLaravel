@@ -15,8 +15,11 @@ class LeadManagementTest extends TestCase
     use RefreshDatabase;
 
     protected User $superAdmin;
+
     protected User $salesAgent;
+
     protected HousingProject $project;
+
     protected Developer $developer;
 
     protected function setUp(): void

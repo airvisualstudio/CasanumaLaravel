@@ -23,6 +23,8 @@ class HousingUnitController extends Controller
         $query = HousingUnit::with([
             'cluster.project:id,name',
             'unitType:id,name,surface_area,building_area,bedrooms,bathrooms,brochure_file',
+            'activeBooking.lead:id,name,whatsapp,email',
+            'activeBooking.sales:id,name,email',
         ]);
 
         if ($request->filled('project_id')) {
@@ -47,9 +49,9 @@ class HousingUnitController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('block', 'ilike', "%{$search}%")
-                  ->orWhere('unit_number', 'ilike', "%{$search}%")
-                  ->orWhere('unit_code', 'ilike', "%{$search}%")
-                  ->orWhere('svg_element_id', 'ilike', "%{$search}%");
+                    ->orWhere('unit_number', 'ilike', "%{$search}%")
+                    ->orWhere('unit_code', 'ilike', "%{$search}%")
+                    ->orWhere('svg_element_id', 'ilike', "%{$search}%");
             });
         }
 
@@ -97,7 +99,7 @@ class HousingUnitController extends Controller
         ]);
 
         if (empty($validated['unit_code'])) {
-            $validated['unit_code'] = $validated['block'] . '/' . $validated['unit_number'];
+            $validated['unit_code'] = $validated['block'].'/'.$validated['unit_number'];
         }
 
         HousingUnit::create($validated);
@@ -125,7 +127,7 @@ class HousingUnitController extends Controller
         ]);
 
         if (empty($validated['unit_code'])) {
-            $validated['unit_code'] = $validated['block'] . '/' . $validated['unit_number'];
+            $validated['unit_code'] = $validated['block'].'/'.$validated['unit_number'];
         }
 
         $housingUnit->update($validated);

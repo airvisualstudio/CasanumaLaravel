@@ -51,10 +51,12 @@ import {
     Landmark,
     Check,
     AlertTriangle,
+    FolderLock,
 } from 'lucide-react';
 import { router, useForm } from '@inertiajs/react';
 import { cn } from '@/lib/utils';
 import { useAuthorization } from '@/hooks/useAuthorization';
+import CustomerDocumentVaultDialog from '@/Components/CRM/CustomerDocumentVaultDialog';
 
 interface TransactionDossierDialogProps {
     open: boolean;
@@ -71,6 +73,9 @@ export default function TransactionDossierDialog({
 }: TransactionDossierDialogProps) {
     const { can, isSuperAdmin, isFinance, isSalesManager } = useAuthorization();
     const [activeTab, setActiveTab] = useState<'spr' | 'customer' | 'payments' | 'kpr'>('spr');
+
+    // Customer Document Vault Modal State
+    const [documentVaultOpen, setDocumentVaultOpen] = useState(false);
 
     // Add Payment Form State
     const [showAddPayment, setShowAddPayment] = useState(false);
@@ -254,8 +259,9 @@ export default function TransactionDossierDialog({
     const progressPercent = totalPrice > 0 ? Math.min(100, Math.round((totalPaid / totalPrice) * 100)) : 0;
 
     return (
-        <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-            <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto p-0 gap-0">
+        <>
+            <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+            <DialogContent className="max-w-5xl xl:max-w-6xl w-[96vw] max-h-[94vh] overflow-y-auto p-0 gap-0">
                 {/* Dossier Header */}
                 <DialogHeader className="p-6 border-b bg-muted/20">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -599,6 +605,30 @@ export default function TransactionDossierDialog({
                                             </span>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Berkas Dokumen KYC Konsumen */}
+                            <div className="rounded-lg border p-4 bg-muted/10 space-y-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="space-y-0.5">
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                                            <FolderLock className="size-4 text-primary" />
+                                            Dokumen Persyaratan Konsumen (KYC Vault)
+                                        </h4>
+                                        <p className="text-xs text-muted-foreground">
+                                            Slot berkas KTP, KK, NPWP, Buku Nikah, Slip Gaji, dan Rekening Koran yang tersimpan di private storage aman dengan preview dan status validasi.
+                                        </p>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        onClick={() => setDocumentVaultOpen(true)}
+                                        className="h-8 text-xs gap-1.5 bg-primary text-primary-foreground shadow-sm flex-shrink-0"
+                                    >
+                                        <FolderLock className="size-3.5" />
+                                        Kelola & Verifikasi Dokumen
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -1023,5 +1053,14 @@ export default function TransactionDossierDialog({
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        {/* Customer Document Vault Dialog */}
+        <CustomerDocumentVaultDialog
+            open={documentVaultOpen}
+            onClose={() => setDocumentVaultOpen(false)}
+            lead={booking.lead}
+            bookingId={booking.id}
+        />
+        </>
     );
 }

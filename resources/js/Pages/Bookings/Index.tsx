@@ -24,6 +24,8 @@ import {
     AlertCircle,
     TrendingUp,
     ChevronRight,
+    LayoutGrid,
+    List,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
@@ -240,11 +242,37 @@ export default function BookingsIndex({
 }: Props) {
     const { user, can, isSuperAdmin, isFinance, isSalesManager, isSalesAgent } = useAuthorization();
 
+    // Authority check for action column
+    const hasBookingActions =
+        isSuperAdmin ||
+        isSalesManager ||
+        isFinance ||
+        can('approve-bookings') ||
+        can('cancel-bookings') ||
+        can('edit-bookings') ||
+        can('verify-payments') ||
+        can('manage-kpr');
+
     // Filters
     const [search, setSearch] = useState(filters?.search || '');
     const [projectId, setProjectId] = useState<string>(filters?.project_id || 'all');
     const [paymentScheme, setPaymentScheme] = useState<string>(filters?.payment_scheme || 'all');
     const [statusFilter, setStatusFilter] = useState<string>(filters?.status || 'all');
+
+    // View mode state (table vs card) - default 'card'
+    const [viewMode, setViewMode] = useState<'table' | 'card'>(() => {
+        if (typeof window !== 'undefined') {
+            return (localStorage.getItem('bookings_view_mode_v2') as 'table' | 'card') || 'card';
+        }
+        return 'card';
+    });
+
+    const handleToggleViewMode = (mode: 'table' | 'card') => {
+        setViewMode(mode);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('bookings_view_mode_v2', mode);
+        }
+    };
 
     // Dialog States
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -583,17 +611,240 @@ export default function BookingsIndex({
 
                 {/* Bookings Datatable */}
                 <Card className="shadow-none border-border/80">
-                    <CardHeader className="px-6 py-4 border-b border-border/70 flex flex-row items-center justify-between">
+                    <CardHeader className="px-6 py-4 border-b border-border/70 flex flex-row items-center justify-between gap-4">
                         <div>
                             <CardTitle className="text-base font-semibold">Daftar Transaksi Kavling & SPR</CardTitle>
                             <CardDescription className="text-xs">
                                 Menampilkan {bookings.data.length} dari total {bookings.total} data transaksi
                             </CardDescription>
                         </div>
+                        {/* View Mode Switcher */}
+                        <div className="flex items-center bg-muted/80 p-0.5 rounded-lg border border-border/60 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => handleToggleViewMode('table')}
+                                className={cn(
+                                    "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
+                                    viewMode === 'table'
+                                        ? "bg-background text-foreground shadow-xs ring-1 ring-border/50"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                                title="Tampilan Tabel"
+                            >
+                                <List className="size-3.5" />
+                                <span className="hidden sm:inline">Tabel</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleToggleViewMode('card')}
+                                className={cn(
+                                    "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
+                                    viewMode === 'card'
+                                        ? "bg-background text-foreground shadow-xs ring-1 ring-border/50"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                                title="Tampilan Kartu"
+                            >
+                                <LayoutGrid className="size-3.5" />
+                                <span className="hidden sm:inline">Kartu</span>
+                            </button>
+                        </div>
                     </CardHeader>
 
                     <CardContent className="p-0">
-                        <Table>
+                        {viewMode === 'card' ? (
+                            <div className="p-5">
+                                {bookings.data.length === 0 ? (
+                                    <div className="text-center py-12 text-muted-foreground text-sm">
+                                        Belum ada transaksi tanda jadi atau data sesuai filter ditemukan.
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                                        {bookings.data.map((booking) => (
+                                            <div
+                                                key={booking.id}
+                                                className="group relative rounded-xl border border-border/80 bg-card p-4 hover:shadow-md hover:border-primary/40 transition-all flex flex-col justify-between"
+                                            >
+                                                <div className="space-y-3">
+                                                    {/* Header: Booking Code, Status Badge */}
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleOpenDossier(booking)}
+                                                                className="font-mono font-bold text-sm text-primary hover:underline flex items-center gap-1.5 text-left group-hover:text-primary transition-colors cursor-pointer"
+                                                                title="Buka Dossier 360° Transaksi"
+                                                            >
+                                                                <FileText className="size-3.5 text-primary" />
+                                                                {booking.booking_code}
+                                                            </button>
+                                                            <div className="text-[11px] font-mono text-muted-foreground mt-0.5">
+                                                                {booking.spr_number || 'SPR Belum Terbit'}
+                                                            </div>
+                                                            <div className="text-[10px] text-muted-foreground">
+                                                                Tgl: {booking.transaction_date}
+                                                            </div>
+                                                        </div>
+                                                        <div className="shrink-0">
+                                                            {statusBadge(booking.status)}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Consumer / Lead info */}
+                                                    <div className="rounded-lg bg-muted/30 p-2.5 space-y-1 text-xs border border-border/40">
+                                                        {booking.lead ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => router.visit(route('leads.index', { search: booking.lead?.name }))}
+                                                                className="font-semibold text-foreground line-clamp-1 hover:text-primary hover:underline text-left cursor-pointer transition-colors"
+                                                                title={`Buka data konsumen ${booking.lead.name}`}
+                                                            >
+                                                                {booking.lead.name}
+                                                            </button>
+                                                        ) : (
+                                                            <div className="font-semibold text-foreground line-clamp-1">-</div>
+                                                        )}
+                                                        <div className="flex items-center justify-between gap-2 text-[11px]">
+                                                            {booking.lead?.nik ? (
+                                                                <span className="font-mono text-muted-foreground">
+                                                                    NIK: {booking.lead.nik}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-muted-foreground italic">NIK belum diisi</span>
+                                                            )}
+                                                            {booking.lead?.whatsapp && (
+                                                                <a
+                                                                    href={`https://wa.me/${booking.lead.whatsapp}`}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className="text-emerald-600 hover:underline flex items-center gap-1 font-mono"
+                                                                    title="Chat WhatsApp"
+                                                                >
+                                                                    <Phone className="size-3" />
+                                                                    {booking.lead.whatsapp}
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Unit details */}
+                                                    <div className="space-y-1.5 text-xs">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="text-muted-foreground">Unit:</span>
+                                                            {booking.unit ? (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => router.visit(route('properties.units.index', { search: booking.unit?.unit_code }))}
+                                                                    className="cursor-pointer transition-transform hover:scale-105"
+                                                                    title={`Buka data unit ${booking.unit.unit_code}`}
+                                                                >
+                                                                    <Badge variant="outline" className="font-bold font-mono text-xs hover:border-primary/50">
+                                                                        Blok {booking.unit.unit_code}
+                                                                    </Badge>
+                                                                </button>
+                                                            ) : (
+                                                                <Badge variant="outline" className="font-bold font-mono text-xs">
+                                                                    -
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        {booking.unit?.cluster?.project ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setProjectId(booking.unit!.cluster!.project!.id.toString());
+                                                                    router.get(route('bookings.index'), {
+                                                                        project_id: booking.unit!.cluster!.project!.id.toString(),
+                                                                    }, { preserveState: true });
+                                                                }}
+                                                                className="text-[11px] text-muted-foreground hover:text-primary hover:underline cursor-pointer text-right truncate block ml-auto"
+                                                                title={`Filter transaksi untuk proyek ${booking.unit.cluster.project.name}`}
+                                                            >
+                                                                {booking.unit.cluster.name} ({booking.unit.cluster.project.name})
+                                                            </button>
+                                                        ) : (
+                                                            <div className="text-[11px] text-muted-foreground text-right truncate">
+                                                                {booking.unit?.cluster?.name || '-'}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Price & Scheme */}
+                                                    <div className="rounded-lg border border-border/60 p-2.5 bg-background/50 space-y-1.5">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="text-xs text-muted-foreground">Harga Unit:</span>
+                                                            <span className="font-bold text-sm font-mono text-primary">
+                                                                {formatRp(booking.total_price || booking.unit?.base_price)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center justify-between gap-2 text-xs">
+                                                            <span className="text-muted-foreground">Uang Tanda Jadi:</span>
+                                                            <span className="text-emerald-600 font-mono font-semibold">
+                                                                {booking.formatted_booking_fee}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/40 text-[11px]">
+                                                            <span className="text-muted-foreground">Skema Bayar:</span>
+                                                            <Badge variant="secondary" className="text-[10px] capitalize">
+                                                                {booking.payment_scheme === 'cash_bertahap' ? 'Cash Bertahap' : booking.payment_scheme.toUpperCase()}
+                                                            </Badge>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Sales PIC */}
+                                                    <div className="flex items-center justify-between gap-2 text-xs pt-1 border-t border-border/40">
+                                                        <span className="text-muted-foreground text-[11px]">Sales PIC:</span>
+                                                        {booking.sales ? (
+                                                            <div className="flex items-center gap-1.5 text-xs text-foreground font-medium truncate max-w-[150px]">
+                                                                <UserCheck className="size-3.5 text-primary shrink-0" />
+                                                                <span className="truncate">{booking.sales.name}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground italic">-</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Card Actions Footer */}
+                                                {hasBookingActions && (
+                                                    <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => handleOpenDossier(booking)}
+                                                            className="h-8 flex-1 text-xs gap-1.5 text-primary border-primary/20 hover:bg-primary/10"
+                                                            title="Buka Dossier 360° Transaksi"
+                                                        >
+                                                            <FileText className="size-3.5" />
+                                                            Dossier 360°
+                                                            <ChevronRight className="size-3.5" />
+                                                        </Button>
+
+                                                        {booking.status !== 'cancelled' && (
+                                                            can('cancel-bookings') ||
+                                                            isSalesManager ||
+                                                            isSuperAdmin ||
+                                                            (Number(booking.sales_id) === Number(user?.id) && booking.status === 'pending_approval')
+                                                        ) && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => confirmCancelBooking(booking)}
+                                                                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+                                                                title="Batalkan Booking"
+                                                            >
+                                                                <X className="size-4" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <Table>
                             <TableHeader>
                                 <TableRow className="bg-muted/40 hover:bg-muted/40">
                                     <TableHead className="w-[60px]">No</TableHead>
@@ -603,13 +854,15 @@ export default function BookingsIndex({
                                     <TableHead>Skema & Nilai Transaksi</TableHead>
                                     <TableHead>Status Progres</TableHead>
                                     <TableHead>Sales PIC</TableHead>
-                                    <TableHead className="w-[120px] text-right">Aksi</TableHead>
+                                    {hasBookingActions && (
+                                        <TableHead className="w-[120px] text-right">Aksi</TableHead>
+                                    )}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {bookings.data.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={8} className="text-center py-12 text-muted-foreground text-sm">
+                                        <TableCell colSpan={hasBookingActions ? 8 : 7} className="text-center py-12 text-muted-foreground text-sm">
                                             Belum ada transaksi tanda jadi atau data sesuai filter ditemukan.
                                         </TableCell>
                                     </TableRow>
@@ -621,10 +874,15 @@ export default function BookingsIndex({
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col">
-                                                    <span className="font-mono font-bold text-xs text-foreground flex items-center gap-1.5">
-                                                        <FileText className="size-3 text-primary" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleOpenDossier(booking)}
+                                                        className="font-mono font-bold text-xs text-primary hover:underline flex items-center gap-1.5 text-left group cursor-pointer"
+                                                        title="Buka Dossier 360° Transaksi"
+                                                    >
+                                                        <FileText className="size-3 text-primary group-hover:scale-110 transition-transform" />
                                                         {booking.booking_code}
-                                                    </span>
+                                                    </button>
                                                     <span className="text-[11px] font-mono text-muted-foreground">
                                                         {booking.spr_number || 'SPR Belum Terbit'}
                                                     </span>
@@ -692,42 +950,45 @@ export default function BookingsIndex({
                                                     <span className="text-xs text-muted-foreground">-</span>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-1.5">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        onClick={() => handleOpenDossier(booking)}
-                                                        className="h-8 px-2.5 text-xs gap-1 text-primary hover:bg-primary/10"
-                                                        title="Buka Dossier 360° Transaksi"
-                                                    >
-                                                        Dossier
-                                                        <ChevronRight className="size-3.5" />
-                                                    </Button>
-
-                                                    {booking.status !== 'cancelled' && (
-                                                        can('cancel-bookings') ||
-                                                        isSalesManager ||
-                                                        isSuperAdmin ||
-                                                        (Number(booking.sales_id) === Number(user?.id) && booking.status === 'pending_approval')
-                                                    ) && (
+                                            {hasBookingActions && (
+                                                <TableCell className="text-right">
+                                                    <div className="flex items-center justify-end gap-1.5">
                                                         <Button
                                                             size="sm"
                                                             variant="ghost"
-                                                            onClick={() => confirmCancelBooking(booking)}
-                                                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                                            title="Batalkan Booking"
+                                                            onClick={() => handleOpenDossier(booking)}
+                                                            className="h-8 px-2.5 text-xs gap-1 text-primary hover:bg-primary/10"
+                                                            title="Buka Dossier 360° Transaksi"
                                                         >
-                                                            <X className="size-4" />
+                                                            Dossier
+                                                            <ChevronRight className="size-3.5" />
                                                         </Button>
-                                                    )}
-                                                </div>
-                                            </TableCell>
+
+                                                        {booking.status !== 'cancelled' && (
+                                                            can('cancel-bookings') ||
+                                                            isSalesManager ||
+                                                            isSuperAdmin ||
+                                                            (Number(booking.sales_id) === Number(user?.id) && booking.status === 'pending_approval')
+                                                        ) && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => confirmCancelBooking(booking)}
+                                                                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                                title="Batalkan Booking"
+                                                            >
+                                                                <X className="size-4" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                            )}
                                         </TableRow>
                                     ))
                                 )}
                             </TableBody>
                         </Table>
+                        )}
                     </CardContent>
                 </Card>
             </div>

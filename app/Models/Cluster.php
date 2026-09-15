@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Cluster extends Model
 {
@@ -32,7 +33,7 @@ class Cluster extends Model
 
     public function getSiteplanSvgUrlAttribute(): ?string
     {
-        if (!$this->siteplan_svg) {
+        if (! $this->siteplan_svg) {
             return null;
         }
 
@@ -40,7 +41,7 @@ class Cluster extends Model
             return $this->siteplan_svg;
         }
 
-        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->siteplan_svg);
+        return Storage::disk('public')->url($this->siteplan_svg);
     }
 
     public function project(): BelongsTo

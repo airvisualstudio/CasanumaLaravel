@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             PropertySeeder::class,
             LeadSeeder::class,
             BookingSeeder::class,
+            CustomerDocumentSeeder::class,
         ]);
     }
 }

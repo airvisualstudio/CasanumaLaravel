@@ -38,7 +38,9 @@ import {
     ZoomOut,
     RotateCcw,
     Copy,
-    EyeOff
+    EyeOff,
+    LayoutGrid,
+    List,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
@@ -187,6 +189,21 @@ export default function UsersIndex({ users, availableRoles }: UsersIndexProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('all');
     const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+
+    // View mode state (table vs card) - default 'card'
+    const [viewMode, setViewMode] = useState<'table' | 'card'>(() => {
+        if (typeof window !== 'undefined') {
+            return (localStorage.getItem('users_view_mode_v2') as 'table' | 'card') || 'card';
+        }
+        return 'card';
+    });
+
+    const handleToggleViewMode = (mode: 'table' | 'card') => {
+        setViewMode(mode);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('users_view_mode_v2', mode);
+        }
+    };
 
     // Dialog states
     const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
@@ -781,7 +798,7 @@ export default function UsersIndex({ users, availableRoles }: UsersIndexProps) {
 
                 {/* 4. User Data Table */}
                 <Card className="border-border/80 shadow-md overflow-hidden py-0 gap-0">
-                    <CardHeader className="px-5 py-4 !pb-4 border-b border-border/50 bg-muted/10 flex flex-row items-center justify-between">
+                    <CardHeader className="px-5 py-4 !pb-4 border-b border-border/50 bg-muted/10 flex flex-row items-center justify-between gap-4">
                         <div>
                             <CardTitle className="text-base font-semibold">
                                 Direktori Staf & Pengguna CRM
@@ -790,14 +807,260 @@ export default function UsersIndex({ users, availableRoles }: UsersIndexProps) {
                                 Menampilkan {filteredUsers.length} dari total {users.length} pengguna terdaftar
                             </CardDescription>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
-                            <ShieldCheck className="size-4 text-primary" />
-                            <span>Otorisasi: Spatie RBAC</span>
+                        <div className="flex items-center gap-3">
+                            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
+                                <ShieldCheck className="size-4 text-primary" />
+                                <span>Otorisasi: Spatie RBAC</span>
+                            </div>
+                            {/* View Mode Switcher */}
+                            <div className="flex items-center bg-muted/80 p-0.5 rounded-lg border border-border/60 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => handleToggleViewMode('table')}
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
+                                        viewMode === 'table'
+                                            ? "bg-background text-foreground shadow-xs ring-1 ring-border/50"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                    title="Tampilan Tabel"
+                                >
+                                    <List className="size-3.5" />
+                                    <span className="hidden sm:inline">Tabel</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleToggleViewMode('card')}
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
+                                        viewMode === 'card'
+                                            ? "bg-background text-foreground shadow-xs ring-1 ring-border/50"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                    title="Tampilan Kartu"
+                                >
+                                    <LayoutGrid className="size-3.5" />
+                                    <span className="hidden sm:inline">Kartu</span>
+                                </button>
+                            </div>
                         </div>
                     </CardHeader>
 
                     <CardContent className="p-0">
-                        <Table>
+                        {viewMode === 'card' ? (
+                            <div className="p-5">
+                                {filteredUsers.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-12 gap-1.5 text-center">
+                                        <Users className="size-7 text-muted-foreground/50 mb-1" />
+                                        <p className="font-semibold text-foreground text-sm">Tidak ada staf atau pengguna ditemukan</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Coba sesuaikan kata kunci pencarian atau filter status dan peran.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                                        {filteredUsers.map((user) => {
+                                            const isSelf = user.id === currentUserId;
+                                            const primaryRole = user.roles[0] || 'sales_agent';
+                                            const roleMeta = roleBadges[primaryRole] || {
+                                                label: primaryRole,
+                                                color: 'border-border bg-muted text-muted-foreground',
+                                                dotColor: 'bg-muted-foreground',
+                                            };
+                                            const waLink = cleanWaNumber(user.phone);
+
+                                            return (
+                                                <div
+                                                    key={user.id}
+                                                    className="group relative rounded-xl border border-border/80 bg-card p-4 hover:shadow-md hover:border-primary/40 transition-all flex flex-col justify-between"
+                                                >
+                                                    <div className="space-y-3">
+                                                        {/* User Top: Avatar, Name, Badge, Status */}
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setUserToView(user)}
+                                                                    className="cursor-pointer hover:opacity-85 transition-opacity shrink-0"
+                                                                    title="Lihat profil detail pengguna"
+                                                                >
+                                                                    <UserAvatar user={user} className="size-11 shrink-0" textClassName="text-sm" />
+                                                                </button>
+                                                                <div className="min-w-0">
+                                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setUserToView(user)}
+                                                                            className="font-semibold text-foreground text-sm truncate hover:text-primary transition-colors text-left cursor-pointer"
+                                                                            title="Lihat profil detail pengguna"
+                                                                        >
+                                                                            {user.name}
+                                                                        </button>
+                                                                        {isSelf && (
+                                                                            <Badge variant="outline" className="text-[10px] py-0 px-1 border-primary/40 bg-primary/10 text-primary shrink-0">
+                                                                                Anda
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <a
+                                                                        href={`mailto:${user.email}`}
+                                                                        className="text-xs text-muted-foreground hover:text-primary hover:underline truncate block"
+                                                                        title={`Kirim email ke ${user.email}`}
+                                                                    >
+                                                                        {user.email}
+                                                                    </a>
+                                                                    {user.employee_id && (
+                                                                        <div className="font-mono text-[10px] text-primary/80 font-medium">
+                                                                            NIP: {user.employee_id}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleToggleStatus(user)}
+                                                                disabled={isSelf}
+                                                                title={isSelf ? 'Tidak dapat menonaktifkan akun sendiri' : 'Klik untuk ubah status aktif/nonaktif'}
+                                                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-all shrink-0 ${
+                                                                    user.is_active
+                                                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
+                                                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                                                } ${isSelf ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+                                                            >
+                                                                <span className={`size-1.5 rounded-full ${user.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground'}`} />
+                                                                <span>{user.is_active ? 'Aktif' : 'Nonaktif'}</span>
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Roles & Position */}
+                                                        <div className="space-y-1 text-xs border-y border-border/50 py-2">
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {user.roles.map((r) => {
+                                                                    const badge = roleBadges[r] || {
+                                                                        label: r,
+                                                                        color: 'border-border bg-muted text-muted-foreground',
+                                                                    };
+                                                                    return (
+                                                                        <button
+                                                                            key={r}
+                                                                            type="button"
+                                                                            onClick={() => setSelectedRoleFilter(r)}
+                                                                            className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold border ${badge.color} hover:opacity-80 cursor-pointer transition-opacity`}
+                                                                            title={`Filter pengguna dengan peran ${badge.label}`}
+                                                                        >
+                                                                            {badge.label}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                                                <Briefcase className="size-3 shrink-0 text-muted-foreground/70" />
+                                                                <span>{user.position || 'Staf Operasional'}</span>
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Contact & Bank */}
+                                                        <div className="space-y-1.5 text-xs">
+                                                            {user.phone ? (
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span className="text-muted-foreground text-[11px]">WhatsApp:</span>
+                                                                    {waLink ? (
+                                                                        <a
+                                                                            href={`https://wa.me/${waLink}`}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-mono font-medium hover:underline text-xs"
+                                                                        >
+                                                                            <Phone className="size-3" />
+                                                                            <span>{user.phone}</span>
+                                                                        </a>
+                                                                    ) : (
+                                                                        <span className="font-mono">{user.phone}</span>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center justify-between text-[11px] text-muted-foreground italic">
+                                                                    <span>WhatsApp:</span>
+                                                                    <span>Belum ada</span>
+                                                                </div>
+                                                            )}
+
+                                                            {user.bank_account_number && (
+                                                                <div className="flex items-center justify-between gap-2 text-[11px] pt-1 border-t border-border/40">
+                                                                    <span className="text-muted-foreground">Rekening:</span>
+                                                                    <div className="text-right">
+                                                                        <span className="font-mono text-foreground font-medium">
+                                                                            {user.bank_name} {user.bank_account_number}
+                                                                        </span>
+                                                                        <div className="text-[10px] text-muted-foreground">
+                                                                            a/n {user.bank_account_holder || user.name}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {user.address && (
+                                                                <p className="text-[11px] text-muted-foreground flex items-start gap-1 pt-1 border-t border-border/40 line-clamp-1" title={user.address}>
+                                                                    <MapPin className="size-3 shrink-0 mt-0.5 text-muted-foreground/70" />
+                                                                    <span className="truncate">{user.address}</span>
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Card Footer Actions */}
+                                                    <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between gap-1">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setUserToView(user)}
+                                                            className="h-7 px-2.5 text-xs text-primary hover:bg-primary/10 border-primary/20"
+                                                        >
+                                                            <Eye className="size-3 mr-1" />
+                                                            <span>Detail</span>
+                                                        </Button>
+
+                                                        <div className="flex items-center gap-0.5">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => openResetPasswordDialog(user)}
+                                                                title={`Reset Password ${user.name}`}
+                                                                className="size-7 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10"
+                                                            >
+                                                                <KeyRound className="size-3" />
+                                                            </Button>
+
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => openEditDialog(user)}
+                                                                title={`Edit ${user.name}`}
+                                                                className="size-7 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                                            >
+                                                                <Edit2 className="size-3" />
+                                                            </Button>
+
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => confirmDelete(user)}
+                                                                disabled={isSelf}
+                                                                title={isSelf ? 'Anda tidak dapat menghapus akun sendiri' : `Hapus ${user.name}`}
+                                                                className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-30"
+                                                            >
+                                                                <Trash2 className="size-3" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <Table>
                             <TableHeader className="bg-muted/30">
                                 <TableRow>
                                     <TableHead className="w-[280px]">Profil Pengguna</TableHead>
@@ -1010,6 +1273,7 @@ export default function UsersIndex({ users, availableRoles }: UsersIndexProps) {
                                 )}
                             </TableBody>
                         </Table>
+                        )}
                     </CardContent>
                 </Card>
 

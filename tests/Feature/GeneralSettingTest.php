@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\ActivityLog;
 use App\Models\AppSetting;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;

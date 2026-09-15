@@ -49,7 +49,8 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     Activity,
-    Bot
+    Bot,
+    Columns3,
 } from 'lucide-react';
 import { useAuthorization } from '@/hooks/useAuthorization';
 import { Toaster, toast } from '@/Components/ui/sonner';
@@ -226,16 +227,24 @@ export default function Authenticated({
             visible: can('view-leads') || can('view-bookings'),
             items: [
                 {
-                    label: 'Pipeline Leads CRM',
-                    icon: Users,
-                    href: route('leads.index'),
-                    active: isCurrent('leads.*'),
+                    label: 'Pipeline Kanban CRM',
+                    icon: Columns3,
+                    href: route('leads.pipeline'),
+                    active: isCurrent('leads.pipeline'),
                     visible: can('view-leads'),
                 },
                 {
                     label: 'Follow Up & Aktivitas',
                     icon: CalendarCheck,
-                    action: () => handleMenuClick('Follow Up & Aktivitas'),
+                    href: route('leads.pipeline'),
+                    active: isCurrent('leads.pipeline'),
+                    visible: can('view-leads'),
+                },
+                {
+                    label: 'Daftar Konsumen',
+                    icon: Users,
+                    href: route('leads.index'),
+                    active: isCurrent('leads.index'),
                     visible: can('view-leads'),
                 },
                 {

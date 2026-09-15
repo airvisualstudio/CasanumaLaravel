@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Services\TelegramService;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ActivityLog extends Model
 {
@@ -67,10 +69,10 @@ class ActivityLog extends Model
         // Auto-send real-time notification to Telegram bot/group
         try {
             if ($action !== 'telegram_test') {
-                app(\App\Services\TelegramService::class)->sendActivityNotification($log);
+                app(TelegramService::class)->sendActivityNotification($log);
             }
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Telegram activity notification error: ' . $e->getMessage());
+            Log::warning('Telegram activity notification error: '.$e->getMessage());
         }
 
         return $log;

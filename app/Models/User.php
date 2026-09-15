@@ -6,13 +6,11 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
-
-use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'name',
@@ -35,7 +33,7 @@ use Illuminate\Support\Facades\Storage;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
 
     /**
      * The accessors to append to the model's array form.
@@ -77,11 +75,11 @@ class User extends Authenticatable
 
         // Convert leading '0' to '62' (e.g. 0812... -> 62812...)
         if (str_starts_with($digits, '0')) {
-            $digits = '62' . substr($digits, 1);
+            $digits = '62'.substr($digits, 1);
         }
         // Convert starting with '8' to '628' (e.g. 812... -> 62812...)
         elseif (str_starts_with($digits, '8')) {
-            $digits = '62' . $digits;
+            $digits = '62'.$digits;
         }
 
         return $digits;
@@ -115,7 +113,7 @@ class User extends Authenticatable
     protected function avatarUrl(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->avatar ? '/storage/' . ltrim($this->avatar, '/') : null,
+            get: fn () => $this->avatar ? '/storage/'.ltrim($this->avatar, '/') : null,
         );
     }
 

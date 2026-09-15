@@ -37,7 +37,7 @@ class HousingProject extends Model
 
     public function getSiteplanSvgUrlAttribute(): ?string
     {
-        if (!$this->siteplan_svg) {
+        if (! $this->siteplan_svg) {
             return null;
         }
 
@@ -95,6 +95,6 @@ class HousingProject extends Model
 
         $formatted = number_format((float) $this->area_size, 0, ',', '.');
 
-        return $formatted . ' ' . ($this->area_unit ?: 'm²');
+        return $formatted.' '.($this->area_unit ?: 'm²');
     }
 }

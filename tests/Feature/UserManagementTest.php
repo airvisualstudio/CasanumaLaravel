@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -233,7 +234,7 @@ class UserManagementTest extends TestCase
         $response->assertRedirect();
         $sales->refresh();
 
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check($newPassword, $sales->password));
+        $this->assertTrue(Hash::check($newPassword, $sales->password));
     }
 
     public function test_non_superadmin_cannot_force_reset_user_password(): void

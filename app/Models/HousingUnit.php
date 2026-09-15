@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class HousingUnit extends Model
@@ -41,18 +43,18 @@ class HousingUnit extends Model
         return $this->belongsTo(UnitType::class, 'unit_type_id');
     }
 
-    public function bookings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class, 'housing_unit_id');
     }
 
-    public function activeBooking(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function activeBooking(): HasOne
     {
-        return $this->hasOne(Booking::class, 'housing_unit_id')->where('status', 'confirmed')->latestOfMany();
+        return $this->hasOne(Booking::class, 'housing_unit_id')->whereNotIn('status', ['cancelled'])->latestOfMany();
     }
 
     public function getFormattedPriceAttribute(): string
     {
-        return 'Rp ' . number_format((float) $this->base_price, 0, ',', '.');
+        return 'Rp '.number_format((float) $this->base_price, 0, ',', '.');
     }
 }

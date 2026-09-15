@@ -19,6 +19,7 @@ class PropertyDetailTest extends TestCase
     use RefreshDatabase;
 
     protected User $superAdmin;
+
     protected HousingProject $project;
 
     protected function setUp(): void

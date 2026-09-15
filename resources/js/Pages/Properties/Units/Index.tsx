@@ -22,7 +22,11 @@ import {
     Building,
     FileText,
     Sparkles,
-    Eye
+    Eye,
+    UserCheck,
+    Phone,
+    LayoutGrid,
+    List,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
@@ -112,6 +116,23 @@ interface HousingUnitData {
         bathrooms: number;
         brochure_file?: string | null;
     } | null;
+    active_booking?: {
+        id: number;
+        booking_code: string;
+        status: string;
+        payment_scheme?: string;
+        lead?: {
+            id: number;
+            name: string;
+            whatsapp?: string;
+            email?: string;
+        } | null;
+        sales?: {
+            id: number;
+            name: string;
+            email?: string;
+        } | null;
+    } | null;
     created_at?: string;
 }
 
@@ -169,6 +190,21 @@ export default function UnitsIndex({
     const [clusterId, setClusterId] = useState<string>(filters?.cluster_id || 'all');
     const [unitTypeId, setUnitTypeId] = useState<string>(filters?.unit_type_id || 'all');
     const [statusFilter, setStatusFilter] = useState<string>(filters?.status || 'all');
+
+    // View Mode (Table View vs Card View) with localStorage persistence - default 'card'
+    const [viewMode, setViewMode] = useState<'table' | 'card'>(() => {
+        if (typeof window !== 'undefined') {
+            return (localStorage.getItem('units_view_mode_v2') as 'table' | 'card') || 'card';
+        }
+        return 'card';
+    });
+
+    const handleToggleViewMode = (mode: 'table' | 'card') => {
+        setViewMode(mode);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('units_view_mode_v2', mode);
+        }
+    };
 
     // Dialog state
     const [unitDialogOpen, setUnitDialogOpen] = useState(false);
@@ -353,28 +389,28 @@ export default function UnitsIndex({
         switch (status) {
             case 'available':
                 return (
-                    <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 border-emerald-500/30 gap-1">
+                    <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 gap-1">
                         <CheckCircle2 className="size-3" />
                         Available
                     </Badge>
                 );
             case 'booked':
                 return (
-                    <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 hover:bg-blue-500/25 border-blue-500/30 gap-1">
+                    <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30 gap-1">
                         <Clock className="size-3" />
                         Booked
                     </Badge>
                 );
             case 'sold':
                 return (
-                    <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 hover:bg-rose-500/25 border-rose-500/30 gap-1">
+                    <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 gap-1">
                         <Lock className="size-3" />
                         Sold
                     </Badge>
                 );
             case 'hold':
                 return (
-                    <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 border-amber-500/30 gap-1">
+                    <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 gap-1">
                         <PauseCircle className="size-3" />
                         Hold
                     </Badge>
@@ -572,117 +608,202 @@ export default function UnitsIndex({
 
                 {/* Units Datatable Card */}
                 <Card className="shadow-none border-border/80">
-                    <CardHeader className="px-6 py-4 border-b border-border/70 flex flex-row items-center justify-between">
+                    <CardHeader className="px-6 py-4 border-b border-border/70 flex flex-row items-center justify-between gap-4">
                         <div>
                             <CardTitle className="text-base font-semibold">Daftar Kavling & Unit Rumah</CardTitle>
                             <CardDescription className="text-xs">
                                 Menampilkan {units.data.length} dari total {units.total} unit
                             </CardDescription>
                         </div>
+
+                        {/* View Mode Switcher: Table View vs Card View */}
+                        <div className="flex items-center bg-muted/80 p-0.5 rounded-lg border border-border/60 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => handleToggleViewMode('table')}
+                                className={cn(
+                                    "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
+                                    viewMode === 'table'
+                                        ? "bg-background text-foreground shadow-xs ring-1 ring-border/50"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                                title="Tampilan Tabel"
+                            >
+                                <List className="size-3.5" />
+                                <span className="hidden sm:inline">Tabel</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleToggleViewMode('card')}
+                                className={cn(
+                                    "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
+                                    viewMode === 'card'
+                                        ? "bg-background text-foreground shadow-xs ring-1 ring-border/50"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                                title="Tampilan Kartu"
+                            >
+                                <LayoutGrid className="size-3.5" />
+                                <span className="hidden sm:inline">Kartu</span>
+                            </button>
+                        </div>
                     </CardHeader>
 
                     <CardContent className="p-0">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="bg-muted/40 hover:bg-muted/40">
-                                    <TableHead className="w-[70px]">No</TableHead>
-                                    <TableHead>Kode & Blok Unit</TableHead>
-                                    <TableHead>Cluster & Proyek</TableHead>
-                                    <TableHead>Tipe Rumah</TableHead>
-                                    <TableHead>Harga Dasar (Cash/KPR)</TableHead>
-                                    <TableHead>Status Unit</TableHead>
-                                    <TableHead>SVG Element ID</TableHead>
-                                    {hasUnitActions && (
-                                        <TableHead className="w-[120px] text-right">Aksi</TableHead>
-                                    )}
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                        {viewMode === 'card' ? (
+                            <div className="p-5">
                                 {units.data.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={hasUnitActions ? 8 : 7} className="text-center py-12 text-muted-foreground">
-                                            Tidak ada unit kavling yang sesuai dengan pencarian / filter.
-                                        </TableCell>
-                                    </TableRow>
+                                    <div className="text-center py-12 text-muted-foreground">
+                                        Tidak ada unit kavling yang sesuai dengan pencarian / filter.
+                                    </div>
                                 ) : (
-                                    units.data.map((unit, idx) => (
-                                        <TableRow key={unit.id} className="hover:bg-muted/30">
-                                            <TableCell className="font-mono text-xs text-muted-foreground">
-                                                {(units.current_page - 1) * units.per_page + idx + 1}
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-sm text-foreground">
-                                                        {unit.unit_code}
-                                                    </span>
-                                                    <span className="text-[11px] text-muted-foreground">
-                                                        Blok {unit.block} No. {unit.unit_number}
-                                                    </span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="text-xs font-semibold text-foreground">
-                                                        {unit.cluster?.name || '-'}
-                                                    </span>
-                                                    <span className="text-[11px] text-muted-foreground">
-                                                        {unit.cluster?.project?.name || '-'}
-                                                    </span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col gap-0.5">
-                                                    <Badge variant="outline" className="w-fit text-xs font-normal">
-                                                        {unit.unit_type?.name || '-'}
-                                                    </Badge>
-                                                    {unit.unit_type && (
-                                                        <span className="text-[11px] text-muted-foreground">
-                                                            LT {unit.unit_type.surface_area}m² / LB {unit.unit_type.building_area}m²
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className="font-semibold text-sm text-foreground">
-                                                    {unit.formatted_price}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>
-                                                {can('edit-units') ? (
-                                                    <button
-                                                        onClick={() => openQuickStatusChange(unit)}
-                                                        className="cursor-pointer transition-opacity hover:opacity-80"
-                                                        title="Klik untuk ubah status cepat"
-                                                    >
-                                                        {renderStatusBadge(unit.status)}
-                                                    </button>
-                                                ) : (
-                                                    <div className="cursor-default">
-                                                        {renderStatusBadge(unit.status)}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                        {units.data.map((unit) => (
+                                            <Card key={unit.id} className="overflow-hidden border border-border/80 hover:border-primary/40 hover:shadow-md transition-all flex flex-col justify-between">
+                                                <div className="p-4 space-y-3">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                {can('edit-units') ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleOpenEdit(unit)}
+                                                                        className="font-bold text-base text-foreground tracking-tight hover:text-primary hover:underline transition-colors text-left cursor-pointer"
+                                                                        title="Klik untuk edit data unit ini"
+                                                                    >
+                                                                        {unit.unit_code}
+                                                                    </button>
+                                                                ) : (
+                                                                    <h4 className="font-bold text-base text-foreground tracking-tight">
+                                                                        {unit.unit_code}
+                                                                    </h4>
+                                                                )}
+                                                                {can('edit-units') ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => openQuickStatusChange(unit)}
+                                                                        className="cursor-pointer transition-opacity hover:opacity-80"
+                                                                        title="Klik untuk ubah status cepat"
+                                                                    >
+                                                                        {renderStatusBadge(unit.status)}
+                                                                    </button>
+                                                                ) : (
+                                                                    renderStatusBadge(unit.status)
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                                Blok {unit.block} No. {unit.unit_number}
+                                                            </p>
+                                                        </div>
+                                                        {unit.svg_element_id && (
+                                                            <span className="font-mono text-[10px] bg-muted text-primary px-1.5 py-0.5 rounded border border-primary/20 shrink-0 flex items-center gap-1" title="SVG Siteplan ID">
+                                                                <Sparkles className="size-2.5" />
+                                                                {unit.svg_element_id}
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                {unit.svg_element_id ? (
-                                                    <span className="inline-flex items-center gap-1 font-mono text-xs bg-muted text-primary px-2 py-0.5 rounded border border-primary/20">
-                                                        <Sparkles className="size-3 text-primary" />
-                                                        {unit.svg_element_id}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-xs text-muted-foreground italic">Belum dipetakan</span>
-                                                )}
-                                            </TableCell>
-                                            {hasUnitActions && (
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-1.5">
+
+                                                    <div className="bg-muted/40 p-2.5 rounded-xl space-y-1.5 text-xs">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-muted-foreground">Cluster:</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setClusterId(unit.cluster_id.toString());
+                                                                    router.get(route('properties.units.index'), { cluster_id: unit.cluster_id.toString() }, { preserveState: true });
+                                                                }}
+                                                                className="font-semibold text-foreground truncate max-w-[130px] hover:text-primary hover:underline cursor-pointer text-right"
+                                                                title="Filter berdasarkan cluster ini"
+                                                            >
+                                                                {unit.cluster?.name || '-'}
+                                                            </button>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-muted-foreground">Tipe Rumah:</span>
+                                                            {unit.unit_type_id ? (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setUnitTypeId(unit.unit_type_id!.toString());
+                                                                        router.get(route('properties.units.index'), { unit_type_id: unit.unit_type_id!.toString() }, { preserveState: true });
+                                                                    }}
+                                                                    className="font-medium text-foreground hover:text-primary hover:underline cursor-pointer text-right truncate max-w-[140px]"
+                                                                    title="Filter berdasarkan tipe rumah ini"
+                                                                >
+                                                                    {unit.unit_type?.name || '-'}
+                                                                </button>
+                                                            ) : (
+                                                                <span className="font-medium text-foreground">{unit.unit_type?.name || '-'}</span>
+                                                            )}
+                                                        </div>
+                                                        {unit.unit_type && (
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-muted-foreground">Luas Tanah/Bgn:</span>
+                                                                <span className="font-medium text-foreground">LT {unit.unit_type.surface_area}m² / LB {unit.unit_type.building_area}m²</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex justify-between items-center pt-1.5 border-t border-border/50">
+                                                            <span className="text-muted-foreground">Harga Dasar:</span>
+                                                            <span className="font-bold text-foreground font-mono">{unit.formatted_price}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {unit.active_booking ? (
+                                                        <div
+                                                            onClick={() => router.get(route('bookings.index'), { search: unit.active_booking!.booking_code })}
+                                                            className="p-2.5 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-xs space-y-1.5 cursor-pointer group/booking"
+                                                            title="Klik untuk buka transaksi booking & SPR ini"
+                                                        >
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-1.5 font-semibold text-foreground truncate max-w-[150px] group-hover/booking:text-primary transition-colors">
+                                                                    <UserCheck className="size-3.5 text-primary shrink-0" />
+                                                                    <span title={unit.active_booking.lead?.name || 'Konsumen'}>
+                                                                        {unit.active_booking.lead?.name || 'Konsumen Terdaftar'}
+                                                                    </span>
+                                                                </div>
+                                                                <Badge variant="outline" className="font-mono text-[9px] px-1 py-0 bg-background text-primary/80 border-primary/30">
+                                                                    {unit.active_booking.booking_code}
+                                                                </Badge>
+                                                            </div>
+                                                            {unit.active_booking.lead?.whatsapp && (
+                                                                <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                                                    <Phone className="size-2.5 text-emerald-500" />
+                                                                    <a
+                                                                        href={`https://wa.me/${unit.active_booking.lead.whatsapp}`}
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        className="text-emerald-600 dark:text-emerald-400 hover:underline"
+                                                                        title="Chat langsung via WhatsApp"
+                                                                    >
+                                                                        {unit.active_booking.lead.whatsapp}
+                                                                    </a>
+                                                                </div>
+                                                            )}
+                                                            {unit.active_booking.sales && (
+                                                                <div className="text-[10px] text-muted-foreground">
+                                                                    Sales PIC: <strong className="text-foreground">{unit.active_booking.sales.name}</strong>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : unit.status === 'available' ? (
+                                                        <div className="text-center py-2 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
+                                                            ✓ Unit Kavling Siap Dipesan
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+
+                                                {hasUnitActions && (
+                                                    <div className="p-3 bg-muted/20 border-t border-border/60 flex items-center justify-end gap-1.5">
                                                         {can('edit-units') && (
                                                             <Button
-                                                                variant="ghost"
-                                                                size="icon"
+                                                                variant="outline"
+                                                                size="sm"
                                                                 onClick={() => handleOpenEdit(unit)}
-                                                                className="size-8 text-muted-foreground hover:text-foreground"
+                                                                className="h-8 text-xs gap-1.5"
                                                             >
                                                                 <Edit2 className="size-3.5" />
+                                                                <span>Edit</span>
                                                             </Button>
                                                         )}
                                                         {can('delete-units') && (
@@ -690,19 +811,175 @@ export default function UnitsIndex({
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 onClick={() => confirmDelete(unit)}
-                                                                className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                                className="size-8 text-destructive hover:bg-destructive/10"
+                                                                title="Hapus Unit"
                                                             >
                                                                 <Trash2 className="size-3.5" />
                                                             </Button>
                                                         )}
                                                     </div>
-                                                </TableCell>
-                                            )}
-                                        </TableRow>
-                                    ))
+                                                )}
+                                            </Card>
+                                        ))}
+                                    </div>
                                 )}
-                            </TableBody>
-                        </Table>
+                            </div>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                                        <TableHead className="w-[70px]">No</TableHead>
+                                        <TableHead>Kode & Blok Unit</TableHead>
+                                        <TableHead>Cluster & Proyek</TableHead>
+                                        <TableHead>Tipe Rumah</TableHead>
+                                        <TableHead>Harga Dasar (Cash/KPR)</TableHead>
+                                        <TableHead>Status Unit</TableHead>
+                                        <TableHead>Konsumen & Sales (PIC)</TableHead>
+                                        <TableHead>SVG Element ID</TableHead>
+                                        {hasUnitActions && (
+                                            <TableHead className="w-[120px] text-right">Aksi</TableHead>
+                                        )}
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {units.data.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={hasUnitActions ? 9 : 8} className="text-center py-12 text-muted-foreground">
+                                                Tidak ada unit kavling yang sesuai dengan pencarian / filter.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        units.data.map((unit, idx) => (
+                                            <TableRow key={unit.id} className="hover:bg-muted/30">
+                                                <TableCell className="font-mono text-xs text-muted-foreground">
+                                                    {(units.current_page - 1) * units.per_page + idx + 1}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-sm text-foreground">
+                                                            {unit.unit_code}
+                                                        </span>
+                                                        <span className="text-[11px] text-muted-foreground">
+                                                            Blok {unit.block} No. {unit.unit_number}
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="text-xs font-semibold text-foreground">
+                                                            {unit.cluster?.name || '-'}
+                                                        </span>
+                                                        <span className="text-[11px] text-muted-foreground">
+                                                            {unit.cluster?.project?.name || '-'}
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <Badge variant="outline" className="w-fit text-xs font-normal">
+                                                            {unit.unit_type?.name || '-'}
+                                                        </Badge>
+                                                        {unit.unit_type && (
+                                                            <span className="text-[11px] text-muted-foreground">
+                                                                LT {unit.unit_type.surface_area}m² / LB {unit.unit_type.building_area}m²
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span className="font-semibold text-sm text-foreground">
+                                                        {unit.formatted_price}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {can('edit-units') ? (
+                                                        <button
+                                                            onClick={() => openQuickStatusChange(unit)}
+                                                            className="cursor-pointer transition-opacity hover:opacity-80"
+                                                            title="Klik untuk ubah status cepat"
+                                                        >
+                                                            {renderStatusBadge(unit.status)}
+                                                        </button>
+                                                    ) : (
+                                                        <div className="cursor-default">
+                                                            {renderStatusBadge(unit.status)}
+                                                        </div>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {unit.active_booking ? (
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                                                                <UserCheck className="size-3.5 text-primary flex-shrink-0" />
+                                                                <span title={unit.active_booking.lead?.name || 'Konsumen'}>
+                                                                    {unit.active_booking.lead?.name || 'Konsumen Terdaftar'}
+                                                                </span>
+                                                            </div>
+                                                            {unit.active_booking.lead?.whatsapp && (
+                                                                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                                                    <Phone className="size-2.5" />
+                                                                    {unit.active_booking.lead.whatsapp}
+                                                                </span>
+                                                            )}
+                                                            <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-muted-foreground">
+                                                                <Badge variant="outline" className="font-mono text-[9px] px-1 py-0 bg-background text-primary/80 border-primary/30">
+                                                                    {unit.active_booking.booking_code}
+                                                                </Badge>
+                                                                {unit.active_booking.sales && (
+                                                                    <span>• Sales: <strong className="text-foreground">{unit.active_booking.sales.name}</strong></span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ) : unit.status === 'available' ? (
+                                                        <Badge variant="outline" className="text-[10px] text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/5 font-normal">
+                                                            Siap Dipesan
+                                                        </Badge>
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground italic">-</span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {unit.svg_element_id ? (
+                                                        <span className="inline-flex items-center gap-1 font-mono text-xs bg-muted text-primary px-2 py-0.5 rounded border border-primary/20">
+                                                            <Sparkles className="size-3 text-primary" />
+                                                            {unit.svg_element_id}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground italic">Belum dipetakan</span>
+                                                    )}
+                                                </TableCell>
+                                                {hasUnitActions && (
+                                                    <TableCell className="text-right">
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            {can('edit-units') && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => handleOpenEdit(unit)}
+                                                                    className="size-8 text-muted-foreground hover:text-foreground"
+                                                                >
+                                                                    <Edit2 className="size-3.5" />
+                                                                </Button>
+                                                            )}
+                                                            {can('delete-units') && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => confirmDelete(unit)}
+                                                                    className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                                >
+                                                                    <Trash2 className="size-3.5" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                )}
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        )}
                     </CardContent>
                 </Card>
 

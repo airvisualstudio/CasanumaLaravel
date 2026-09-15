@@ -47,7 +47,7 @@ export default function SprPrintModal({ open, onClose, booking }: SprPrintModalP
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0 print:border-none print:shadow-none print:max-w-none print:m-0 print:p-0">
+            <DialogContent className="max-w-5xl xl:max-w-6xl w-[95vw] max-h-[92vh] overflow-y-auto p-0 gap-0 print:border-none print:shadow-none print:max-w-none print:m-0 print:p-0">
                 {/* Print Control Toolbar - Hidden when printing */}
                 <div className="flex items-center justify-between px-6 py-4 border-b bg-muted/30 print:hidden sticky top-0 bg-background/95 backdrop-blur z-20">
                     <div className="flex items-center gap-2">

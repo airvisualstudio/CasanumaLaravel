@@ -27,7 +27,7 @@ class ClusterController extends Controller
             $search = $request->search;
             $clustersQuery->where(function ($q) use ($search) {
                 $q->where('name', 'ilike', "%{$search}%")
-                  ->orWhere('code', 'ilike', "%{$search}%");
+                    ->orWhere('code', 'ilike', "%{$search}%");
             });
         }
 

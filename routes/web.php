@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ClusterController;
+use App\Http\Controllers\CustomerDocumentController;
 use App\Http\Controllers\DeveloperController;
 use App\Http\Controllers\GeneralSettingController;
 use App\Http\Controllers\HousingProjectController;
@@ -92,6 +93,8 @@ Route::middleware(['auth', 'can:view-units'])->group(function () {
 // Penjualan & Leads CRM
 Route::middleware(['auth', 'can:view-leads'])->group(function () {
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
+    Route::get('/leads/pipeline', [LeadController::class, 'pipeline'])->name('leads.pipeline');
+    Route::get('/leads/{lead}/interactions', [LeadController::class, 'interactions'])->name('leads.interactions.index');
 
     Route::middleware('can:create-leads')->group(function () {
         Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
@@ -100,11 +103,30 @@ Route::middleware(['auth', 'can:view-leads'])->group(function () {
     Route::middleware('can:edit-leads')->group(function () {
         Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
         Route::patch('/leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.update-status');
+        Route::post('/leads/{lead}/archive', [LeadController::class, 'archive'])->name('leads.archive');
+        Route::post('/leads/{lead}/restore', [LeadController::class, 'restore'])->name('leads.restore');
+        Route::post('/leads/{lead}/interactions', [LeadController::class, 'storeInteraction'])->name('leads.interactions.store');
+        Route::post('/leads/{lead}/interactions/{interaction}/notes', [LeadController::class, 'storeInteractionNote'])->name('leads.interactions.notes.store');
+    });
+
+    Route::middleware('can:assign-leads')->group(function () {
+        Route::patch('/leads/{lead}/reassign', [LeadController::class, 'reassign'])->name('leads.reassign');
+        Route::post('/leads/check-sla', [LeadController::class, 'checkSla'])->name('leads.check-sla');
     });
 
     Route::middleware('can:delete-leads')->group(function () {
         Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
     });
+});
+
+// Dokumen Konsumen & KYC Vault (Private Storage & Validasi)
+Route::middleware('auth')->group(function () {
+    Route::get('/leads/{lead}/documents', [CustomerDocumentController::class, 'index'])->name('leads.documents.index');
+    Route::post('/leads/{lead}/documents', [CustomerDocumentController::class, 'store'])->name('leads.documents.store');
+    Route::get('/customer-documents/{customerDocument}/preview', [CustomerDocumentController::class, 'preview'])->name('customer-documents.preview');
+    Route::get('/customer-documents/{customerDocument}/download', [CustomerDocumentController::class, 'download'])->name('customer-documents.download');
+    Route::patch('/customer-documents/{customerDocument}/status', [CustomerDocumentController::class, 'updateStatus'])->name('customer-documents.status');
+    Route::delete('/customer-documents/{customerDocument}', [CustomerDocumentController::class, 'destroy'])->name('customer-documents.destroy');
 });
 
 // Transaksi Booking Fee & SPR

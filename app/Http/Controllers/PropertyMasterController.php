@@ -32,6 +32,7 @@ class PropertyMasterController extends Controller
                 if ($proj->area_unit === 'Ha' || $proj->area_unit === 'ha') {
                     return ((float) $proj->area_size) * 10000;
                 }
+
                 return (float) $proj->area_size;
             }),
         ];

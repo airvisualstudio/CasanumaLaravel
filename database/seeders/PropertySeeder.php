@@ -146,8 +146,22 @@ class PropertySeeder extends Seeder
             ]
         );
 
+        $tipe54 = UnitType::firstOrCreate(
+            ['housing_project_id' => $project2->id, 'name' => 'Tipe 54/90 (Urban Green)'],
+            [
+                'cluster_id' => $clusterGardenia->id,
+                'surface_area' => 90,
+                'building_area' => 54,
+                'bedrooms' => 3,
+                'bathrooms' => 2,
+                'electricity' => '2200 VA',
+                'description' => 'Rumah modern 2 lantai dengan ventilasi silang alami dan taman belakang.',
+            ]
+        );
+
         // 3. Housing Units
         $unitsData = [
+            // Cluster Lavender (Project 1)
             [
                 'cluster_id' => $clusterLavender->id,
                 'unit_type_id' => $tipe36->id,
@@ -155,9 +169,9 @@ class PropertySeeder extends Seeder
                 'unit_number' => '01',
                 'unit_code' => 'A1/01',
                 'base_price' => 450000000,
-                'status' => 'available',
+                'status' => 'booked',
                 'svg_element_id' => 'lot-a1-01',
-                'notes' => 'Posisi dekat gerbang utama cluster.',
+                'notes' => 'Posisi strategis dekat gerbang utama cluster.',
             ],
             [
                 'cluster_id' => $clusterLavender->id,
@@ -168,7 +182,18 @@ class PropertySeeder extends Seeder
                 'base_price' => 450000000,
                 'status' => 'booked',
                 'svg_element_id' => 'lot-a1-02',
-                'notes' => 'Tanda jadi via Pak Budi Santoso.',
+                'notes' => 'Tanda jadi via Pak Rian Pratama.',
+            ],
+            [
+                'cluster_id' => $clusterLavender->id,
+                'unit_type_id' => $tipe36->id,
+                'block' => 'A1',
+                'unit_number' => '03',
+                'unit_code' => 'A1/03',
+                'base_price' => 455000000,
+                'status' => 'available',
+                'svg_element_id' => 'lot-a1-03',
+                'notes' => 'Siap huni, hadap taman utama.',
             ],
             [
                 'cluster_id' => $clusterLavender->id,
@@ -179,7 +204,7 @@ class PropertySeeder extends Seeder
                 'base_price' => 585000000,
                 'status' => 'available',
                 'svg_element_id' => 'lot-a2-05',
-                'notes' => 'Hadap timur (matahari pagi).',
+                'notes' => 'Hadap timur (matahari pagi), sirkulasi sejuk.',
             ],
             [
                 'cluster_id' => $clusterLavender->id,
@@ -190,8 +215,43 @@ class PropertySeeder extends Seeder
                 'base_price' => 610000000,
                 'status' => 'sold',
                 'svg_element_id' => 'lot-a2-06',
-                'notes' => 'Sudah serah terima kunci.',
+                'notes' => 'Sudah serah terima kunci (BAST lengkap).',
             ],
+            [
+                'cluster_id' => $clusterLavender->id,
+                'unit_type_id' => $tipe45->id,
+                'block' => 'A2',
+                'unit_number' => '07',
+                'unit_code' => 'A2/07',
+                'base_price' => 595000000,
+                'status' => 'available',
+                'svg_element_id' => 'lot-a2-07',
+                'notes' => 'Kavling standar siap bangun.',
+            ],
+            [
+                'cluster_id' => $clusterLavender->id,
+                'unit_type_id' => $tipe36->id,
+                'block' => 'B1',
+                'unit_number' => '01',
+                'unit_code' => 'B1/01',
+                'base_price' => 460000000,
+                'status' => 'available',
+                'svg_element_id' => 'lot-b1-01',
+                'notes' => 'Dekat fasilitas clubhouse & playground.',
+            ],
+            [
+                'cluster_id' => $clusterLavender->id,
+                'unit_type_id' => $tipe45->id,
+                'block' => 'B1',
+                'unit_number' => '02',
+                'unit_code' => 'B1/02',
+                'base_price' => 590000000,
+                'status' => 'hold',
+                'svg_element_id' => 'lot-b1-02',
+                'notes' => 'Hold sementara untuk calon konsumen VIP.',
+            ],
+
+            // Cluster Pine Hills (Project 1)
             [
                 'cluster_id' => $clusterPineHills->id,
                 'unit_type_id' => $tipe72->id,
@@ -201,7 +261,7 @@ class PropertySeeder extends Seeder
                 'base_price' => 1150000000,
                 'status' => 'available',
                 'svg_element_id' => 'lot-ph1-10',
-                'notes' => 'Kavling sudut (hook) dengan view bukit.',
+                'notes' => 'Kavling sudut (hook) dengan panorama lembah.',
             ],
             [
                 'cluster_id' => $clusterPineHills->id,
@@ -214,10 +274,56 @@ class PropertySeeder extends Seeder
                 'svg_element_id' => 'lot-ph1-11',
                 'notes' => 'Ditahan untuk manajemen direksi.',
             ],
+            [
+                'cluster_id' => $clusterPineHills->id,
+                'unit_type_id' => $tipe72->id,
+                'block' => 'PH1',
+                'unit_number' => '12',
+                'unit_code' => 'PH1/12',
+                'base_price' => 1200000000,
+                'status' => 'booked',
+                'svg_element_id' => 'lot-ph1-12',
+                'notes' => 'Proses verifikasi KPR Bank Mandiri.',
+            ],
+
+            // Cluster Gardenia (Project 2)
+            [
+                'cluster_id' => $clusterGardenia->id,
+                'unit_type_id' => $tipe54->id,
+                'block' => 'GD1',
+                'unit_number' => '01',
+                'unit_code' => 'GD1/01',
+                'base_price' => 725000000,
+                'status' => 'available',
+                'svg_element_id' => 'lot-gd1-01',
+                'notes' => 'Smart eco-home dengan rooftop solar cell.',
+            ],
+            [
+                'cluster_id' => $clusterGardenia->id,
+                'unit_type_id' => $tipe54->id,
+                'block' => 'GD1',
+                'unit_number' => '02',
+                'unit_code' => 'GD1/02',
+                'base_price' => 725000000,
+                'status' => 'available',
+                'svg_element_id' => 'lot-gd1-02',
+                'notes' => 'Pencahayaan alami 100% di siang hari.',
+            ],
+            [
+                'cluster_id' => $clusterGardenia->id,
+                'unit_type_id' => $tipe54->id,
+                'block' => 'GD1',
+                'unit_number' => '03',
+                'unit_code' => 'GD1/03',
+                'base_price' => 745000000,
+                'status' => 'sold',
+                'svg_element_id' => 'lot-gd1-03',
+                'notes' => 'Lunas skema cash keras.',
+            ],
         ];
 
         foreach ($unitsData as $unit) {
-            HousingUnit::firstOrCreate(
+            HousingUnit::updateOrCreate(
                 ['unit_code' => $unit['unit_code']],
                 $unit
             );

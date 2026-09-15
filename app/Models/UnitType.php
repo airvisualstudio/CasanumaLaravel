@@ -47,7 +47,7 @@ class UnitType extends Model
 
     public function getBrochureUrlAttribute(): ?string
     {
-        if (!$this->brochure_file) {
+        if (! $this->brochure_file) {
             return null;
         }
 

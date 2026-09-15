@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ActivityLog;
 use App\Models\SystemSetting;
 use Exception;
 use Illuminate\Support\Facades\Http;
@@ -113,7 +114,7 @@ class TelegramService
             ."👤 <b>Operator:</b> {$operator}\n"
             ."⏱ <b>Waktu:</b> {$timestamp}\n"
             ."🌐 <b>Environment:</b> <code>{$serverEnv}</code>\n\n"
-            ."<i>Notifikasi sistem CRM, audit activity logs, dan update operasional akan dikirimkan ke channel/chat ini secara otomatis.</i>";
+            .'<i>Notifikasi sistem CRM, audit activity logs, dan update operasional akan dikirimkan ke channel/chat ini secara otomatis.</i>';
 
         return $this->sendMessage($testMessage, $token, $chat);
     }
@@ -121,7 +122,7 @@ class TelegramService
     /**
      * Send real-time activity log notification to Telegram.
      */
-    public function sendActivityNotification(\App\Models\ActivityLog $log): array
+    public function sendActivityNotification(ActivityLog $log): array
     {
         $notificationsEnabled = filter_var(
             SystemSetting::get('telegram_notifications_enabled', true),
@@ -179,11 +180,11 @@ class TelegramService
             $count = 0;
             foreach ($log->properties as $key => $val) {
                 if ($count >= 6) {
-                    $details .= "• <i>...dan " . (count($log->properties) - 6) . " properti lainnya</i>\n";
+                    $details .= '• <i>...dan '.(count($log->properties) - 6)." properti lainnya</i>\n";
                     break;
                 }
                 $valStr = is_bool($val) ? ($val ? 'true' : 'false') : (is_scalar($val) ? (string) $val : json_encode($val));
-                $details .= "• <b>" . htmlspecialchars((string) $key) . ":</b> " . htmlspecialchars($valStr) . "\n";
+                $details .= '• <b>'.htmlspecialchars((string) $key).':</b> '.htmlspecialchars($valStr)."\n";
                 $count++;
             }
             $message .= rtrim($details);

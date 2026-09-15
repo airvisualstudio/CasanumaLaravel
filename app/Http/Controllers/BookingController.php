@@ -160,13 +160,17 @@ class BookingController extends Controller
             $validated['sales_id'] = $user->id;
         }
 
-        $unit = HousingUnit::findOrFail($validated['housing_unit_id']);
-        if ($unit->status !== 'available') {
-            return redirect()->back()->with('error', "Unit {$unit->unit_code} tidak tersedia (status saat ini: {$unit->status}).");
-        }
+        $unit = null;
 
-        DB::transaction(function () use ($request, $validated, $unit) {
-            $user = $request->user();
+        try {
+            DB::transaction(function () use ($request, $validated, &$unit) {
+                $user = $request->user();
+
+                // Concurrency row-locking: prevent race-condition double bookings
+                $unit = HousingUnit::where('id', $validated['housing_unit_id'])->lockForUpdate()->firstOrFail();
+                if ($unit->status !== 'available') {
+                    throw new \Exception("Unit {$unit->unit_code} tidak tersedia (status saat ini: {$unit->status}).");
+                }
 
             $basePrice = (float) $validated['base_price'];
             $additionalPrice = (float) ($validated['additional_price'] ?? 0);
@@ -262,6 +266,9 @@ class BookingController extends Controller
                 ]
             );
         });
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
 
         $msg = $request->user()->hasRole(['sales_manager', 'superadmin'])
             ? "Transaksi Booking unit {$unit->unit_code} berhasil dibuat dan otomatis disetujui (Status: BOOKED)."
