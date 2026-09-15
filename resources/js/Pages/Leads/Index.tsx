@@ -41,6 +41,8 @@ import {
     RotateCcw,
     LayoutGrid,
     List,
+    FileSpreadsheet,
+    Download,
 } from 'lucide-react';
 import FollowUpTimelineDialog from '@/Components/CRM/FollowUpTimelineDialog';
 import CustomerDocumentVaultDialog from '@/Components/CRM/CustomerDocumentVaultDialog';
@@ -746,6 +748,28 @@ export default function LeadsIndex({
                             >
                                 <ShieldAlert className="size-4 text-amber-500" />
                                 <span>Audit SLA Inaktif</span>
+                            </Button>
+                        )}
+
+                        {/* Export Excel strictly limited to Superadmin to prevent unauthorized database copying */}
+                        {isSuperAdmin && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                                className="h-10 px-3.5 gap-2 rounded-xl text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+                            >
+                                <a
+                                    href={route('leads.export', {
+                                        pool: currentPool !== 'active' ? currentPool : undefined,
+                                        housing_project_id: projectId !== 'all' ? projectId : undefined,
+                                        status: statusFilter !== 'all' ? statusFilter : undefined,
+                                    })}
+                                    title="Ekspor Seluruh Database Konsumen ke Excel/CSV (Khusus Superadmin)"
+                                >
+                                    <FileSpreadsheet className="size-4 text-emerald-500" />
+                                    <span>Export Excel</span>
+                                </a>
                             </Button>
                         )}
 

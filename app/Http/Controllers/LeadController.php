@@ -939,4 +939,96 @@ class LeadController extends Controller
 
         return redirect()->back()->with('success', 'Data prospek konsumen berhasil dihapus.');
     }
+
+    /**
+     * Export leads database to CSV/Excel format.
+     * STRICTLY SUPERADMIN ONLY to prevent customer database leaks.
+     */
+    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        abort_unless(auth()->user()->hasRole('superadmin'), 403, 'Akses Ditolak: Hanya Super Administrator yang diizinkan mengunduh database kontak konsumen.');
+
+        ActivityLog::record(
+            'export_leads',
+            'Superadmin mengunduh database kontak konsumen (Export Excel)',
+            auth()->user()
+        );
+
+        $query = Lead::with(['project', 'sales']);
+
+        if ($request->filled('pool') && $request->pool === 'archived') {
+            $query->archivedPool();
+        } else {
+            $query->active();
+        }
+
+        if ($request->filled('project_id') && $request->project_id !== 'all') {
+            $query->where('housing_project_id', $request->project_id);
+        }
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        $leads = $query->orderBy('created_at', 'desc')->get();
+
+        $filename = 'casanuma-leads-export-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($leads) {
+            $handle = fopen('php://output', 'w');
+
+            // Add UTF-8 BOM for Microsoft Excel compatibility
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            // CSV Header row
+            fputcsv($handle, [
+                'ID Prospek',
+                'Nama Konsumen',
+                'Nomor WhatsApp',
+                'Email',
+                'NIK',
+                'Proyek Perumahan',
+                'Status Pipeline',
+                'Suhu Prospek',
+                'SLIK Status',
+                'Sales PIC',
+                'Sumber Leads',
+                'Sub-Sumber / Campaign',
+                'Maksimal Budget',
+                'Tipe Unit Diminati',
+                'Pekerjaan / Profesi',
+                'Penghasilan Bulanan',
+                'Catatan Kebutuhan',
+                'Tanggal Masuk Prospek',
+            ]);
+
+            foreach ($leads as $lead) {
+                fputcsv($handle, [
+                    $lead->id,
+                    $lead->name,
+                    $lead->whatsapp,
+                    $lead->email ?? '-',
+                    $lead->nik ?? '-',
+                    $lead->project?->name ?? '-',
+                    self::getStageLabel($lead->status),
+                    strtoupper($lead->lead_temperature ?? 'WARM'),
+                    strtoupper($lead->slik_status ?? 'CLEAR'),
+                    $lead->sales?->name ?? 'Belum Ditugaskan',
+                    $lead->source,
+                    $lead->source_detail ?? '-',
+                    $lead->max_budget ? 'Rp ' . number_format($lead->max_budget, 0, ',', '.') : '-',
+                    $lead->preferred_unit_type ?? '-',
+                    $lead->job_type ?? '-',
+                    $lead->monthly_income ? 'Rp ' . number_format($lead->monthly_income, 0, ',', '.') : '-',
+                    $lead->notes ?? '-',
+                    $lead->created_at?->format('d/m/Y H:i') ?? '-',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
 }

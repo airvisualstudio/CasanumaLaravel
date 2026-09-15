@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -125,5 +126,21 @@ class User extends Authenticatable
         return Attribute::make(
             get: fn () => $this->join_date ? $this->join_date->translatedFormat('d F Y') : null,
         );
+    }
+
+    /**
+     * Prospek konsumen (leads) yang ditangani oleh user ini.
+     */
+    public function leads(): HasMany
+    {
+        return $this->hasMany(Lead::class, 'sales_id');
+    }
+
+    /**
+     * Transaksi booking kavling yang di-input / ditangani oleh user ini.
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'sales_id');
     }
 }

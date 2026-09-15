@@ -37,8 +37,12 @@ Route::middleware(['auth', 'role:superadmin'])->group(function () {
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::match(['put', 'post'], '/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::patch('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+    Route::post('/users/{user}/deactivate-and-handover', [UserController::class, 'deactivateAndHandover'])->name('users.deactivate-and-handover');
     Route::patch('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+
+    // Leads Data Export (Strictly Superadmin Only)
+    Route::get('/leads/export', [LeadController::class, 'export'])->name('leads.export');
 
     // Settings: General Branding, Activity Logs & Telegram Integration
     Route::prefix('settings')->name('settings.')->group(function () {

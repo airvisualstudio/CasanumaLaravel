@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\Lead;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -22,6 +24,7 @@ class UserController extends Controller
     public function index(): Response
     {
         $users = User::with('roles')
+            ->withCount(['leads', 'bookings'])
             ->orderBy('id', 'asc')
             ->get()
             ->map(function (User $user) {
@@ -40,6 +43,8 @@ class UserController extends Controller
                     'join_date' => $user->join_date?->format('Y-m-d'),
                     'join_date_formatted' => $user->join_date?->format('d M Y') ?? '-',
                     'is_active' => (bool) $user->is_active,
+                    'leads_count' => (int) $user->leads_count,
+                    'bookings_count' => (int) $user->bookings_count,
                     'bank_name' => $user->bank_name,
                     'bank_account_number' => $user->bank_account_number,
                     'bank_account_holder' => $user->bank_account_holder,
@@ -50,9 +55,16 @@ class UserController extends Controller
 
         $roles = Role::pluck('name');
 
+        // Active sales and managers for lead handover selection
+        $activeSales = User::role(['sales_agent', 'sales_manager'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
         return Inertia::render('Users/Index', [
             'users' => $users,
             'availableRoles' => $roles,
+            'activeSales' => $activeSales,
         ]);
     }
 
@@ -211,6 +223,119 @@ class UserController extends Controller
     }
 
     /**
+     * Deactivate user and optionally handover their assigned leads to another sales agent in one click.
+     */
+    public function deactivateAndHandover(Request $request, User $user): RedirectResponse
+    {
+        if ($user->id === auth()->id()) {
+            return back()->withErrors([
+                'error' => 'Anda tidak dapat menonaktifkan akun Anda sendiri yang sedang aktif!',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'target_sales_id' => ['nullable', 'exists:users,id'],
+        ]);
+
+        $targetSalesId = $validated['target_sales_id'] ?? null;
+        $leads = $user->leads;
+        $leadsCount = $leads->count();
+        $targetSales = null;
+
+        if ($targetSalesId) {
+            $targetSales = User::findOrFail($targetSalesId);
+            if (! $targetSales->is_active) {
+                return back()->withErrors([
+                    'target_sales_id' => 'Sales target pengalihan harus berstatus aktif.',
+                ]);
+            }
+            if ($targetSales->id === $user->id) {
+                return back()->withErrors([
+                    'target_sales_id' => 'Sales target pengalihan tidak boleh sama dengan pengguna yang dinonaktifkan.',
+                ]);
+            }
+        }
+
+        DB::transaction(function () use ($user, $targetSales, $leads, $leadsCount) {
+            if ($targetSales && $leadsCount > 0) {
+                // Reassign all leads
+                Lead::where('sales_id', $user->id)->update([
+                    'sales_id' => $targetSales->id,
+                ]);
+
+                // Record timeline note for each lead
+                foreach ($leads as $lead) {
+                    $lead->interactions()->create([
+                        'user_id' => auth()->id(),
+                        'channel' => 'system',
+                        'notes' => "🛡️ Handover Otomatis: Prospek dialihkan dari {$user->name} ke {$targetSales->name} karena status akun dinonaktifkan.",
+                        'completed_at' => now(),
+                    ]);
+                }
+
+                ActivityLog::record(
+                    'lead_handover',
+                    "Melakukan handover {$leadsCount} prospek konsumen dari {$user->name} ke {$targetSales->name} saat nonaktifkan akun",
+                    $user,
+                    [
+                        'from_user_id' => $user->id,
+                        'to_user_id' => $targetSales->id,
+                        'leads_count' => $leadsCount,
+                    ]
+                );
+            } elseif ($leadsCount > 0) {
+                // Set to unassigned
+                Lead::where('sales_id', $user->id)->update([
+                    'sales_id' => null,
+                ]);
+
+                foreach ($leads as $lead) {
+                    $lead->interactions()->create([
+                        'user_id' => auth()->id(),
+                        'channel' => 'system',
+                        'notes' => "🛡️ Handover Otomatis: Prospek dilepas ke Unassigned Pool dari {$user->name} karena status akun dinonaktifkan.",
+                        'completed_at' => now(),
+                    ]);
+                }
+
+                ActivityLog::record(
+                    'lead_handover',
+                    "Melepas {$leadsCount} prospek konsumen dari {$user->name} ke Unassigned Pool saat nonaktifkan akun",
+                    $user,
+                    [
+                        'from_user_id' => $user->id,
+                        'to_user_id' => null,
+                        'leads_count' => $leadsCount,
+                    ]
+                );
+            }
+
+            // Deactivate the user
+            $user->update([
+                'is_active' => false,
+            ]);
+
+            ActivityLog::record(
+                'status_toggle',
+                "Menonaktifkan status akun {$user->name}" . ($targetSales ? " dan mengoper {$leadsCount} prospek ke {$targetSales->name}" : ''),
+                $user,
+                ['is_active' => false]
+            );
+        });
+
+        $msg = "Akun {$user->name} berhasil dinonaktifkan";
+        if ($targetSales && $leadsCount > 0) {
+            $msg .= " dan {$leadsCount} prospek konsumen berhasil dialihkan ke {$targetSales->name}.";
+        } elseif ($leadsCount > 0) {
+            $msg .= " dan {$leadsCount} prospek konsumen dipindahkan ke Unassigned Pool.";
+        } else {
+            $msg .= ".";
+        }
+
+        return back()->with('success', $msg);
+    }
+
+    /**
      * Remove the specified user from storage.
      */
     public function destroy(User $user): RedirectResponse
@@ -218,6 +343,13 @@ class UserController extends Controller
         if ($user->id === auth()->id()) {
             return back()->withErrors([
                 'error' => 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif!',
+            ]);
+        }
+
+        // Prevent deletion if user has historical leads or bookings
+        if ($user->leads()->count() > 0 || $user->bookings()->count() > 0) {
+            return back()->withErrors([
+                'error' => "Pengguna {$user->name} memiliki riwayat transaksi booking atau prospek konsumen yang terikat. Demi integritas data historis, akun ini tidak boleh dihapus. Silakan nonaktifkan status akun sebagai gantinya.",
             ]);
         }
 

@@ -41,6 +41,7 @@ import {
     EyeOff,
     LayoutGrid,
     List,
+    ShieldAlert,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
@@ -77,6 +78,7 @@ import { Calendar } from '@/Components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
 import AvatarCropperModal from '@/Components/AvatarCropperModal';
 import { toast } from '@/Components/ui/sonner';
+import HandoverLeadsDialog from './Partials/HandoverLeadsDialog';
 
 interface UserData {
     id: number;
@@ -93,6 +95,8 @@ interface UserData {
     join_date?: string | null;
     join_date_formatted?: string | null;
     is_active: boolean;
+    leads_count?: number;
+    bookings_count?: number;
     bank_name?: string | null;
     bank_account_number?: string | null;
     bank_account_holder?: string | null;
@@ -103,6 +107,7 @@ interface UserData {
 interface UsersIndexProps {
     users: UserData[];
     availableRoles: string[];
+    activeSales?: Array<{ id: number; name: string; email: string }>;
     flash?: {
         success?: string;
         error?: string;
@@ -181,7 +186,7 @@ function UserAvatar({
     );
 }
 
-export default function UsersIndex({ users, availableRoles }: UsersIndexProps) {
+export default function UsersIndex({ users, availableRoles, activeSales = [] }: UsersIndexProps) {
     const { auth, flash, errors: pageErrors } = usePage<UsersIndexProps>().props;
     const currentUserId = auth.user.id;
 
@@ -212,6 +217,10 @@ export default function UsersIndex({ users, availableRoles }: UsersIndexProps) {
     const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
     const [userToView, setUserToView] = useState<UserData | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+    // Handover Leads state (for deactivating users with active leads)
+    const [userForHandover, setUserForHandover] = useState<UserData | null>(null);
+    const [isHandoverDialogOpen, setIsHandoverDialogOpen] = useState(false);
 
     // Cropping & Compression states
     const [isCropperOpen, setIsCropperOpen] = useState(false);
@@ -479,6 +488,13 @@ export default function UsersIndex({ users, availableRoles }: UsersIndexProps) {
     };
 
     const handleToggleStatus = (user: UserData) => {
+        // If user is currently active and has active leads assigned, open handover dialog
+        if (user.is_active && (user.leads_count ?? 0) > 0) {
+            setUserForHandover(user);
+            setIsHandoverDialogOpen(true);
+            return;
+        }
+
         const nextStatus = !user.is_active;
         router.patch(route('users.toggle-status', user.id), {}, {
             preserveScroll: true,
@@ -1004,6 +1020,18 @@ export default function UsersIndex({ users, availableRoles }: UsersIndexProps) {
                                                                     <MapPin className="size-3 shrink-0 mt-0.5 text-muted-foreground/70" />
                                                                     <span className="truncate">{user.address}</span>
                                                                 </p>
+                                                            )}
+
+                                                            {((user.leads_count ?? 0) > 0 || (user.bookings_count ?? 0) > 0) && (
+                                                                <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-border/40 text-muted-foreground">
+                                                                    <span className="flex items-center gap-1">
+                                                                        <Users className="size-3 text-primary" />
+                                                                        <span>Portofolio Data:</span>
+                                                                    </span>
+                                                                    <span className="font-semibold text-foreground">
+                                                                        {user.leads_count ?? 0} Prospek · {user.bookings_count ?? 0} Booking
+                                                                    </span>
+                                                                </div>
                                                             )}
                                                         </div>
                                                     </div>
@@ -2051,7 +2079,7 @@ export default function UsersIndex({ users, availableRoles }: UsersIndexProps) {
                     </DialogContent>
                 </Dialog>
 
-                {/* 8. Dialog Konfirmasi Hapus Pengguna (Standard shadcn Dialog) */}
+                {/* 8. Dialog Konfirmasi Hapus Pengguna (Standard shadcn Dialog with Historical Protection) */}
                 <Dialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader className="gap-2">
@@ -2062,26 +2090,50 @@ export default function UsersIndex({ users, availableRoles }: UsersIndexProps) {
                                 </DialogTitle>
                             </div>
                             <DialogDescription className="text-xs text-muted-foreground">
-                                Tindakan ini tidak dapat dibatalkan. Akun pengguna dan aksesnya ke sistem CASANUMA CRM akan dihapus secara permanen.
+                                {((userToDelete?.leads_count ?? 0) > 0 || (userToDelete?.bookings_count ?? 0) > 0)
+                                    ? 'Akun ini terikat dengan riwayat operasional CRM sehingga dilindungi dari penghapusan permanen.'
+                                    : 'Tindakan ini tidak dapat dibatalkan. Akun pengguna dan aksesnya ke sistem CASANUMA CRM akan dihapus secara permanen.'}
                             </DialogDescription>
                         </DialogHeader>
 
                         {userToDelete && (
-                            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3.5 space-y-2 text-xs">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">Nama:</span>
-                                    <span className="font-semibold text-foreground">{userToDelete.name}</span>
+                            <div className="space-y-3">
+                                <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3.5 space-y-2 text-xs">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-muted-foreground">Nama:</span>
+                                        <span className="font-semibold text-foreground">{userToDelete.name}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-muted-foreground">Email:</span>
+                                        <span className="font-mono text-muted-foreground">{userToDelete.email}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-muted-foreground">Peran:</span>
+                                        <span className="font-medium text-primary uppercase text-[11px]">
+                                            {userToDelete.roles.join(', ')}
+                                        </span>
+                                    </div>
+                                    {((userToDelete.leads_count ?? 0) > 0 || (userToDelete.bookings_count ?? 0) > 0) && (
+                                        <div className="flex items-center justify-between pt-1 border-t border-destructive/20 text-destructive font-medium">
+                                            <span>Data Terikat:</span>
+                                            <span>
+                                                {userToDelete.leads_count ?? 0} Prospek / {userToDelete.bookings_count ?? 0} Booking
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">Email:</span>
-                                    <span className="font-mono text-muted-foreground">{userToDelete.email}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">Peran:</span>
-                                    <span className="font-medium text-primary uppercase text-[11px]">
-                                        {userToDelete.roles.join(', ')}
-                                    </span>
-                                </div>
+
+                                {((userToDelete.leads_count ?? 0) > 0 || (userToDelete.bookings_count ?? 0) > 0) && (
+                                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs space-y-1.5 text-amber-900 dark:text-amber-200">
+                                        <div className="flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-400">
+                                            <ShieldAlert className="size-4 shrink-0" />
+                                            <span>Akun Dilindungi Integritas Data Historis</span>
+                                        </div>
+                                        <p className="text-[11px] leading-relaxed text-muted-foreground">
+                                            Demi keamanan laporan penjualan, audit transaksi booking, dan riwayat follow-up masa lalu, akun dengan data terikat <strong>tidak boleh dihapus</strong>. Silakan gunakan tombol di bawah untuk menonaktifkan akun dan mengalihkan prospek ke staf lain.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -2094,16 +2146,33 @@ export default function UsersIndex({ users, availableRoles }: UsersIndexProps) {
                             >
                                 Batal
                             </Button>
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                onClick={handleDeleteUser}
-                                disabled={deleteProcessing}
-                                className="gap-2"
-                            >
-                                {deleteProcessing && <Loader2 className="size-3.5 animate-spin" />}
-                                <span>Ya, Hapus Pengguna</span>
-                            </Button>
+                            {((userToDelete?.leads_count ?? 0) > 0 || (userToDelete?.bookings_count ?? 0) > 0) ? (
+                                <Button
+                                    type="button"
+                                    onClick={() => {
+                                        const target = userToDelete;
+                                        setUserToDelete(null);
+                                        if (target) {
+                                            handleToggleStatus(target);
+                                        }
+                                    }}
+                                    className="gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+                                >
+                                    <UserX className="size-3.5" />
+                                    <span>Nonaktifkan Akun Saja</span>
+                                </Button>
+                            ) : (
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    onClick={handleDeleteUser}
+                                    disabled={deleteProcessing}
+                                    className="gap-2"
+                                >
+                                    {deleteProcessing && <Loader2 className="size-3.5 animate-spin" />}
+                                    <span>Ya, Hapus Pengguna</span>
+                                </Button>
+                            )}
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
@@ -2247,6 +2316,17 @@ export default function UsersIndex({ users, availableRoles }: UsersIndexProps) {
                         )}
                     </DialogContent>
                 </Dialog>
+
+                {/* 10. Dialog Handover Leads saat Nonaktifkan Akun */}
+                <HandoverLeadsDialog
+                    user={userForHandover}
+                    activeSales={activeSales}
+                    isOpen={isHandoverDialogOpen}
+                    onClose={() => {
+                        setIsHandoverDialogOpen(false);
+                        setUserForHandover(null);
+                    }}
+                />
             </div>
         </AuthenticatedLayout>
     );
