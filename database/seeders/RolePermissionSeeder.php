@@ -56,6 +56,10 @@ class RolePermissionSeeder extends Seeder
             'review-receipts',
             'approve-receipts',
 
+            // Document Editor & Letter Templates
+            'manage-document-templates',
+            'view-document-templates',
+
             // System & User Management
             'manage-users',
             'manage-roles',
@@ -91,6 +95,8 @@ class RolePermissionSeeder extends Seeder
             'cancel-bookings',
             'view-receipts',
             'approve-receipts',
+            'view-document-templates',
+            'manage-document-templates',
         ]);
 
         // Sales Agent: Create & manage own leads, view units, create bookings
@@ -105,6 +111,7 @@ class RolePermissionSeeder extends Seeder
             'create-bookings',
             'view-receipts',
             'create-receipts',
+            'view-document-templates',
         ]);
 
         // Finance: View bookings, verify payments, financial summary, issue invoices, manage KPR
@@ -120,6 +127,7 @@ class RolePermissionSeeder extends Seeder
             'approve-bookings',
             'view-receipts',
             'review-receipts',
+            'view-document-templates',
         ]);
     }
 }

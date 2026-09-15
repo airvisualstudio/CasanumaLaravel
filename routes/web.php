@@ -5,6 +5,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ClusterController;
 use App\Http\Controllers\CustomerDocumentController;
 use App\Http\Controllers\DeveloperController;
+use App\Http\Controllers\DocumentTemplateController;
 use App\Http\Controllers\GeneralSettingController;
 use App\Http\Controllers\HousingProjectController;
 use App\Http\Controllers\HousingUnitController;
@@ -182,6 +183,22 @@ Route::middleware(['auth', 'can:view-receipts'])->group(function () {
     });
 
     Route::post('/receipts/{receipt}/reject', [ReceiptController::class, 'reject'])->name('receipts.reject');
+});
+
+// Template Dokumen & Surat Menyurat
+Route::middleware(['auth', 'can:view-document-templates'])->group(function () {
+    Route::get('/document-templates', [DocumentTemplateController::class, 'index'])->name('document-templates.index');
+    Route::post('/document-templates/preview', [DocumentTemplateController::class, 'preview'])->name('document-templates.preview');
+    Route::get('/document-templates/{document_template}/pdf', [DocumentTemplateController::class, 'exportPdf'])->name('document-templates.pdf');
+
+    Route::middleware('can:manage-document-templates')->group(function () {
+        Route::get('/document-templates/create', [DocumentTemplateController::class, 'create'])->name('document-templates.create');
+        Route::post('/document-templates', [DocumentTemplateController::class, 'store'])->name('document-templates.store');
+        Route::get('/document-templates/{document_template}/edit', [DocumentTemplateController::class, 'edit'])->name('document-templates.edit');
+        Route::put('/document-templates/{document_template}', [DocumentTemplateController::class, 'update'])->name('document-templates.update');
+        Route::post('/document-templates/{document_template}', [DocumentTemplateController::class, 'update']);
+        Route::delete('/document-templates/{document_template}', [DocumentTemplateController::class, 'destroy'])->name('document-templates.destroy');
+    });
 });
 
 // Notifications (In-app Live Alerts)

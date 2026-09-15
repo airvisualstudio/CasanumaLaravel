@@ -84,6 +84,11 @@ class Booking extends Model
         return $this->belongsTo(User::class, 'sales_id');
     }
 
+    public function salesAgent(): BelongsTo
+    {
+        return $this->sales();
+    }
+
     public function approvedByManager(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by_manager_id');

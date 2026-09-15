@@ -25,6 +25,9 @@ export interface User {
 export interface AppSettings {
     app_name: string;
     company_name: string;
+    company_address?: string | null;
+    company_phone?: string | null;
+    company_email?: string | null;
     app_description: string;
     primary_color?: string | null;
     primary_hsl?: string | null;

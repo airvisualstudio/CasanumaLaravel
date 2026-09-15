@@ -52,6 +52,7 @@ import {
     Bot,
     Columns3,
     Receipt as ReceiptIcon,
+    FileText,
 } from 'lucide-react';
 import NotificationBell from '@/Components/NotificationBell';
 import { useAuthorization } from '@/hooks/useAuthorization';
@@ -292,6 +293,19 @@ export default function Authenticated({
                     icon: Wallet,
                     action: () => handleMenuClick('Laporan Arus Kas'),
                     visible: can('view-financial-summary'),
+                },
+            ],
+        },
+        {
+            groupName: 'Dokumen & Template',
+            visible: can('view-document-templates'),
+            items: [
+                {
+                    label: 'Editor & Template Surat',
+                    icon: FileText,
+                    href: route('document-templates.index'),
+                    active: isCurrent('document-templates.*'),
+                    visible: can('view-document-templates'),
                 },
             ],
         },
