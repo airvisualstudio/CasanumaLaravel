@@ -50,6 +50,12 @@ class RolePermissionSeeder extends Seeder
             'issue-invoices',
             'manage-kpr',
 
+            // Receipt Management (Kwitansi)
+            'view-receipts',
+            'create-receipts',
+            'review-receipts',
+            'approve-receipts',
+
             // System & User Management
             'manage-users',
             'manage-roles',
@@ -83,6 +89,8 @@ class RolePermissionSeeder extends Seeder
             'edit-bookings',
             'approve-bookings',
             'cancel-bookings',
+            'view-receipts',
+            'approve-receipts',
         ]);
 
         // Sales Agent: Create & manage own leads, view units, create bookings
@@ -95,6 +103,8 @@ class RolePermissionSeeder extends Seeder
             'edit-leads',
             'view-bookings',
             'create-bookings',
+            'view-receipts',
+            'create-receipts',
         ]);
 
         // Finance: View bookings, verify payments, financial summary, issue invoices, manage KPR
@@ -108,6 +118,8 @@ class RolePermissionSeeder extends Seeder
             'issue-invoices',
             'manage-kpr',
             'approve-bookings',
+            'view-receipts',
+            'review-receipts',
         ]);
     }
 }
