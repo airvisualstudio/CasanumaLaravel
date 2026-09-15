@@ -51,7 +51,9 @@ import {
     Activity,
     Bot,
     Columns3,
+    Receipt as ReceiptIcon,
 } from 'lucide-react';
+import NotificationBell from '@/Components/NotificationBell';
 import { useAuthorization } from '@/hooks/useAuthorization';
 import { Toaster, toast } from '@/Components/ui/sonner';
 import { PageProps } from '@/types';
@@ -264,8 +266,15 @@ export default function Authenticated({
         },
         {
             groupName: 'Keuangan & Kas',
-            visible: can('view-finance'),
+            visible: can('view-receipts') || can('view-finance') || can('verify-payments'),
             items: [
+                {
+                    label: 'Kwitansi & Finansial',
+                    icon: ReceiptIcon,
+                    href: route('receipts.index'),
+                    active: isCurrent('receipts.*'),
+                    visible: can('view-receipts'),
+                },
                 {
                     label: 'Verifikasi Pembayaran',
                     icon: CheckCircle2,
@@ -628,6 +637,9 @@ export default function Authenticated({
                             <Database className="size-3" />
                             <span>PostgreSQL Connected</span>
                         </div>
+
+                        {/* In-app Notification Bell */}
+                        <NotificationBell />
 
                         {/* User Profile Dropdown */}
                         <DropdownMenu>

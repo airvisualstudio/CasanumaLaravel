@@ -21,7 +21,10 @@ import {
     Palette,
     RotateCcw,
     Check,
-    LayoutTemplate
+    LayoutTemplate,
+    Receipt as ReceiptIcon,
+    Stamp,
+    FileCheck
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -53,12 +56,16 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
     const darkLogoInputRef = useRef<HTMLInputElement>(null);
     const faviconInputRef = useRef<HTMLInputElement>(null);
     const loginBgInputRef = useRef<HTMLInputElement>(null);
+    const receiptLogoInputRef = useRef<HTMLInputElement>(null);
+    const receiptSignatureInputRef = useRef<HTMLInputElement>(null);
 
     // Preview state
     const [lightLogoPreview, setLightLogoPreview] = useState<string | null>(settings.logo_light_url || null);
     const [darkLogoPreview, setDarkLogoPreview] = useState<string | null>(settings.logo_dark_url || null);
     const [faviconPreview, setFaviconPreview] = useState<string | null>(settings.favicon_url || null);
     const [loginBgPreview, setLoginBgPreview] = useState<string | null>(settings.login_background_url || null);
+    const [receiptLogoPreview, setReceiptLogoPreview] = useState<string | null>(settings.receipt_letterhead_logo_url || null);
+    const [receiptSignaturePreview, setReceiptSignaturePreview] = useState<string | null>(settings.receipt_signature_image_url || null);
 
     // Inertia form
     const { data, setData, post, processing, errors, recentlySuccessful } = useForm({
@@ -66,20 +73,26 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
         company_name: settings.company_name || 'PT Casanuma Modern Living',
         app_description: settings.app_description || '',
         primary_color: settings.primary_color || '',
+        receipt_number_format: settings.receipt_number_format || 'KW/{YEAR}/{MONTH}/{ID}',
+        receipt_footer_notes: settings.receipt_footer_notes || 'Kwitansi ini sah dan diproses secara digital sebagai tanda bukti pembayaran resmi.',
         logo_light: null as File | null,
         logo_dark: null as File | null,
         favicon: null as File | null,
         login_background: null as File | null,
+        receipt_letterhead_logo: null as File | null,
+        receipt_signature_image: null as File | null,
         remove_logo_light: false,
         remove_logo_dark: false,
         remove_favicon: false,
         remove_login_background: false,
         remove_primary_color: false,
+        remove_receipt_letterhead_logo: false,
+        remove_receipt_signature_image: false,
     });
 
     const handleFileChange = (
         e: React.ChangeEvent<HTMLInputElement>,
-        type: 'logo_light' | 'logo_dark' | 'favicon' | 'login_background'
+        type: 'logo_light' | 'logo_dark' | 'favicon' | 'login_background' | 'receipt_letterhead_logo' | 'receipt_signature_image'
     ) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -106,10 +119,16 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
         } else if (type === 'login_background') {
             setData((prev) => ({ ...prev, login_background: file, remove_login_background: false }));
             setLoginBgPreview(previewUrl);
+        } else if (type === 'receipt_letterhead_logo') {
+            setData((prev) => ({ ...prev, receipt_letterhead_logo: file, remove_receipt_letterhead_logo: false }));
+            setReceiptLogoPreview(previewUrl);
+        } else if (type === 'receipt_signature_image') {
+            setData((prev) => ({ ...prev, receipt_signature_image: file, remove_receipt_signature_image: false }));
+            setReceiptSignaturePreview(previewUrl);
         }
     };
 
-    const handleRemoveFile = (type: 'logo_light' | 'logo_dark' | 'favicon' | 'login_background') => {
+    const handleRemoveFile = (type: 'logo_light' | 'logo_dark' | 'favicon' | 'login_background' | 'receipt_letterhead_logo' | 'receipt_signature_image') => {
         if (type === 'logo_light') {
             setData((prev) => ({ ...prev, logo_light: null, remove_logo_light: true }));
             setLightLogoPreview(null);
@@ -126,6 +145,14 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
             setData((prev) => ({ ...prev, login_background: null, remove_login_background: true }));
             setLoginBgPreview(null);
             if (loginBgInputRef.current) loginBgInputRef.current.value = '';
+        } else if (type === 'receipt_letterhead_logo') {
+            setData((prev) => ({ ...prev, receipt_letterhead_logo: null, remove_receipt_letterhead_logo: true }));
+            setReceiptLogoPreview(null);
+            if (receiptLogoInputRef.current) receiptLogoInputRef.current.value = '';
+        } else if (type === 'receipt_signature_image') {
+            setData((prev) => ({ ...prev, receipt_signature_image: null, remove_receipt_signature_image: true }));
+            setReceiptSignaturePreview(null);
+            if (receiptSignatureInputRef.current) receiptSignatureInputRef.current.value = '';
         }
     };
 
@@ -727,6 +754,161 @@ export default function GeneralSettings({ settings }: GeneralSettingsProps) {
                                                 )}
                                             </div>
                                         </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Card 5: Template Kwitansi & Tanda Tangan Digital */}
+                            <Card className="border-border/80 shadow-xs">
+                                <CardHeader className="p-5 pb-4 border-b border-border/50 bg-muted/10">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                                            <ReceiptIcon className="size-4" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-sm font-bold text-foreground">
+                                                Template Kwitansi & Tanda Tangan Digital
+                                            </CardTitle>
+                                            <CardDescription className="text-xs">
+                                                Konfigurasi format penomoran otomatis, kop surat resmi, tanda tangan digital, dan catatan footer PDF kwitansi.
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+
+                                <CardContent className="p-5 space-y-5">
+                                    {/* Format Nomor Kwitansi */}
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="receipt_number_format" className="text-xs font-semibold">
+                                            Format Nomor Kwitansi Otomatis
+                                        </Label>
+                                        <Input
+                                            id="receipt_number_format"
+                                            value={data.receipt_number_format}
+                                            onChange={(e) => setData('receipt_number_format', e.target.value)}
+                                            placeholder="KW/{YEAR}/{MONTH}/{ID}"
+                                            className="text-xs font-mono"
+                                        />
+                                        <p className="text-[11px] text-muted-foreground">
+                                            Variabel yang didukung: <code className="bg-muted px-1 py-0.5 rounded text-primary font-mono">{'{YEAR}'}</code> (4 digit tahun), <code className="bg-muted px-1 py-0.5 rounded text-primary font-mono">{'{MONTH}'}</code> (2 digit bulan), <code className="bg-muted px-1 py-0.5 rounded text-primary font-mono">{'{ID}'}</code> (urutan nomor kwitansi 4 digit).
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {/* Kop Surat / Logo Khusus Kwitansi */}
+                                        <div className="space-y-2 p-3.5 rounded-xl border border-border/70 bg-muted/5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                                                    <FileCheck className="size-3.5 text-blue-500" />
+                                                    <span>Kop Surat / Logo Kwitansi</span>
+                                                </div>
+                                                <span className="text-[10px] text-muted-foreground font-mono">Maks. 2MB</span>
+                                            </div>
+
+                                            <div className="h-20 rounded-lg bg-card border border-border flex items-center justify-center p-2">
+                                                {receiptLogoPreview ? (
+                                                    <img src={receiptLogoPreview} alt="Kop Surat" className="max-h-16 max-w-full object-contain" />
+                                                ) : (
+                                                    <span className="text-[11px] text-muted-foreground italic">Gunakan logo standar</span>
+                                                )}
+                                            </div>
+
+                                            <input
+                                                type="file"
+                                                ref={receiptLogoInputRef}
+                                                accept="image/png,image/jpeg,image/svg+xml"
+                                                onChange={(e) => handleFileChange(e, 'receipt_letterhead_logo')}
+                                                className="hidden"
+                                            />
+                                            <div className="flex items-center gap-2 pt-1">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => receiptLogoInputRef.current?.click()}
+                                                    className="h-7 text-[11px] flex-1 gap-1"
+                                                >
+                                                    <Upload className="size-3" />
+                                                    <span>{receiptLogoPreview ? 'Ganti' : 'Upload Kop'}</span>
+                                                </Button>
+                                                {receiptLogoPreview && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleRemoveFile('receipt_letterhead_logo')}
+                                                        className="h-7 text-[11px] text-destructive hover:bg-destructive/10 px-2"
+                                                    >
+                                                        <Trash2 className="size-3" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Tanda Tangan Digital Resmi */}
+                                        <div className="space-y-2 p-3.5 rounded-xl border border-border/70 bg-muted/5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                                                    <Stamp className="size-3.5 text-amber-500" />
+                                                    <span>Tanda Tangan Digital</span>
+                                                </div>
+                                                <span className="text-[10px] text-muted-foreground font-mono">PNG transparan</span>
+                                            </div>
+
+                                            <div className="h-20 rounded-lg bg-card border border-border flex items-center justify-center p-2">
+                                                {receiptSignaturePreview ? (
+                                                    <img src={receiptSignaturePreview} alt="Tanda Tangan" className="max-h-16 max-w-full object-contain" />
+                                                ) : (
+                                                    <span className="text-[11px] text-muted-foreground italic">Belum ada tanda tangan</span>
+                                                )}
+                                            </div>
+
+                                            <input
+                                                type="file"
+                                                ref={receiptSignatureInputRef}
+                                                accept="image/png"
+                                                onChange={(e) => handleFileChange(e, 'receipt_signature_image')}
+                                                className="hidden"
+                                            />
+                                            <div className="flex items-center gap-2 pt-1">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => receiptSignatureInputRef.current?.click()}
+                                                    className="h-7 text-[11px] flex-1 gap-1"
+                                                >
+                                                    <Upload className="size-3" />
+                                                    <span>{receiptSignaturePreview ? 'Ganti TTD' : 'Upload TTD'}</span>
+                                                </Button>
+                                                {receiptSignaturePreview && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleRemoveFile('receipt_signature_image')}
+                                                        className="h-7 text-[11px] text-destructive hover:bg-destructive/10 px-2"
+                                                    >
+                                                        <Trash2 className="size-3" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Catatan Footer */}
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="receipt_footer_notes" className="text-xs font-semibold">
+                                            Catatan Kaki Dokumen PDF (Footer Note)
+                                        </Label>
+                                        <Textarea
+                                            id="receipt_footer_notes"
+                                            value={data.receipt_footer_notes}
+                                            onChange={(e) => setData('receipt_footer_notes', e.target.value)}
+                                            rows={2}
+                                            placeholder="Kwitansi ini sah dan diproses secara digital..."
+                                            className="text-xs resize-none"
+                                        />
                                     </div>
                                 </CardContent>
                             </Card>

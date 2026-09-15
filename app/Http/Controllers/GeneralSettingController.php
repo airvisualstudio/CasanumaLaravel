@@ -41,6 +41,12 @@ class GeneralSettingController extends Controller
             'remove_favicon' => ['nullable', 'boolean'],
             'remove_primary_color' => ['nullable', 'boolean'],
             'remove_login_background' => ['nullable', 'boolean'],
+            'receipt_number_format' => ['nullable', 'string', 'max:80'],
+            'receipt_footer_notes' => ['nullable', 'string', 'max:1000'],
+            'receipt_letterhead_logo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,svg,webp', 'max:2048'],
+            'receipt_signature_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,svg,webp', 'max:2048'],
+            'remove_receipt_letterhead_logo' => ['nullable', 'boolean'],
+            'remove_receipt_signature_image' => ['nullable', 'boolean'],
         ], [
             'app_name.required' => 'Nama aplikasi wajib diisi.',
             'app_name.max' => 'Nama aplikasi maksimal 100 karakter.',
@@ -60,12 +66,23 @@ class GeneralSettingController extends Controller
             'login_background.image' => 'Background login harus berupa file gambar valid.',
             'login_background.mimes' => 'Format background login harus JPG, PNG, atau WebP.',
             'login_background.max' => 'Ukuran background login tidak boleh melebihi 4MB.',
+            'receipt_letterhead_logo.image' => 'Kop surat kwitansi harus berupa file gambar valid.',
+            'receipt_letterhead_logo.max' => 'Ukuran kop surat kwitansi maksimal 2MB.',
+            'receipt_signature_image.image' => 'Tanda tangan digital harus berupa file gambar valid.',
+            'receipt_signature_image.max' => 'Ukuran tanda tangan digital maksimal 2MB.',
         ]);
 
         // 1. Update text settings
         AppSetting::set('app_name', $validated['app_name'], 'general');
         AppSetting::set('company_name', $validated['company_name'], 'general');
         AppSetting::set('app_description', $validated['app_description'] ?? '', 'general');
+
+        if (isset($validated['receipt_number_format'])) {
+            AppSetting::set('receipt_number_format', $validated['receipt_number_format'], 'receipt');
+        }
+        if (isset($validated['receipt_footer_notes'])) {
+            AppSetting::set('receipt_footer_notes', $validated['receipt_footer_notes'], 'receipt');
+        }
 
         // 2. Handle Primary Brand Color
         if ($request->boolean('remove_primary_color')) {
@@ -138,21 +155,50 @@ class GeneralSettingController extends Controller
             AppSetting::set('login_background', $path, 'branding');
         }
 
-        // 7. Record Activity Log for Superadmin audit trail
+        // 7. Handle Receipt Letterhead Logo
+        if ($request->boolean('remove_receipt_letterhead_logo')) {
+            $oldReceiptLogo = AppSetting::get('receipt_letterhead_logo');
+            if ($oldReceiptLogo && Storage::disk('public')->exists($oldReceiptLogo)) {
+                Storage::disk('public')->delete($oldReceiptLogo);
+            }
+            AppSetting::set('receipt_letterhead_logo', null, 'receipt');
+        } elseif ($request->hasFile('receipt_letterhead_logo')) {
+            $oldReceiptLogo = AppSetting::get('receipt_letterhead_logo');
+            if ($oldReceiptLogo && Storage::disk('public')->exists($oldReceiptLogo)) {
+                Storage::disk('public')->delete($oldReceiptLogo);
+            }
+            $path = $request->file('receipt_letterhead_logo')->store('receipts/assets', 'public');
+            AppSetting::set('receipt_letterhead_logo', $path, 'receipt');
+        }
+
+        // 8. Handle Receipt Digital Signature Image
+        if ($request->boolean('remove_receipt_signature_image')) {
+            $oldSignature = AppSetting::get('receipt_signature_image');
+            if ($oldSignature && Storage::disk('public')->exists($oldSignature)) {
+                Storage::disk('public')->delete($oldSignature);
+            }
+            AppSetting::set('receipt_signature_image', null, 'receipt');
+        } elseif ($request->hasFile('receipt_signature_image')) {
+            $oldSignature = AppSetting::get('receipt_signature_image');
+            if ($oldSignature && Storage::disk('public')->exists($oldSignature)) {
+                Storage::disk('public')->delete($oldSignature);
+            }
+            $path = $request->file('receipt_signature_image')->store('receipts/assets', 'public');
+            AppSetting::set('receipt_signature_image', $path, 'receipt');
+        }
+
+        // 9. Record Activity Log for Superadmin audit trail
         ActivityLog::record(
             action: 'settings_update',
-            description: "Memperbarui identitas aplikasi & branding sistem: {$validated['app_name']} ({$validated['company_name']})",
+            description: "Memperbarui identitas aplikasi & template kwitansi sistem: {$validated['app_name']} ({$validated['company_name']})",
             properties: [
                 'app_name' => $validated['app_name'],
                 'company_name' => $validated['company_name'],
                 'primary_color' => AppSetting::get('primary_color'),
-                'has_logo_light' => (bool) AppSetting::get('logo_light'),
-                'has_logo_dark' => (bool) AppSetting::get('logo_dark'),
-                'has_favicon' => (bool) AppSetting::get('favicon'),
-                'has_login_background' => (bool) AppSetting::get('login_background'),
+                'receipt_number_format' => AppSetting::get('receipt_number_format'),
             ]
         );
 
-        return redirect()->back()->with('success', 'Pengaturan branding aplikasi berhasil disimpan.');
+        return redirect()->back()->with('success', 'Pengaturan branding & template kwitansi berhasil disimpan.');
     }
 }

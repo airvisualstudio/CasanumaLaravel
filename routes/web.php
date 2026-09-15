@@ -9,8 +9,10 @@ use App\Http\Controllers\GeneralSettingController;
 use App\Http\Controllers\HousingProjectController;
 use App\Http\Controllers\HousingUnitController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyMasterController;
+use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\SiteplanController;
 use App\Http\Controllers\UnitTypeController;
 use App\Http\Controllers\UserController;
@@ -20,6 +22,9 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+// Public Receipt QR Code Verification
+Route::get('/receipts/verify/{token}', [ReceiptController::class, 'verify'])->name('receipts.verify');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
@@ -158,4 +163,33 @@ Route::middleware(['auth', 'can:view-bookings'])->group(function () {
     });
 });
 
+// Kwitansi & Finansial (Multi-Step Approval Workflow)
+Route::middleware(['auth', 'can:view-receipts'])->group(function () {
+    Route::get('/receipts', [ReceiptController::class, 'index'])->name('receipts.index');
+    Route::get('/receipts/{receipt}', [ReceiptController::class, 'show'])->name('receipts.show');
+    Route::get('/receipts/{receipt}/pdf', [ReceiptController::class, 'downloadPdf'])->name('receipts.pdf');
+
+    Route::middleware('can:create-receipts')->group(function () {
+        Route::post('/receipts', [ReceiptController::class, 'store'])->name('receipts.store');
+    });
+
+    Route::middleware('can:review-receipts')->group(function () {
+        Route::post('/receipts/{receipt}/review-finance', [ReceiptController::class, 'reviewByFinance'])->name('receipts.review-finance');
+    });
+
+    Route::middleware('can:approve-receipts')->group(function () {
+        Route::post('/receipts/{receipt}/approve-manager', [ReceiptController::class, 'approveByManager'])->name('receipts.approve-manager');
+    });
+
+    Route::post('/receipts/{receipt}/reject', [ReceiptController::class, 'reject'])->name('receipts.reject');
+});
+
+// Notifications (In-app Live Alerts)
+Route::middleware('auth')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+});
+
 require __DIR__.'/auth.php';
+

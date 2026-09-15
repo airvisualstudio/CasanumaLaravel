@@ -6,7 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Booking;
 use App\Models\HousingProject;
 use App\Models\Lead;
-use App\Models\PropertyUnit;
+use App\Models\HousingUnit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -79,7 +79,7 @@ class UserSecurityAndLeadHandoverTest extends TestCase
         $admin = User::where('email', 'admin@casanuma.com')->first();
         $sales = User::where('email', 'sales@casanuma.com')->first();
         $project = HousingProject::first();
-        $unit = PropertyUnit::first();
+        $unit = HousingUnit::first();
 
         $lead = Lead::create([
             'name' => 'Citra Lestari',
@@ -93,12 +93,15 @@ class UserSecurityAndLeadHandoverTest extends TestCase
         Booking::create([
             'booking_code' => 'BK-TEST-001',
             'lead_id' => $lead->id,
-            'property_unit_id' => $unit->id,
+            'housing_unit_id' => $unit->id,
             'sales_id' => $sales->id,
             'booking_fee' => 5000000,
+            'payment_scheme' => 'cash',
+            'base_price' => 500000000,
+            'total_price' => 500000000,
             'status' => 'confirmed',
-            'payment_status' => 'verified',
             'booking_date' => now(),
+            'transaction_date' => now()->toDateString(),
         ]);
 
         $response = $this->actingAs($admin)->delete("/users/{$sales->id}");

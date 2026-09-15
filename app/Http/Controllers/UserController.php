@@ -268,6 +268,7 @@ class UserController extends Controller
                     $lead->interactions()->create([
                         'user_id' => auth()->id(),
                         'channel' => 'system',
+                        'interaction_date' => now()->toDateString(),
                         'notes' => "🛡️ Handover Otomatis: Prospek dialihkan dari {$user->name} ke {$targetSales->name} karena status akun dinonaktifkan.",
                         'completed_at' => now(),
                     ]);

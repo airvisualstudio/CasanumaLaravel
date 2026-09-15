@@ -41,6 +41,10 @@ class HandleInertiaRequests extends Middleware
                 ]) : null,
             ],
             'app_settings' => fn () => AppSetting::getAllFormatted(),
+            'notifications' => fn () => $user ? [
+                'unread_count' => $user->unreadNotifications()->count(),
+                'recent' => $user->notifications()->latest()->take(10)->get(),
+            ] : null,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

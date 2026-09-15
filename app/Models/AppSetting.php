@@ -121,6 +121,8 @@ class AppSetting extends Model
         $favicon = static::get('favicon');
         $loginBg = static::get('login_background');
         $primaryColor = static::get('primary_color', null);
+        $receiptLetterhead = static::get('receipt_letterhead_logo');
+        $receiptSignature = static::get('receipt_signature_image');
 
         return [
             'app_name' => static::get('app_name', 'CASANUMA CRM'),
@@ -136,6 +138,12 @@ class AppSetting extends Model
             'logo_dark_url' => $logoDark ? Storage::url($logoDark) : null,
             'favicon' => $favicon,
             'favicon_url' => $favicon ? Storage::url($favicon) : null,
+            'receipt_number_format' => static::get('receipt_number_format', 'KW/{YEAR}/{MONTH}/{ID}'),
+            'receipt_footer_notes' => static::get('receipt_footer_notes', 'Kwitansi ini sah dan diproses secara digital sebagai tanda bukti pembayaran resmi.'),
+            'receipt_letterhead_logo' => $receiptLetterhead,
+            'receipt_letterhead_logo_url' => $receiptLetterhead ? Storage::url($receiptLetterhead) : null,
+            'receipt_signature_image' => $receiptSignature,
+            'receipt_signature_image_url' => $receiptSignature ? Storage::url($receiptSignature) : null,
         ];
     }
 }

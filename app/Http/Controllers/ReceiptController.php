@@ -341,7 +341,8 @@ class ReceiptController extends Controller
             return back()->with('error', 'PDF belum tersedia untuk kwitansi ini.');
         }
 
-        $filename = ($receipt->receipt_number ?? 'receipt-'.$receipt->id).'.pdf';
+        $safeReceiptNumber = str_replace(['/', '\\'], '-', $receipt->receipt_number ?? 'receipt-'.$receipt->id);
+        $filename = "Kwitansi-{$safeReceiptNumber}.pdf";
 
         return \Illuminate\Support\Facades\Storage::disk('public')->download($receipt->pdf_path, $filename);
     }

@@ -243,7 +243,7 @@ class Receipt extends Model
     /**
      * Log a status change.
      */
-    public function logStatusChange(string $fromStatus, string $toStatus, int $changedBy, ?string $notes = null): ReceiptStatusLog
+    public function logStatusChange(?string $fromStatus, string $toStatus, int $changedBy, ?string $notes = null): ReceiptStatusLog
     {
         return $this->statusLogs()->create([
             'from_status' => $fromStatus,
