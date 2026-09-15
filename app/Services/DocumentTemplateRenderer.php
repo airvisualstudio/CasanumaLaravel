@@ -15,64 +15,82 @@ class DocumentTemplateRenderer
     /**
      * Get list of all available dynamic tokens grouped by category.
      *
-     * @return array<string, array<int, array{token: string, label: string, example: string}>>
+     * @return array<string, array{label: string, tokens: array<int, array{token: string, label: string, example: string}>}>
      */
     public static function getAvailableTokens(): array
     {
         return [
-            'Konsumen' => [
-                ['token' => '{{nama_konsumen}}', 'label' => 'Nama Lengkap Konsumen', 'example' => 'Budi Santoso'],
-                ['token' => '{{nik_konsumen}}', 'label' => 'Nomor KTP / NIK', 'example' => '3273201509900001'],
-                ['token' => '{{whatsapp_konsumen}}', 'label' => 'Nomor WhatsApp / HP', 'example' => '081234567890'],
-                ['token' => '{{email_konsumen}}', 'label' => 'Alamat Email', 'example' => 'budi.santoso@email.com'],
-                ['token' => '{{alamat_konsumen}}', 'label' => 'Alamat Lengkap', 'example' => 'Jl. Boulevard No. 10, Bandung'],
-                ['token' => '{{pekerjaan_konsumen}}', 'label' => 'Pekerjaan / Profesi', 'example' => 'Karyawan Swasta'],
+            'konsumen' => [
+                'label' => 'Konsumen',
+                'tokens' => [
+                    ['token' => '{{nama_konsumen}}', 'label' => 'Nama Lengkap Konsumen', 'example' => 'Budi Santoso'],
+                    ['token' => '{{nik_konsumen}}', 'label' => 'Nomor KTP / NIK', 'example' => '3273201509900001'],
+                    ['token' => '{{whatsapp_konsumen}}', 'label' => 'Nomor WhatsApp / HP', 'example' => '081234567890'],
+                    ['token' => '{{email_konsumen}}', 'label' => 'Alamat Email', 'example' => 'budi.santoso@email.com'],
+                    ['token' => '{{alamat_konsumen}}', 'label' => 'Alamat Lengkap', 'example' => 'Jl. Boulevard No. 10, Bandung'],
+                    ['token' => '{{pekerjaan_konsumen}}', 'label' => 'Pekerjaan / Profesi', 'example' => 'Karyawan Swasta'],
+                ],
             ],
-            'Properti & Kavling' => [
-                ['token' => '{{nomor_kavling}}', 'label' => 'Nomor / Kode Kavling', 'example' => 'A-01'],
-                ['token' => '{{nama_proyek}}', 'label' => 'Nama Proyek Perumahan', 'example' => 'Casanuma Grand Hills'],
-                ['token' => '{{nama_cluster}}', 'label' => 'Nama Cluster', 'example' => 'Cluster Sakura'],
-                ['token' => '{{kode_unit}}', 'label' => 'Kode Unit Properti', 'example' => 'A-01'],
-                ['token' => '{{tipe_unit}}', 'label' => 'Tipe Bangunan / Rumah', 'example' => 'Tipe 45/90'],
-                ['token' => '{{luas_tanah}}', 'label' => 'Luas Tanah (m²)', 'example' => '90 m²'],
-                ['token' => '{{luas_bangunan}}', 'label' => 'Luas Bangunan (m²)', 'example' => '45 m²'],
-                ['token' => '{{blok_unit}}', 'label' => 'Blok Kavling', 'example' => 'Blok A'],
-                ['token' => '{{nomor_unit}}', 'label' => 'Nomor Kavling', 'example' => '01'],
+            'properti_kavling' => [
+                'label' => 'Properti & Kavling',
+                'tokens' => [
+                    ['token' => '{{nomor_kavling}}', 'label' => 'Nomor / Kode Kavling', 'example' => 'A-01'],
+                    ['token' => '{{nama_proyek}}', 'label' => 'Nama Proyek Perumahan', 'example' => 'Casanuma Grand Hills'],
+                    ['token' => '{{nama_cluster}}', 'label' => 'Nama Cluster', 'example' => 'Cluster Sakura'],
+                    ['token' => '{{kode_unit}}', 'label' => 'Kode Unit Properti', 'example' => 'A-01'],
+                    ['token' => '{{tipe_unit}}', 'label' => 'Tipe Bangunan / Rumah', 'example' => 'Tipe 45/90'],
+                    ['token' => '{{luas_tanah}}', 'label' => 'Luas Tanah (m²)', 'example' => '90 m²'],
+                    ['token' => '{{luas_bangunan}}', 'label' => 'Luas Bangunan (m²)', 'example' => '45 m²'],
+                    ['token' => '{{blok_unit}}', 'label' => 'Blok Kavling', 'example' => 'Blok A'],
+                    ['token' => '{{nomor_unit}}', 'label' => 'Nomor Kavling', 'example' => '01'],
+                ],
             ],
-            'Transaksi Booking & SPR' => [
-                ['token' => '{{tanggal_transaksi}}', 'label' => 'Tanggal Transaksi', 'example' => '15 September 2026'],
-                ['token' => '{{nomor_booking}}', 'label' => 'Kode Transaksi Booking', 'example' => 'BK-2026-001'],
-                ['token' => '{{nomor_spr}}', 'label' => 'Nomor Resmi SPR', 'example' => 'SPR/2026/09/001'],
-                ['token' => '{{tanggal_booking}}', 'label' => 'Tanggal Booking', 'example' => '15 September 2026'],
-                ['token' => '{{skema_pembayaran}}', 'label' => 'Skema Pembayaran', 'example' => 'KPR Bank'],
-                ['token' => '{{harga_dasar}}', 'label' => 'Harga Dasar Unit (Rp)', 'example' => 'Rp 750.000.000'],
-                ['token' => '{{harga_total}}', 'label' => 'Total Harga Transaksi (Rp)', 'example' => 'Rp 750.000.000'],
-                ['token' => '{{terbilang_harga_total}}', 'label' => 'Terbilang Total Harga', 'example' => 'Tujuh Ratus Lima Puluh Juta Rupiah'],
-                ['token' => '{{booking_fee}}', 'label' => 'Nominal Tanda Jadi (Rp)', 'example' => 'Rp 10.000.000'],
-                ['token' => '{{terbilang_booking_fee}}', 'label' => 'Terbilang Booking Fee', 'example' => 'Sepuluh Juta Rupiah'],
+            'transaksi_booking' => [
+                'label' => 'Transaksi Booking & SPR',
+                'tokens' => [
+                    ['token' => '{{tanggal_transaksi}}', 'label' => 'Tanggal Transaksi', 'example' => '15 September 2026'],
+                    ['token' => '{{nomor_booking}}', 'label' => 'Kode Transaksi Booking', 'example' => 'BK-2026-001'],
+                    ['token' => '{{nomor_spr}}', 'label' => 'Nomor Resmi SPR', 'example' => 'SPR/2026/09/001'],
+                    ['token' => '{{tanggal_booking}}', 'label' => 'Tanggal Booking', 'example' => '15 September 2026'],
+                    ['token' => '{{skema_pembayaran}}', 'label' => 'Skema Pembayaran', 'example' => 'KPR Bank'],
+                    ['token' => '{{harga_dasar}}', 'label' => 'Harga Dasar Unit (Rp)', 'example' => 'Rp 750.000.000'],
+                    ['token' => '{{harga_total}}', 'label' => 'Total Harga Transaksi (Rp)', 'example' => 'Rp 750.000.000'],
+                    ['token' => '{{terbilang_harga_total}}', 'label' => 'Terbilang Total Harga', 'example' => 'Tujuh Ratus Lima Puluh Juta Rupiah'],
+                    ['token' => '{{booking_fee}}', 'label' => 'Nominal Tanda Jadi (Rp)', 'example' => 'Rp 10.000.000'],
+                    ['token' => '{{terbilang_booking_fee}}', 'label' => 'Terbilang Booking Fee', 'example' => 'Sepuluh Juta Rupiah'],
+                ],
             ],
-            'Kwitansi & Pembayaran' => [
-                ['token' => '{{nominal_terbilang}}', 'label' => 'Nominal Terbilang (Ejaan)', 'example' => 'Lima Puluh Juta Rupiah'],
-                ['token' => '{{nomor_kwitansi}}', 'label' => 'Nomor Kwitansi Resmi', 'example' => 'KW/2026/09/0001'],
-                ['token' => '{{jenis_pembayaran}}', 'label' => 'Jenis Pembayaran', 'example' => 'Uang Muka (DP)'],
-                ['token' => '{{nominal_bayar}}', 'label' => 'Nominal Kwitansi (Rp)', 'example' => 'Rp 50.000.000'],
-                ['token' => '{{terbilang_nominal}}', 'label' => 'Terbilang Nominal Bayar', 'example' => 'Lima Puluh Juta Rupiah'],
-                ['token' => '{{metode_bayar}}', 'label' => 'Metode Pembayaran', 'example' => 'Transfer Bank'],
-                ['token' => '{{bank_pembayaran}}', 'label' => 'Bank Rekening Tujuan', 'example' => 'BCA (0123456789)'],
-                ['token' => '{{tanggal_bayar}}', 'label' => 'Tanggal Pembayaran', 'example' => '15 September 2026'],
+            'kwitansi_bayar' => [
+                'label' => 'Kwitansi & Pembayaran',
+                'tokens' => [
+                    ['token' => '{{nominal_terbilang}}', 'label' => 'Nominal Terbilang (Ejaan)', 'example' => 'Lima Puluh Juta Rupiah'],
+                    ['token' => '{{nomor_kwitansi}}', 'label' => 'Nomor Kwitansi Resmi', 'example' => 'KW/2026/09/0001'],
+                    ['token' => '{{jenis_pembayaran}}', 'label' => 'Jenis Pembayaran', 'example' => 'Uang Muka (DP)'],
+                    ['token' => '{{nominal_bayar}}', 'label' => 'Nominal Kwitansi (Rp)', 'example' => 'Rp 50.000.000'],
+                    ['token' => '{{terbilang_nominal}}', 'label' => 'Terbilang Nominal Bayar', 'example' => 'Lima Puluh Juta Rupiah'],
+                    ['token' => '{{metode_bayar}}', 'label' => 'Metode Pembayaran', 'example' => 'Transfer Bank'],
+                    ['token' => '{{bank_pembayaran}}', 'label' => 'Bank Rekening Tujuan', 'example' => 'BCA (0123456789)'],
+                    ['token' => '{{tanggal_bayar}}', 'label' => 'Tanggal Pembayaran', 'example' => '15 September 2026'],
+                ],
             ],
-            'Validasi & Approval Manager' => [
-                ['token' => '{{qr_manager}}', 'label' => 'QR Code Approval Manager', 'example' => '[QR Digital Signature]'],
-                ['token' => '{{nama_manager}}', 'label' => 'Nama Sales Manager', 'example' => 'Bambang Wijaya'],
-                ['token' => '{{nama_finance}}', 'label' => 'Nama Petugas Finance', 'example' => 'Sari Handayani'],
-                ['token' => '{{nama_sales}}', 'label' => 'Nama Petugas Sales', 'example' => 'Rian Pratama'],
+            'validasi_approval' => [
+                'label' => 'Validasi & Approval Manager',
+                'tokens' => [
+                    ['token' => '{{qr_manager}}', 'label' => 'QR Code Approval Manager', 'example' => '[QR Digital Signature]'],
+                    ['token' => '{{nama_manager}}', 'label' => 'Nama Sales Manager', 'example' => 'Bambang Wijaya'],
+                    ['token' => '{{nama_finance}}', 'label' => 'Nama Petugas Finance', 'example' => 'Sari Handayani'],
+                    ['token' => '{{nama_sales}}', 'label' => 'Nama Petugas Sales', 'example' => 'Rian Pratama'],
+                ],
             ],
-            'Identitas Perusahaan & Staff' => [
-                ['token' => '{{nama_perusahaan}}', 'label' => 'Nama PT / Developer', 'example' => 'PT Casanuma Modern Living'],
-                ['token' => '{{nama_aplikasi}}', 'label' => 'Nama Brand / CRM', 'example' => 'CASANUMA CRM'],
-                ['token' => '{{tanggal_hari_ini}}', 'label' => 'Tanggal Cetak Hari Ini', 'example' => now()->translatedFormat('d F Y')],
-                ['token' => '{{tahun_ini}}', 'label' => 'Tahun Sekarang', 'example' => now()->format('Y')],
-                ['token' => '{{kota_kantor}}', 'label' => 'Kota Domisili Kantor', 'example' => 'Bandung'],
+            'perusahaan_staff' => [
+                'label' => 'Identitas Perusahaan & Staff',
+                'tokens' => [
+                    ['token' => '{{nama_perusahaan}}', 'label' => 'Nama PT / Developer', 'example' => 'PT Casanuma Modern Living'],
+                    ['token' => '{{nama_aplikasi}}', 'label' => 'Nama Brand / CRM', 'example' => 'CASANUMA CRM'],
+                    ['token' => '{{tanggal_hari_ini}}', 'label' => 'Tanggal Cetak Hari Ini', 'example' => now()->translatedFormat('d F Y')],
+                    ['token' => '{{tahun_ini}}', 'label' => 'Tahun Sekarang', 'example' => now()->format('Y')],
+                    ['token' => '{{kota_kantor}}', 'label' => 'Kota Domisili Kantor', 'example' => 'Bandung'],
+                ],
             ],
         ];
     }
