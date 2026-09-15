@@ -26,6 +26,7 @@ export interface TokenItem {
     token: string;
     label: string;
     sample?: string;
+    example?: string;
     desc?: string;
 }
 

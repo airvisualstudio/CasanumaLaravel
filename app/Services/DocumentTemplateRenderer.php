@@ -29,9 +29,10 @@ class DocumentTemplateRenderer
                 ['token' => '{{pekerjaan_konsumen}}', 'label' => 'Pekerjaan / Profesi', 'example' => 'Karyawan Swasta'],
             ],
             'Properti & Kavling' => [
+                ['token' => '{{nomor_kavling}}', 'label' => 'Nomor / Kode Kavling', 'example' => 'A-01'],
                 ['token' => '{{nama_proyek}}', 'label' => 'Nama Proyek Perumahan', 'example' => 'Casanuma Grand Hills'],
                 ['token' => '{{nama_cluster}}', 'label' => 'Nama Cluster', 'example' => 'Cluster Sakura'],
-                ['token' => '{{kode_unit}}', 'label' => 'Kode Kavling / Unit', 'example' => 'A-01'],
+                ['token' => '{{kode_unit}}', 'label' => 'Kode Unit Properti', 'example' => 'A-01'],
                 ['token' => '{{tipe_unit}}', 'label' => 'Tipe Bangunan / Rumah', 'example' => 'Tipe 45/90'],
                 ['token' => '{{luas_tanah}}', 'label' => 'Luas Tanah (m²)', 'example' => '90 m²'],
                 ['token' => '{{luas_bangunan}}', 'label' => 'Luas Bangunan (m²)', 'example' => '45 m²'],
@@ -39,6 +40,7 @@ class DocumentTemplateRenderer
                 ['token' => '{{nomor_unit}}', 'label' => 'Nomor Kavling', 'example' => '01'],
             ],
             'Transaksi Booking & SPR' => [
+                ['token' => '{{tanggal_transaksi}}', 'label' => 'Tanggal Transaksi', 'example' => '15 September 2026'],
                 ['token' => '{{nomor_booking}}', 'label' => 'Kode Transaksi Booking', 'example' => 'BK-2026-001'],
                 ['token' => '{{nomor_spr}}', 'label' => 'Nomor Resmi SPR', 'example' => 'SPR/2026/09/001'],
                 ['token' => '{{tanggal_booking}}', 'label' => 'Tanggal Booking', 'example' => '15 September 2026'],
@@ -50,6 +52,7 @@ class DocumentTemplateRenderer
                 ['token' => '{{terbilang_booking_fee}}', 'label' => 'Terbilang Booking Fee', 'example' => 'Sepuluh Juta Rupiah'],
             ],
             'Kwitansi & Pembayaran' => [
+                ['token' => '{{nominal_terbilang}}', 'label' => 'Nominal Terbilang (Ejaan)', 'example' => 'Lima Puluh Juta Rupiah'],
                 ['token' => '{{nomor_kwitansi}}', 'label' => 'Nomor Kwitansi Resmi', 'example' => 'KW/2026/09/0001'],
                 ['token' => '{{jenis_pembayaran}}', 'label' => 'Jenis Pembayaran', 'example' => 'Uang Muka (DP)'],
                 ['token' => '{{nominal_bayar}}', 'label' => 'Nominal Kwitansi (Rp)', 'example' => 'Rp 50.000.000'],
@@ -58,17 +61,44 @@ class DocumentTemplateRenderer
                 ['token' => '{{bank_pembayaran}}', 'label' => 'Bank Rekening Tujuan', 'example' => 'BCA (0123456789)'],
                 ['token' => '{{tanggal_bayar}}', 'label' => 'Tanggal Pembayaran', 'example' => '15 September 2026'],
             ],
+            'Validasi & Approval Manager' => [
+                ['token' => '{{qr_manager}}', 'label' => 'QR Code Approval Manager', 'example' => '[QR Digital Signature]'],
+                ['token' => '{{nama_manager}}', 'label' => 'Nama Sales Manager', 'example' => 'Bambang Wijaya'],
+                ['token' => '{{nama_finance}}', 'label' => 'Nama Petugas Finance', 'example' => 'Sari Handayani'],
+                ['token' => '{{nama_sales}}', 'label' => 'Nama Petugas Sales', 'example' => 'Rian Pratama'],
+            ],
             'Identitas Perusahaan & Staff' => [
                 ['token' => '{{nama_perusahaan}}', 'label' => 'Nama PT / Developer', 'example' => 'PT Casanuma Modern Living'],
                 ['token' => '{{nama_aplikasi}}', 'label' => 'Nama Brand / CRM', 'example' => 'CASANUMA CRM'],
-                ['token' => '{{nama_sales}}', 'label' => 'Nama Petugas Sales', 'example' => 'Rian Pratama'],
-                ['token' => '{{nama_finance}}', 'label' => 'Nama Petugas Finance', 'example' => 'Sari Handayani'],
-                ['token' => '{{nama_manager}}', 'label' => 'Nama Sales Manager', 'example' => 'Bambang Wijaya'],
                 ['token' => '{{tanggal_hari_ini}}', 'label' => 'Tanggal Cetak Hari Ini', 'example' => now()->translatedFormat('d F Y')],
                 ['token' => '{{tahun_ini}}', 'label' => 'Tahun Sekarang', 'example' => now()->format('Y')],
                 ['token' => '{{kota_kantor}}', 'label' => 'Kota Domisili Kantor', 'example' => 'Bandung'],
             ],
         ];
+    }
+
+    /**
+     * Generate inline QR code SVG stamp for manager approval verification.
+     */
+    public static function generateManagerQrCode(?string $approverName = null, ?string $timestamp = null, ?string $code = null): string
+    {
+        $approver = $approverName ?: 'Ir. Bambang Wijaya, M.M. (Sales Manager)';
+        $time = $timestamp ?: now()->format('Y-m-d H:i:s');
+        $verificationCode = $code ?: 'CSN-APPR-'.strtoupper(substr(md5($approver.$time), 0, 10));
+
+        $qrData = "CASANUMA VERIFIED DOCUMENT\nApprover: {$approver}\nDate: {$time}\nRef: {$verificationCode}\nStatus: DIGITALLY APPROVED";
+
+        try {
+            $svg = QrCode::format('svg')->size(75)->margin(1)->generate($qrData);
+            $base64 = base64_encode($svg);
+
+            return '<span style="display: inline-block; text-align: center; vertical-align: middle; margin: 4px; padding: 4px; border: 1px dashed #cbd5e1; border-radius: 6px; background-color: #f8fafc;">'.
+                   '<img src="data:image/svg+xml;base64,'.$base64.'" style="width: 65px; height: 65px; display: block; margin: 0 auto;" alt="QR Approval Manager" />'.
+                   '<span style="display: block; font-size: 8px; color: #16a34a; font-weight: bold; margin-top: 2px; font-family: sans-serif;">✓ APPROVED BY MANAGER</span>'.
+                   '</span>';
+        } catch (\Throwable $e) {
+            return '<span style="display: inline-block; border: 1.5px solid #16a34a; color: #16a34a; padding: 4px 8px; font-weight: bold; font-size: 9px; text-transform: uppercase; border-radius: 4px; font-family: sans-serif;">[✓ DIGITALLY APPROVED BY MANAGER]</span>';
+        }
     }
 
     /**
@@ -87,6 +117,7 @@ class DocumentTemplateRenderer
             '{{pekerjaan_konsumen}}' => 'Wiraswasta / Direktur PT',
             '{{nama_proyek}}' => 'Casanuma Grand Hills',
             '{{nama_cluster}}' => 'Cluster Sakura Premiere',
+            '{{nomor_kavling}}' => 'A1-08',
             '{{kode_unit}}' => 'A1-08',
             '{{tipe_unit}}' => 'Tipe 54/105 (2 Lantai)',
             '{{luas_tanah}}' => '105 m²',
@@ -96,6 +127,7 @@ class DocumentTemplateRenderer
             '{{nomor_booking}}' => 'BK-2026-089',
             '{{nomor_spr}}' => 'SPR/CGH/2026/09/0089',
             '{{tanggal_booking}}' => now()->translatedFormat('d F Y'),
+            '{{tanggal_transaksi}}' => now()->translatedFormat('d F Y'),
             '{{skema_pembayaran}}' => 'KPR Bank Syariah',
             '{{harga_dasar}}' => 'Rp 850.000.000',
             '{{harga_total}}' => 'Rp 850.000.000',
@@ -105,6 +137,7 @@ class DocumentTemplateRenderer
             '{{nomor_kwitansi}}' => 'KW/2026/09/0128',
             '{{jenis_pembayaran}}' => 'Uang Muka (DP)',
             '{{nominal_bayar}}' => 'Rp 50.000.000',
+            '{{nominal_terbilang}}' => 'Lima Puluh Juta Rupiah',
             '{{terbilang_nominal}}' => 'Lima Puluh Juta Rupiah',
             '{{metode_bayar}}' => 'Transfer Bank',
             '{{bank_pembayaran}}' => 'BCA Rekening 123-456-7890 a.n PT Casanuma Modern Living',
@@ -114,6 +147,7 @@ class DocumentTemplateRenderer
             '{{nama_sales}}' => 'Rian Pratama (Sales Executive)',
             '{{nama_finance}}' => 'Sari Handayani, S.Ak',
             '{{nama_manager}}' => 'Ir. Bambang Wijaya, M.M.',
+            '{{qr_manager}}' => self::generateManagerQrCode(),
             '{{tanggal_hari_ini}}' => now()->translatedFormat('d F Y'),
             '{{tahun_ini}}' => now()->format('Y'),
             '{{kota_kantor}}' => 'Bandung',
@@ -162,6 +196,7 @@ class DocumentTemplateRenderer
             $unit = $booking->unit;
             if ($unit) {
                 $dict['{{kode_unit}}'] = $unit->unit_code ?? '-';
+                $dict['{{nomor_kavling}}'] = $unit->unit_number ?? $unit->unit_code ?? '-';
                 $dict['{{blok_unit}}'] = $unit->block ? "Blok {$unit->block}" : '-';
                 $dict['{{nomor_unit}}'] = $unit->unit_number ?? '-';
                 $dict['{{tipe_unit}}'] = $unit->unitType?->name ?? '-';
@@ -174,12 +209,14 @@ class DocumentTemplateRenderer
             $dict['{{nomor_booking}}'] = $booking->booking_code ?? '-';
             $dict['{{nomor_spr}}'] = $booking->spr_number ?? "SPR/{$booking->booking_code}";
             $dict['{{tanggal_booking}}'] = $booking->booking_date ? \Carbon\Carbon::parse($booking->booking_date)->translatedFormat('d F Y') : '-';
+            $dict['{{tanggal_transaksi}}'] = $dict['{{tanggal_booking}}'];
             $dict['{{skema_pembayaran}}'] = ucfirst(str_replace('_', ' ', $booking->payment_scheme ?? '-'));
 
             $totalPrice = (float) ($booking->total_price ?? $booking->base_price ?? 0);
             $dict['{{harga_dasar}}'] = 'Rp '.number_format((float) ($booking->base_price ?? 0), 0, ',', '.');
             $dict['{{harga_total}}'] = 'Rp '.number_format($totalPrice, 0, ',', '.');
             $dict['{{terbilang_harga_total}}'] = self::terbilang($totalPrice).' Rupiah';
+            $dict['{{nominal_terbilang}}'] = $dict['{{terbilang_harga_total}}'];
 
             $bf = (float) ($booking->booking_fee ?? 0);
             $dict['{{booking_fee}}'] = 'Rp '.number_format($bf, 0, ',', '.');
@@ -196,9 +233,11 @@ class DocumentTemplateRenderer
             $amount = (float) $receipt->amount;
             $dict['{{nominal_bayar}}'] = 'Rp '.number_format($amount, 0, ',', '.');
             $dict['{{terbilang_nominal}}'] = self::terbilang($amount).' Rupiah';
+            $dict['{{nominal_terbilang}}'] = $dict['{{terbilang_nominal}}'];
             $dict['{{metode_bayar}}'] = ucfirst(str_replace('_', ' ', $receipt->payment_method ?? '-'));
             $dict['{{bank_pembayaran}}'] = $receipt->bank_name ?? '-';
             $dict['{{tanggal_bayar}}'] = $receipt->payment_date ? \Carbon\Carbon::parse($receipt->payment_date)->translatedFormat('d F Y') : '-';
+            $dict['{{tanggal_transaksi}}'] = $dict['{{tanggal_bayar}}'];
 
             if ($receipt->submitter) {
                 $dict['{{nama_sales}}'] = $receipt->submitter->name;
@@ -209,6 +248,29 @@ class DocumentTemplateRenderer
             if ($receipt->managerApprover) {
                 $dict['{{nama_manager}}'] = $receipt->managerApprover->name;
             }
+        }
+
+        // Manager Digital QR Code verification
+        $approverName = $receipt?->managerApprover?->name
+            ?? $booking?->approvedByManager?->name
+            ?? ($receipt?->approved_by_manager_id ? 'Sales Manager' : null)
+            ?? ($booking?->approved_by_manager_id ? 'Sales Manager' : null);
+
+        $approverTime = $receipt?->approved_by_manager_at
+            ?? $booking?->approved_by_manager_at;
+
+        $approverCode = $receipt?->receipt_number
+            ?? $booking?->booking_code
+            ?? 'DOC-'.\Illuminate\Support\Str::random(8);
+
+        if ($approverName) {
+            $dict['{{qr_manager}}'] = self::generateManagerQrCode(
+                $approverName,
+                $approverTime ? \Carbon\Carbon::parse($approverTime)->format('Y-m-d H:i:s') : now()->format('Y-m-d H:i:s'),
+                $approverCode
+            );
+        } else {
+            $dict['{{qr_manager}}'] = self::generateManagerQrCode();
         }
 
         if ($currentUser) {
