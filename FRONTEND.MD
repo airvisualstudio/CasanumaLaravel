@@ -269,3 +269,38 @@ export default function LeadActions() {
   </Popover>
   ```
 
+### 4.6. Standardisasi View Mode (Card View Default & Navigasi Interaktif)
+> **MANDATORY:** Semua halaman master data (Leads, Units, Bookings, Users) wajib mendukung mode ganda **Card View** dan **Tabel View**, dengan **Card View sebagai tampilan bawaan (default)**.
+
+**Aturan Implementasi:**
+1. **Inisialisasi State & LocalStorage:**
+   Gunakan key versioning `*_view_mode_v2` untuk memastikan semua sesi pengguna secara konsisten membuka Card View pertama kali:
+   ```tsx
+   const [viewMode, setViewMode] = useState<'table' | 'card'>(() => {
+     if (typeof window !== 'undefined') {
+       return (localStorage.getItem('leads_view_mode_v2') as 'table' | 'card') || 'card';
+     }
+     return 'card';
+   });
+   ```
+2. **Clickable Data Affordance:**
+   Setiap titik data pada kartu yang memiliki konteks navigasi wajib dibuat interaktif:
+   - **Nama Konsumen:** Membuka `FollowUpTimelineDialog` (riwayat, internal notes, jadwal).
+   - **Box Booking / Unit:** Mengarahkan ke berkas transaksi booking terkait (`bookings.index`).
+   - **Tipe / Cluster / Proyek:** Memicu penyaringan (*filter*) data yang relevan.
+   - **Kontak Email:** Membuka tautan `mailto:`.
+3. **Event Propagation Isolation:**
+   Pada kartu yang memiliki container klik, elemen klik anak (seperti nomor WhatsApp eksternal) **wajib** memanggil `e.stopPropagation()`:
+   ```tsx
+   <a
+     href={`https://wa.me/${phone}`}
+     onClick={(e) => e.stopPropagation()}
+     target="_blank"
+     rel="noreferrer"
+   >
+   ```
+4. **Pembersihan Efek Hover Label Statis (Badge Hygiene):**
+   - Komponen `@/Components/ui/badge` dibebaskan dari efek hover bawaan (`hover:bg-*`).
+   - Efek visual hover hanya diberikan pada pembungkus `<button>` atau `<a>` yang memang dapat diklik oleh pengguna.
+
+

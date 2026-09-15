@@ -83,3 +83,14 @@ Boost replaces these bootstrap instructions with guidelines tailored to the appl
   - **Dropdown / Selection:** Wajib menggunakan `Select` (`SelectTrigger`, `SelectValue`, `SelectContent`, `SelectItem`) dari `@/Components/ui/select`.
   - **Calendar / Date Picker:** Wajib menggunakan `Calendar` dari `@/Components/ui/calendar` yang dibungkus `Popover` (`@/Components/ui/popover`) dipadukan dengan formatting `date-fns`.
 
+## 6. View Mode (Card vs Table) & Badge Standards
+- **Multi-View Parity:** Seluruh halaman daftar data utama (Leads, Properties/Units, Bookings, Users) wajib menyediakan switcher tampilan **Tabel View** dan **Card View**.
+- **Default ke Card View:** Secara baku (default), tampilan wajib disetel ke **Card View (`'card'`)** dengan persistensi `localStorage` (`*_view_mode_v2`).
+- **Interactive Card Data Points:** Elemen data pada kartu wajib dapat diklik (*clickable*) sesuai konteks datanya:
+  - Nama konsumen ➔ Membuka Timeline & Follow-up dossier
+  - Unit/Booking box ➔ Navigasi ke halaman detail booking terkait
+  - Email ➔ Tautan `mailto:`
+  - Kode unit ➔ Membuka form edit/spesifikasi unit
+  - Cluster/Proyek/Role ➔ Melakukan quick filter data terkait
+- **Static Label Hygiene:** Komponen badge statis murni yang tidak dapat diedit dilarang memiliki efek hover palsu (`hover:bg-*` pada base variant badge dihilangkan). Efek hover hanya disematkan pada elemen yang benar-benar interaktif / dapat diklik.
+

@@ -1,174 +1,92 @@
-# Walkthrough: Core Housing CRM Dashboard & Legacy Backup
+# Walkthrough: CASANUMA CRM - Implementasi Fitur & Arsitektur Terpadu
 
-Telah berhasil dibuat dashboard baru khusus sistem **CASANUMA CRM** (Database Perumahan Terpadu) yang siap multi-user (Super Admin vs Sales Agent), dilengkapi statistik unit, visual progress ketersediaan kavling, funnel status leads, tracking booking fee, serta backup dashboard lama.
-
----
-
-## 1. Perubahan File
-
-### 1.1 Backup Dashboard Lama
-- **Path:** [`resources/js/Pages/DashboardLegacy.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/DashboardLegacy.tsx)
-- **Route:** `/dashboard-legacy` ([routes/web.php](file:///d:/90_ARCHIVE/nama-projek-lo/routes/web.php#L17))
-- Seluruh tampilan dashboard lama (overview server, stack teknologi, log aktivitas sistem) disimpan utuh dan dilengkapi tombol navigasi cepat kembali ke Dashboard CRM utama.
-
-### 1.2 Layout Terintegrasi CRM
-- **Path:** [`resources/js/Layouts/AuthenticatedLayout.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Layouts/AuthenticatedLayout.tsx)
-- Logo branding **CASANUMA CRM** dengan icon `Building2`.
-- Navigasi khusus CRM: *Dashboard*, *Unit & Kavling*, *Leads & CRM*, *Booking & KPR*.
-- Tombol akses cepat *Legacy View* di navbar atas.
-- Badge peran pengguna (*Super Admin* vs *Sales Agent*) pada dropdown akun.
-
-### 1.3 Dashboard CRM Perumahan Baru
-- **Path:** [`resources/js/Pages/Dashboard.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Dashboard.tsx)
-- **Fitur Utama:**
-  1. **Mode Switcher (Admin vs Sales View):**
-     - Switcher interaktif client-side untuk mensimulasikan perspektif *Super Admin* (omzet global, performa tim) dan *Sales Agent* (target prospek pribadi, follow up hari ini).
-  2. **4 KPI Statistics Cards:**
-     - **Stok Kavling Unit:** 48 / 142 Unit Available dengan visual progress bar (Available, Booked, Sold, Reserved).
-     - **Pipeline Leads:** 328 Prospek Aktif (+18.4% konversi).
-     - **Booking Fee Bulan Ini:** Rp 345 Juta (23 Unit terbooking dari target Rp 450 Jt).
-     - **Berkas KPR & Bank:** 14 Berkas dalam proses (Estimasi pencairan Rp 9.2 Milyar).
-  3. **Visualizer Stok Kavling Per Cluster:**
-     - Filter cluster (*Semua*, *Larasati*, *Cilame*).
-     - Legend warna standar: *Available* (Hijau Emerald), *Reserved* (Kuning Amber), *Booked* (Biru Sky), *Sold/Akad* (Abu-abu Slate).
-     - Breakdown per cluster (Cluster Larasati Residence, Cluster Cilame Hill, Cluster Grand Emerald).
-  4. **Funnel Konversi Leads:**
-     - Tahapan konversi: *1. Leads Baru (120)* ➔ *2. Kontak WA (84)* ➔ *3. Survei Lokasi (46)* ➔ *4. Booking Fee (23)* ➔ *5. Akad Kredit (18)*.
-  5. **Tabel Aktivitas Leads Cepat:**
-     - 5 prospek terbaru dengan status prioritas (HOT / WARM / COLD) dan tombol langsung buka WhatsApp.
-  6. **Tabel Transaksi Booking Fee:**
-     - 5 tanda jadi kavling terbaru lengkap dengan data pembeli, unit kavling, sales pengampu, nominal, dan status pembayaran (*Lunas* / *Verifikasi*).
-  7. **Pintasan Cepat Operasional:**
-     - Tombol cepat untuk *Simulasi KPR*, *Katalog & Pricelist*, *Agenda Survei*, dan *SLIK & SP3K Bank*.
+Rangkuman implementasi fitur, standarisasi antarmuka, pengujian, dan arsitektur terkini dari **CASANUMA CRM & Centralized Housing Database**:
 
 ---
 
-## 2. Hasil Verifikasi
-
-1. **Build Frontend:**
-   ```bash
-   bun run build
-   ```
-   *Output:* Sukses dikompilasi 100% tanpa error TypeScript.
-2. **Testing Otomasi:**
-   ```bash
-   php artisan test
-   ```
-   *Output:* 27 tes lolos (`27 passed, 85 assertions`), mencakup unit/feature authentication dan Spatie roles.
-3. **Database:**
-   - PostgreSQL terhubung stabil, user `admin@casanuma.com` siap login.
+## 1. Leads Management & First-Principle Conversion Engine
+1. **Audit Log Perubahan Data Sensitif:** Mencatat riwayat perubahan data sensitif konsumen (No. WhatsApp, Status Tahapan Pipeline, Sales PIC, NIK, Nama Konsumen) untuk mencegah kecurangan, pencurian prospek, atau sengketa antar sales.
+2. **Archive / Blacklist Pool:** Pemisahan database prospek menjadi dua ruang kerja (`Workspace Prospek Aktif` vs `Archive & Blacklist Pool`), menjaga workspace utama tetap bersih dari prospek yang sudah batal, mati, atau berstatus Blacklist SLIK/BI Checking.
+3. **Internal Notes & Supervisor Thread:** Superadmin & Sales Manager dapat meninggalkan arahan atau evaluasi langsung di tiap riwayat follow-up.
+4. **Proteksi Anti-Duplikasi & Auto-Assign:** Validasi unik nomor WhatsApp & NIK per proyek perumahan; auto-assign ke sales yang menginput dengan fitur re-assign bagi manager.
+5. **Lead Temperature & SLA Indicator:** Prioritas prospek (🔥 Hot, ⚡ Warm, ❄️ Cold) dan pemantauan batas SLA 7 hari tanpa follow-up.
 
 ---
 
-## 3. Sistem Role & Permission (spatie/laravel-permission)
+## 2. Table View vs Card View Switcher (Multi-View Layout)
 
-Telah terpasang dan terkonfigurasi paket [`spatie/laravel-permission`](https://spatie.be/docs/laravel-permission):
+Sesuai kebutuhan operasional visual CRM, fitur view toggle interaktif telah diterapkan di semua modul data utama:
 
-### 3.1 Role Dasar yang Dikonfigurasi
-1. `superadmin` - Akses penuh seluruh sistem, konfigurasi, user, dan omzet global.
-2. `sales_manager` - Supervisi pipeline leads, approval diskon/booking, monitor target tim sales.
-3. `sales_agent` - Input leads, update status follow up, dan booking unit kavling pribadi.
-4. `finance` - Verifikasi pembayaran booking fee, rekonsiliasi bank, monitoring pencairan KPR.
+### Modul yang Didukung:
+1. **Daftar Unit Properti** ([Units/Index.tsx](file:///D:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Properties/Units/Index.tsx))
+   - **Tabel View:** Tampilan tabular dengan kolom Kode & Blok, Cluster, Tipe Rumah, Harga Dasar, Status Unit, PIC Konsumen/Sales, dan Aksi.
+   - **Card View:** Grid kartu responsif (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4`) dengan badge status unit warna-warni, spesifikasi LT/LB, harga berformat Rupiah, info booking terikat, serta tombol aksi cepat (Quick Status, Edit, Delete).
+   - **Penyimpanan State:** Tersimpan di `localStorage` (`units_view_mode_v2`).
 
-### 3.2 Modular Seeders & Akun Pengujian
-- **Seeder File:**
-  - [`database/seeders/RolePermissionSeeder.php`](file:///d:/90_ARCHIVE/nama-projek-lo/database/seeders/RolePermissionSeeder.php): Mendaftarkan 19 permissions spesifik CRM (kavling, leads, booking, finance) dan menautkannya ke masing-masing role.
-  - [`database/seeders/UserSeeder.php`](file:///d:/90_ARCHIVE/nama-projek-lo/database/seeders/UserSeeder.php): Mendaftarkan dummy user tiap role.
+2. **Daftar Prospek Konsumen** ([Leads/Index.tsx](file:///D:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Leads/Index.tsx))
+   - **Tabel View:** Kolom No, Konsumen & Kontak, Proyek Peminatan, Kavling/Arsip, Sales PIC, Sumber Prospek, Status Pipeline, Catatan, dan Aksi.
+   - **Card View:** Grid kartu terperinci dengan badge prioritas (Hot/Warm/Cold), status SLA & SLIK, kontak click-to-chat WA, preferensi unit/budget, status pipeline interaktif, info booking, serta action toolbar (Timeline, Dokumen KYC, Re-assign, Archive/Restore, Edit, Delete).
+   - **Penyimpanan State:** Tersimpan di `localStorage` (`leads_view_mode_v2`).
 
-Semua akun menggunakan password bawaan: `password`
-| Role | Nama Lengkap | Email Login | Hak Akses Utama |
-| :--- | :--- | :--- | :--- |
-| `superadmin` | Super Admin | `admin@casanuma.com` | Bypass all permissions, akses total |
-| `sales_manager` | Budi Santoso (Manager) | `manager@casanuma.com` | View/manage units, assign leads, approve bookings |
-| `sales_agent` | Rian Pratama (Sales) | `sales@casanuma.com` | Input leads, update follow-up, submit booking |
-| `sales_agent` | Siti Rahma (Sales 2) | `sales2@casanuma.com` | Input leads, update follow-up, submit booking |
-| `finance` | Dewi Lestari (Finance) | `finance@casanuma.com` | View financial summary, verifikasi pembayaran booking & kas |
+3. **Transaksi Booking & Dokumen SPR** ([Bookings/Index.tsx](file:///D:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Bookings/Index.tsx))
+   - **Tabel View:** Kolom No. Booking & SPR, Konsumen, Unit Kavling, Skema & Nilai Transaksi, Status Progres, Sales PIC, dan Aksi.
+   - **Card View:** Grid kartu transaksional dengan kode booking terhubung ke Dossier 360°, status transaksi, rincian konsumen & WhatsApp, objek kavling, rincian harga dasar & UTJ, skema pembayaran, tombol cetak SPR/Dossier, dan batalkan booking.
+   - **Penyimpanan State:** Tersimpan di `localStorage` (`bookings_view_mode_v2`).
 
-### 3.3 Integrasi Frontend & Middleware
-- **Model:** [`app/Models/User.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Models/User.php) menggunakan trait `Spatie\Permission\Traits\HasRoles`.
-- **Inertia Share:** [`app/Http/Middleware/HandleInertiaRequests.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Http/Middleware/HandleInertiaRequests.php) membagikan `roles` dan `permissions` ke props frontend:
-  ```php
-  'auth' => [
-      'user' => $user ? array_merge($user->toArray(), [
-          'roles' => $user->getRoleNames()->values()->all(),
-          'permissions' => $user->getAllPermissions()->pluck('name')->values()->all(),
-      ]) : null,
-  ],
-  ```
-- **React Hook (`useAuthorization`):** [`resources/js/hooks/useAuthorization.ts`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/hooks/useAuthorization.ts)
-  - `const { can, hasRole, isSuperAdmin, isSalesManager, isSalesAgent, isFinance } = useAuthorization();`
-  - Mempermudah filtering komponen shadcn di frontend (misal: `{can('view-leads') && <Button>Leads</Button>}`).
-- **Quick Login Buttons:** [`resources/js/Pages/Auth/Login.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Auth/Login.tsx) dilengkapi tombol 1-klik untuk autofill akun Admin, Manager, Sales, dan Finance saat pengujian.
-- **TypeScript Interface:** [`resources/js/types/index.d.ts`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/types/index.d.ts) diperbarui dengan array `roles` dan `permissions`.
-- **Layout:** [`resources/js/Layouts/AuthenticatedLayout.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Layouts/AuthenticatedLayout.tsx) otomatis memfilter menu navbar (Unit, Leads, Booking, Keuangan) berdasarkan permission pengguna.
-- **Tech Stack Specification:** [`TECH_STACK.md`](file:///d:/90_ARCHIVE/nama-projek-lo/TECH_STACK.md) otomatis tersinkronisasi menampilkan `spatie/laravel-permission: 8.3.0`.
+4. **Direktori Staf & Pengguna CRM** ([Users/Index.tsx](file:///D:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Users/Index.tsx))
+   - **Tabel View:** Profil Pengguna, Peran & Jabatan, Kontak & Domisili, Rekening Komisi, Status, dan Aksi.
+   - **Card View:** Grid kartu profil pengguna dengan Avatar foto/inisial, NIP, badge peran Spatie, toggle status aktif/nonaktif, kontak WA, info rekening bank, tombol Detail Profil, Reset Password, Edit, dan Hapus.
+   - **Penyimpanan State:** Tersimpan di `localStorage` (`users_view_mode_v2`).
 
 ---
 
-## 4. User Module Final Polish (100% Tuntas)
+## 3. Card View Default & Navigasi Interaktif Sesuai Data (Clickable Data Points)
 
-### 4.1 Upload Avatar Preview, Batas 2MB & Revert ke Inisial
-- **Batas Ukuran & Format:** Divalidasi ketat di sisi klien (`handleFileSelect`) dan sisi backend (`max:2048`, `mimes:jpeg,png,jpg`). File > 2MB atau format selain JPG/PNG ditolak dengan pesan error yang jelas.
-- **Crop & Preview:** Pengguna dapat melihat preview hasil potongan foto sebelum menyimpan via `AvatarCropperModal`.
-- **Hapus Foto (Revert ke Inisial):** Disediakan tombol khusus "Hapus Foto (Gunakan Inisial)" serta tombol badge silang `X`. Ketika dihapus, sistem otomatis menampilkan avatar inisial nama dengan gradien warna brand CASANUMA CRM.
+Sesuai permintaan: *"jadikan view card di semua tabel itu default nya, lalu bisa di klik sesuai datanya"*:
 
-### 4.2 Sanitasi Format Nomor WhatsApp (Backend Mutator)
-- Diterapkan Eloquent mutator di [`app/Models/User.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Models/User.php) via method `sanitizePhoneNumber()`.
-- Setiap input nomor telepon maupun kontak darurat (misal `0812...`, `+62 812...`, `812...`) otomatis dibersihkan dan distandarisasi ke format internasional `628xx` secara konsisten di seluruh aplikasi.
+### A. Default View Card di Semua Tabel
+- Seluruh modul data utama ([Units](file:///D:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Properties/Units/Index.tsx), [Leads](file:///D:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Leads/Index.tsx), [Bookings](file:///D:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Bookings/Index.tsx), dan [Users](file:///D:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Users/Index.tsx)) kini **otomatis default ke Card View (`'card'`)**.
+- Menggunakan skema kunci penyimpanan versi baru (`*_view_mode_v2`) di `localStorage`, memastikan pengguna lama maupun baru langsung disuguhkan tampilan Card View secara default saat membuka aplikasi.
+- Tombol toggle Tabel View vs Card View tetap aktif untuk fleksibilitas pengguna jika sewaktu-waktu ingin beralih ke tabel tabular.
 
-### 4.3 Toolbar List User di Atas Tabel (Search & Filters)
-- **Search:** Input pencarian responsif untuk mencari berdasarkan nama, email, NIK, jabatan, dan no. WhatsApp.
-- **Filter Role:** Dropdown shadcn `Select` ("Semua Role", "Super Administrator", "Sales Manager", "Sales Agent", "Finance") dipadukan dengan pill buttons pintasan 1-klik.
-- **Filter Status:** Dropdown shadcn `Select` ("Semua Status", "Hanya Aktif", "Hanya Nonaktif").
-- **Tombol Reset:** Tombol "Reset" dinamis yang muncul otomatis saat filter atau pencarian aktif.
+### B. Titik Data Interaktif (Clickable Sesuai Konteks)
+Elemen data pada setiap kartu kini responsif terhadap klik sesuai konteks data:
 
-### 4.4 Sistem Notifikasi Toast (shadcn Sonner)
-- Dipasang komponen [`sonner.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/ui/sonner.tsx) dan dipasang di root layout [`AuthenticatedLayout.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Layouts/AuthenticatedLayout.tsx) menggunakan `<Toaster richColors position="top-right" closeButton />`.
-- Otomatis bereaksi menangkap `flash.success` & `flash.error` dari Inertia controller, serta diintegrasikan ke seluruh event interaktif (tambah pengguna, perbarui data, hapus user, ganti status aktif, salin password, dan reset password).
+1. **Kartu Prospek Konsumen ([Leads/Index.tsx](file:///D:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Leads/Index.tsx)):**
+   - **Nama Konsumen:** Klik nama langsung membuka riwayat follow-up & timeline interaksi konsumen (`handleOpenTimeline(lead)`).
+   - **Email:** Terhubung ke tautan `mailto:`, siap mengirim email langsung dari client mail pengguna.
+   - **Proyek Peminatan:** Klik nama proyek untuk langsung menyaring (filter) daftar prospek sesuai proyek perumahan tersebut.
+   - **Kotak Unit / Booking:** Klik kontainer booking (`A1/02`, `BK-202609-0002`) untuk langsung membuka transaksi terkait di halaman **Transaksi Booking**.
+   - **Preferensi Unit:** Klik tipe unit untuk mencari unit yang relevan di daftar unit.
+   - **Sales PIC & Status Pipeline:** Mempertahankan aksi klik cepat (modal re-assign dan modal ganti status pipeline).
 
-### 4.5 Hasil Pengujian & Build
-- **Frontend Build (`bun run build`):** Sukses dalam 1.56s tanpa error TypeScript.
-- **PHP Test Suite (`php artisan test`):** 48 test cases lolos (160 assertions).
+2. **Kartu Unit Properti ([Units/Index.tsx](file:///D:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Properties/Units/Index.tsx)):**
+   - **Kode Unit (`unit_code`):** Klik kode unit untuk langsung membuka modal edit unit.
+   - **Cluster & Tipe Rumah:** Klik nama cluster atau tipe unit untuk memfilter unit yang sejenis.
+   - **Kotak Booking Terikat:** Klik untuk langsung diarahkan ke halaman transaksi booking dengan nomor tanda jadi unit tersebut.
+   - **WhatsApp Konsumen:** Memiliki `e.stopPropagation()` sehingga klik kontak WA langsung membuka obrolan tanpa memicu navigasi kartu.
+
+3. **Kartu Transaksi Booking ([Bookings/Index.tsx](file:///D:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Bookings/Index.tsx)):**
+   - **Nama Konsumen:** Klik nama konsumen untuk langsung membuka prospek terkait di halaman Prospek Konsumen.
+   - **Badge Blok Unit:** Klik blok unit untuk langsung mencari dan melihat spesifikasi unit di Daftar Unit.
+   - **Kode Transaksi (`booking_code`):** Klik kode transaksi untuk membuka **Dossier 360° Transaksi & Riwayat Pembayaran**.
+   - **Nama Proyek:** Klik untuk menyaring daftar transaksi berdasarkan proyek perumahan.
+
+4. **Kartu Direktori Pengguna ([Users/Index.tsx](file:///D:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Users/Index.tsx)):**
+   - **Avatar & Nama Pengguna:** Klik avatar atau nama untuk membuka modal profil detail staf.
+   - **Email:** Terhubung ke tautan `mailto:`.
+   - **Badge Peran (Roles):** Klik badge peran untuk menyaring daftar staf berdasarkan peran tersebut.
+
+### C. Pembersihan Efek Hover pada Label Non-Editable
+- Komponen `Badge` ([badge.tsx](file:///D:/90_ARCHIVE/nama-projek-lo/resources/js/Components/ui/badge.tsx)) telah dibersihkan dari efek hover default (`hover:bg-primary/80`, dll.) sehingga label statis murni tidak berkedip atau berubah warna saat disentuh kursor. Efek interaksi hover hanya diberikan pada elemen yang benar-benar dapat diklik.
 
 ---
 
-## 5. Activity Logs & Integrasi Telegram (Settings Menu Superadmin)
+## 4. Hasil Verifikasi & Testing
 
-### 5.1 Penyimpanan Konfigurasi Dinamis di Database (`system_settings`)
-- Tabel `system_settings` menyimpan kredensial `telegram_bot_token`, `telegram_chat_id`, dan `telegram_notifications_enabled` secara dinamis tanpa perlu edit file `.env` manual di server.
-- Helper model [`SystemSetting.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Models/SystemSetting.php) dengan caching otomatis: `SystemSetting::get('telegram_bot_token')` dan `SystemSetting::set(...)`.
+### Automated Test Suite (`php artisan test`)
+- **162 tests passed, 0 failures, 780 assertions (100% Green)**.
+- Seluruh skenario pengujian unit dan fitur (Auth, Roles & Permissions, User Management, Activity Logs & Telegram Service, Properties & Units, Leads Conversion Engine, dan Transactions/Bookings) lulus sepenuhnya.
 
-### 5.2 Rekam Jejak Audit Otomatis (`activity_logs`)
-- Tabel `activity_logs` mencatat setiap aksi operasional pengguna:
-  - `user_create`: Saat superadmin menambah pengguna baru
-  - `user_update`: Saat data pengguna diperbarui
-  - `status_toggle`: Saat akun staf diaktifkan/dinonaktifkan
-  - `password_reset`: Saat superadmin mereset password
-  - `user_delete`: Saat akun staf dihapus
-  - `profile_update`: Saat staf mengupdate profil mandiri
-  - `telegram_config`: Saat konfigurasi bot Telegram diperbarui
-  - `telegram_test`: Riwayat uji coba koneksi bot Telegram
-- Helper statis [`ActivityLog::record(...)`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Models/ActivityLog.php) otomatis mencatat `user_id`, IP Address, User Agent, dan metadata JSON.
-
-### 5.3 Antarmuka Settings & Activity Logs ([`ActivityLogs.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Settings/ActivityLogs.tsx))
-- **Khusus Superadmin:** Dilindungi Spatie RBAC `role:superadmin` di route [`web.php`](file:///d:/90_ARCHIVE/nama-projek-lo/routes/web.php) (sales & finance otomatis di-block HTTP 403 Forbidden).
-- **Tab 1 - Activity Logs (Audit Trail):**
-  - KPI Cards: Total Log, Log Hari Ini, Staf Aktif Hari Ini, Status Bot Telegram.
-  - Toolbar Pencarian & Dropdown Kategori Aksi.
-  - Tabel interaktif lengkap dengan avatar aktor, badge aksi berwarna, deskripsi, IP address, waktu relatif, dan modal dialog shadcn untuk inspeksi metadata JSON.
-- **Tab 2 - Integrasi Telegram:**
-  - Status banner koneksi: *Terkoneksi* vs *Belum Dikonfigurasi*.
-  - Input Bot Token (dengan tombol toggle Show/Hide) & Chat ID tujuan.
-  - Tombol **"Test Connection"**: Mengirimkan pesan verifikasi langsung via [`TelegramService.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Services/TelegramService.php) ke Telegram dan memberikan umpan balik toast instan.
-  - Tombol **"Simpan Pengaturan"**: Menyimpan konfigurasi ke database.
-  - Panduan interaktif cara membuat bot via `@BotFather` dan mencari Chat ID via `@userinfobot`.
-
-### 5.4 Notifikasi Real-Time Log Aktivitas ke Telegram
-- **Metode `sendActivityNotification`:** Ditambahkan pada [`TelegramService.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Services/TelegramService.php) untuk mengirimkan format pesan HTML yang rapi ke bot/grup Telegram secara instan saat aktivitas baru dicatat (`user_create`, `user_update`, `status_toggle`, `password_reset`, `profile_update`, `password_change`, dll).
-- **Trigger Otomatis di [`ActivityLog::record(...)`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Models/ActivityLog.php):** Setiap log aktivitas baru otomatis diteruskan ke Telegram secara asinkron/non-blocking tanpa memperlambat proses utama pengguna.
-- **SSL Bypass untuk Local Windows Development:** cURL error 60 diatasi otomatis dengan konfigurasi `withoutVerifying()` saat mode development/local, sehingga bot Telegram dapat mengirim pesan tanpa terhalang cert chain lokal.
-- **UI Toggle Real-Time:** Tersedia checkbox shadcn di tab Pengaturan Telegram untuk mengaktifkan/menonaktifkan pengiriman log real-time ke Telegram kapan saja.
-
-### 5.5 Hasil Pengujian & Build
-- **Frontend Build (`bun run build`):** Berhasil 100% tanpa error TypeScript (termasuk komponen Checkbox dan update form).
-- **PHP Feature Tests (`php artisan test`):** **55 passed, 196 assertions** (100% lulus, mencakup auto-dispatch log aktivitas ke Telegram saat ada aksi pengguna).
+### Frontend Compilation (`bun run build`)
+- TypeScript compiler (`tsc`) dan Vite bundler berhasil membangun seluruh aset frontend dengan status `exit code 0`.

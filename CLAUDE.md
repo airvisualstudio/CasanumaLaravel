@@ -28,6 +28,9 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Authorization: Use `spatie/laravel-permission` on backend, and consume permissions on frontend via `@/hooks/useAuthorization` (`can()`, `isSuperAdmin`, `isSalesManager`, `isSalesAgent`, `isFinance`).
 - System Settings & Configuration: Use database-driven settings via `App\Models\SystemSetting::get($key, $default)` and `App\Models\SystemSetting::set($key, $value, $group, $type)`. Never hardcode integration credentials.
 - Activity Logs & Audit Trail: Always record significant mutations via `App\Models\ActivityLog::record($action, $description, $subject, $properties)`. It automatically captures the actor, IP, user-agent, and dispatches real-time Telegram alerts via `TelegramService` when configured.
+- Multi-View Layout & Card View Default: All primary list pages (`Leads`, `Properties/Units`, `Bookings`, `Users`) MUST support both Card View and Table View, with Card View as the default (`'card'`) persisted via `localStorage` keys (`*_view_mode_v2`). Interactive data points inside cards (names, booking codes, unit blocks, emails) MUST be clickable with appropriate handlers or links.
+- Badge & Static Label Hygiene: Components using `@/Components/ui/badge` for non-editable labels MUST NOT have hover effects (`hover:bg-*` in base variant is removed). Interactive elements must use explicit button/link wrappers.
+- Leads Conversion Engine: Leads must preserve temperature (hot/warm/cold), SLA tracking (7 days), internal notes thread on interactions, anti-duplication (unique WhatsApp/NIK per project), auto-assign to creating sales agent, and sensitive data audit logging (phone/status/nik/sales_id).
 
 ## Verification Scripts
 

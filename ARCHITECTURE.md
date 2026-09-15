@@ -108,8 +108,6 @@ crm-perumahan/
    - Triggers `UnitStatusChangedEvent`.
 5. **Inertia Response:** Controller redirects back with flash status and updated model state without full page refresh.
 
----
-
 ## 4. Security & Role-Based Authorization Strategy
 - **Authentication & RBAC:** `spatie/laravel-permission` layered on top of Laravel Breeze.
   - **4 Active Roles:**
@@ -126,3 +124,42 @@ crm-perumahan/
 - **CSRF & Session Security:** SameSite cookie security, HTTPS enforcement, encrypted sessions on PostgreSQL.
 - **Query Optimization:** Eager loading with indexed foreign keys (`property_cluster_id`, `assigned_sales_id`, `status`).
 - **File Assets:** Direct temporary uploads or local storage with symlinks, prepared for S3 adapter switch.
+
+---
+
+## 5. UI Architectural Paradigm: Multi-View & Card-First Architecture
+
+The frontend datatable layer implements a unified **Card-First Multi-View Pattern** across all primary domain dashboards (`Leads`, `Properties/Units`, `Bookings`, `Users`):
+
+```
++-------------------------------------------------------------------------+
+|                  Inertia Page Component (e.g. Leads/Index)              |
++------------------------------------+------------------------------------+
+                                     |
+                [Segmented Control: Table View vs Card View]
+                                     |
+          +--------------------------+--------------------------+
+          |                                                     |
++---------v-----------+                               +---------v-----------+
+|    Card View (Baku) |                               |     Table View      |
+|  - Responsive Grid  |                               |  - Compact Tabular  |
+|  - Clickable Points |                               |  - Inline Badges    |
+|  - Quick Action Bar |                               |  - Row Action Menu  |
++---------+-----------+                               +---------+-----------+
+          |                                                     |
+          +--------------------------+--------------------------+
+                                     |
+                       [Persistent LocalStorage Engine]
+                       - Versioned Keys: *_view_mode_v2
+                       - Default State: 'card'
+```
+
+### Key Architectural Guidelines for Views:
+1. **Default State Guarantee:** Every listing view defaults to `'card'` upon initial mount via `useState(() => localStorage.getItem('<key>_view_mode_v2') || 'card')`.
+2. **Context-Driven Interactive Points:** Card surfaces are not static; individual data points function as intuitive navigation triggers:
+   - Customer name dispatches detailed interaction timelines (`handleOpenTimeline`).
+   - Active booking tokens navigate to linked booking dossier files (`bookings.index`).
+   - Project and cluster badges trigger scoped search filters.
+   - Child interactive links (such as WhatsApp external chat) isolate click propagation via `e.stopPropagation()`.
+3. **Pure Component Styling Hygiene:** Non-interactive badges (such as static status or categorization tags) are isolated from unwanted CSS hover effects (`hover:bg-*` stripped from default CVA variants), ensuring only clickable elements provide cursor and opacity affordance.
+

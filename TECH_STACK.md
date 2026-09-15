@@ -63,13 +63,18 @@
 | `class-variance-authority` | 0.7.1 | `dependency` | Class Variance Authority 🧬 |
 | `cn` | 0.3.0 | `dependency` | Fast, small, compiled class-name merging for Tailwind CSS. Drop-in replacement for clsx + tailwind-merge. |
 | `concurrently` | 10.0.5 | `devDependency` | Run commands concurrently |
+| `date-fns` | 4.4.0 | `dependency` | Modern JavaScript date utility library |
 | `laravel-vite-plugin` | 3.2.0 | `devDependency` | Laravel plugin for Vite. |
 | `lucide-react` | 1.45.0 | `dependency` | A Lucide icon library package for React applications. |
 | `postcss` | 8.5.28 | `devDependency` | Tool for transforming styles with JS plugins |
 | `radix-ui` | 1.6.7 | `dependency` | Frontend dependency |
 | `react` | 18.3.1 | `devDependency` | React is a JavaScript library for building user interfaces. |
+| `react-day-picker` | 10.0.1 | `dependency` | Customizable Date Picker for React |
 | `react-dom` | 18.3.1 | `devDependency` | React package for working with the DOM. |
+| `react-easy-crop` | 6.2.3 | `dependency` | A React component to crop images/videos with easy interactions |
+| `react-zoom-pan-pinch` | 4.2.0 | `dependency` | Zoom and pan html elements in easy way. |
 | `shadcn` | 4.21.0 | `dependency` | Add components to your apps. |
+| `sonner` | 2.0.8 | `dependency` | An opinionated toast component for React. |
 | `tailwindcss` | 4.3.3 | `devDependency` | A utility-first CSS framework for rapidly building custom user interfaces. |
 | `tw-animate-css` | 1.4.0 | `dependency` | TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`. |
 | `typescript` | 5.9.3 | `devDependency` | TypeScript is a language for application scale JavaScript development |

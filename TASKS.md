@@ -1,6 +1,7 @@
 # 🎯 Engineering Tasks & Sprint Roadmap
+**Project:** CASANUMA CRM & Centralized Housing Database  
 **Sprint Cadence:** 4 Phases (Milestone Delivery)  
-**Task Management:** Git Feature Branches (`feature/phase-X-...`)
+**Current Test Suite Status:** **162 tests passed, 780 assertions (100% Green)**  
 
 ---
 
@@ -13,27 +14,21 @@
 
 ---
 
-## Phase 2: Design System, Layout, & Inventory UI (IN PROGRESS 🚀)
+## Phase 2: Design System, Layout, & User Management (COMPLETED ✅)
 - [x] **UI-01:** Configure shadcn/ui and Tailwind CSS v4 design system tokens (zinc/neutral, emerald deals, amber warnings, rose destructive).
-- [x] **UI-02:** Install and verify core shadcn primitives (`button`, `card`, `dialog`, `dropdown-menu`, `input`, `label`, `checkbox`).
+- [x] **UI-02:** Install and verify core shadcn primitives (`button`, `card`, `dialog`, `dropdown-menu`, `input`, `label`, `checkbox`, `select`, `calendar`, `popover`, `badge`).
 - [x] **UI-03:** Standardize all modals/popups/alerts to shadcn `Dialog` (ban `window.alert()`, migrate `DeleteUserForm.tsx` & module actions).
 - [x] **FE-01:** Sticky Full-Height Sidebar (`lg:sticky lg:top-0 lg:h-screen`) with independent scrolling ("bisa di-roll") & desktop single toggle.
 - [x] **FE-02:** Collapsible Icon-Only Sidebar (`w-64` to `w-[72px]`) with perfect 36px vertical center symmetry and hidden scrollbar layout track.
-- [x] **FE-03:** Fluid Responsive Dashboard (`max-w-[1550px]`) with vertical-centered Welcome Card and role-tailored quick action modules.
+- [x] **FE-03:** Fluid Responsive Dashboard (`max-w-[1550px]`) with role-tailored KPI widgets and quick action modules.
 - [x] **USER-01:** User Management CRUD Controller ([`UserController.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Http/Controllers/UserController.php)) with validation, avatar storage, Spatie role sync, toggle status, and self-deletion prevention.
-- [x] **USER-02:** Strict Spatie Middleware Lock (`role:superadmin` throwing HTTP 403 for sales_agent, sales_manager, finance).
-- [x] **USER-03:** Data Table shadcn UI ([`table.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/ui/table.tsx)) & User List ([`Users/Index.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Users/Index.tsx)) with live search, role filters, active status filter, and quick WhatsApp link.
+- [x] **USER-02:** Strict Spatie Middleware Lock (`role:superadmin` throwing HTTP 403 for unauthorized users).
+- [x] **USER-03:** User List ([`Users/Index.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Users/Index.tsx)) with Card View default, Table View toggle, live search, role/status filters, and direct WhatsApp links.
 - [x] **USER-04:** Tabbed Add/Edit User Dialog (Account, Personal Info, Work Info, Bank Account) & Dossier Detail Dialog strictly using shadcn `Dialog`.
 - [x] **USER-05:** Database migration & seeder for extended user fields (avatar, phone, address, emergency contact, employee_id, position, join_date, is_active, bank info) with client-side image cropping & auto-compression < 200KB.
 - [x] **USER-06:** Force Reset Password oleh Superadmin di tabel User Management & Dossier modal dengan generator password acak, copy button, dan dialog shadcn `Dialog`.
 - [x] **USER-07:** Self-service Ganti Password dan Settings/Profile di dropdown profil topbar & sidebar footer dengan anchor navigation (`Profile/Edit.tsx`).
 - [x] **USER-08:** Standardisasi Dropdown shadcn `Select` & Date Picker `Calendar` + `Popover` (tanpa native HTML `<select>` / `<input type="date">`).
-- [x] **USER-09:** Form Pengaturan Profil Mandiri ([`UpdateProfileInformationForm.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.tsx)): User dapat melengkapi Foto Profil (crop & kompresi), No WA, Alamat, Kontak Darurat, dan Rekening Bank secara mandiri, dengan proteksi ketat field NIK, Jabatan, Role, Tanggal Join, dan Status Akun terkunci (read-only) di frontend dan controller backend ([`ProfileController.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Http/Controllers/ProfileController.php) & [`ProfileUpdateRequest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Http/Requests/ProfileUpdateRequest.php)).
-- [x] **USER-10 (Final Polish 100%):**
-  - **Upload Avatar:** Batas file maksimal 2MB (`jpg/png`), live preview cropping sebelum save, opsi hapus foto balik ke avatar inisial nama.
-  - **Format WA:** Mutator Eloquent otomatis men-sanitize no. telpon/WA ke format standar `628xx` di backend ([`User.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Models/User.php)).
-  - **List User Toolbar:** Fitur search nama/email/NIK/WA + dropdown filter Role (`Select`) & filter Status Aktif (`Select`) terintegrasi tepat di atas tabel.
-  - **Notifikasi Sonner Toast:** Integrasi `<Toaster richColors />` shadcn ([`sonner.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/ui/sonner.tsx)) terpasang di [`AuthenticatedLayout.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Layouts/AuthenticatedLayout.tsx) menangkap flash Inertia dan event aksi (tambah user, update, hapus, reset password, ganti avatar).
 - [x] **ADMIN-01:** Activity Logs & Audit Trail:
   - Migrasi `activity_logs` table (`user_id`, `action`, `description`, `subject_type`, `subject_id`, `properties`, `ip_address`, `user_agent`).
   - Helper Eloquent [`ActivityLog::record(...)`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Models/ActivityLog.php) terpasang di seluruh CRUD user, status toggle, force reset password, self profile update, dan password update.
@@ -42,37 +37,60 @@
   - Migrasi `system_settings` table (`key`, `value`, `type`, `group`) dengan caching untuk penyimpanan kredensial bot Telegram di database.
   - Form input Bot Token (toggle show/hide), Chat ID, dan toggle notifikasi real-time di UI Superadmin.
   - Tombol "Test Connection" dengan verifikasi pesan langsung ke API Telegram.
-  - Layanan [`TelegramService.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Services/TelegramService.php) dengan bypass SSL otomatis pada mode local development (mengatasi cURL error 60 Windows).
+  - Layanan [`TelegramService.php`](file:///d:/90_ARCHIVE/nama-projek-lo/app/Services/TelegramService.php) dengan bypass SSL otomatis pada mode local development.
   - Auto-dispatch notifikasi real-time saat log aktivitas baru dicatat (non-blocking).
-- [x] **QA-USER:** Automated Feature Test Suite ([`UserManagementTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/UserManagementTest.php)) passing dengan 17 test cases.
-- [x] **QA-PROFILE:** Automated Feature Test Suite ([`ProfileTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/ProfileTest.php)) passing dengan 9 test cases.
-- [x] **QA-ADMIN:** Automated Feature Test Suite ([`ActivityLogTest.php`](file:///d:/90_ARCHIVE/nama-projek-lo/tests/Feature/ActivityLogTest.php)) passing dengan 7 test cases (Total aplikasi: **55 passed, 196 assertions**).
-- [ ] **DB-04:** Migrations & Seeders for Housing Inventory:
-  - Table `clusters` (nama, deskripsi, lokasi, total_unit).
-  - Table `unit_types` (tipe_nama, lb, lt, spesifikasi_bangunan, denah_url).
-  - Table `units` (cluster_id, unit_type_id, block_number, price, status, locking_timestamp).
-- [ ] **FE-04:** Property Inventory Table (TanStack Table dengan sorting, filter cluster, search no blok, badge status).
-- [ ] **FE-05:** Create/Edit Unit Modal with image upload and validation schema.
-- [ ] **BE-01:** Implement concurrency-safe unit reservation endpoint (`DB::transaction` with row locking).
 
 ---
 
-## Phase 3: CRM Leads Pipeline & Follow-up Board
-- [ ] **DB-05:** Migration for CRM & Pipeline:
-  - Table `leads` (nama, no_hp, email, budget, source, status, assigned_to).
-  - Table `lead_activities` (lead_id, user_id, type, note, follow_up_date).
-- [ ] **FE-06:** Interactive Kanban Board for Leads (New Lead -> Kontak Pertama -> Jadwal Survei -> Survei Lokasi -> Negosiasi -> Booking).
-- [ ] **FE-07:** Lead Detail Drawer (Sheet) showing customer profile, history log, and quick follow-up action buttons.
-- [ ] **BE-02:** Lead status transition controller with automated activity logging.
-- [ ] **BE-03:** Sales lead assignment logic (Manager view).
-- [ ] **FE-08:** Reminder widget for pending follow-ups today.
+## Phase 3: Housing Database & Inventory Unit Management (COMPLETED ✅)
+- [x] **DB-04:** Migrations & Seeders for Housing Inventory:
+  - Table `housing_projects` (nama kawasan, deskripsi, lokasi, developer).
+  - Table `housing_clusters` (nama cluster, siteplan, total unit).
+  - Table `housing_unit_types` (nama tipe, luas tanah, luas bangunan, spesifikasi).
+  - Table `housing_units` (kode kavling, blok, nomor, harga dasar, status unit, `svg_element_id`).
+- [x] **PROP-01:** Property Project & Cluster Management ([`Properties/Index.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Properties/Index.tsx)).
+- [x] **PROP-02:** Inventory Unit Management ([`Properties/Units/Index.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Properties/Units/Index.tsx)):
+  - Multi-View Switcher dengan **Card View sebagai default**.
+  - Interactive clickable points: klik kode unit untuk edit, klik cluster/tipe untuk quick filter, klik active booking box untuk membuka berkas booking.
+  - Quick Status Change Modal untuk update ketersediaan unit.
+  - SVG Element ID integration untuk pemetaan siteplan master.
 
 ---
 
-## Phase 4: Transactions, KPR Vault, & Reports
-- [ ] **DB-06:** Migration for `transactions`, `kpr_applications`, and `document_attachments`.
-- [ ] **BE-04:** Automated PDF generation for Surat Pesanan Rumah (SPR).
-- [ ] **FE-09:** Document Upload & Verification UI (File dropzone, status verifikasi berkas KPR).
-- [ ] **FE-10:** Analytics Dashboard Cards (KPI stats, charts via Recharts or Lucide indicators).
-- [ ] **QA-02:** Unit testing (Unit status race conditions, role permission gates).
-- [ ] **OPS-01:** CI/CD script setup for VPS deployment (Git pull, migrate, npm build, optimize).
+## Phase 4: Leads Engine & First-Principle Conversion (COMPLETED ✅)
+- [x] **DB-05:** Migrations for Leads & Interaction History:
+  - Table `leads` (nama, wa, email, nik, sumber, sub-sumber, budget, preferensi, suhu, sla, pool arsip, sales in charge).
+  - Table `lead_interactions` (lead_id, user_id, channel, notes, scheduled_at, completed_at, internal_notes).
+- [x] **LEAD-01:** First-Principle Conversion Features:
+  - **Lead Temperature:** Indikator prioritas (🔥 Hot, ⚡ Warm, ❄️ Cold).
+  - **SLA & Auto-Revoke Indicator:** Monitoring batas waktu 7 hari tanpa follow-up.
+  - **Internal Notes Thread:** Diskusi internal antara Manager/Superadmin & Sales PIC langsung di setiap log riwayat.
+  - **Proteksi Anti-Duplikasi:** Validasi WhatsApp & NIK unik per proyek perumahan.
+  - **Auto-Assign & Re-Assign:** Sales auto-assigned saat input; re-assign dialog khusus Manager/Superadmin.
+  - **Audit Log Data Sensitif:** Otomatis tercatat ke Activity Log & Timeline jika WA, Status, NIK, atau Sales PIC dimutasi.
+  - **Workspace Segregation:** Dual pool (**🟢 Workspace Prospek Aktif** vs **🗄️ Archive & Blacklist Pool**).
+- [x] **LEAD-02:** Multi-View Layout & Interactive Cards ([`Leads/Index.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Leads/Index.tsx)):
+  - **Card View sebagai default** dengan persistensi `localStorage`.
+  - Clickable points: Nama konsumen membuka Timeline, email membuka mailto, proyek memicu filter, kotak kavling membuka transaksi booking.
+- [x] **LEAD-03:** Kanban Board Pipeline ([`Leads/Pipeline.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Leads/Pipeline.tsx)) untuk visualisasi tahapan konversi.
+- [x] **LEAD-04:** KYC Document Vault ([`CustomerDocumentVaultDialog.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/CRM/CustomerDocumentVaultDialog.tsx)) untuk pengarsipan KTP, KK, NPWP, Slip Gaji, dan Rekening Koran.
+
+---
+
+## Phase 5: Transactions, Bookings & Dokumen SPR (COMPLETED ✅)
+- [x] **DB-06:** Migration for `bookings` & Transaction Tracking:
+  - Table `bookings` (booking_code, spr_number, lead_id, housing_unit_id, sales_id, booking_fee, total_price, payment_scheme, status).
+- [x] **BOOK-01:** Booking & Tanda Jadi Dashboard ([`Bookings/Index.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Bookings/Index.tsx)):
+  - Multi-View Switcher dengan **Card View sebagai default**.
+  - Clickable points: Nama konsumen ke leads, unit badge ke daftar unit, kode booking ke Dossier 360°, nama proyek ke filter transaksi.
+- [x] **BOOK-02:** Transaction Dossier 360° ([`TransactionDossierDialog.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/CRM/TransactionDossierDialog.tsx)):
+  - Rincian lengkap pemesan, spesifikasi kavling, riwayat pembayaran UTJ, dan tracking KPR bank.
+- [x] **BOOK-03:** Surat Pemesanan Rumah (SPR) Generator ([`SprPrintModal.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/CRM/SprPrintModal.tsx)) siap cetak dan ekspor format resmi.
+
+---
+
+## 🔮 Next Milestones & Future Enhancements (Backlog)
+- [ ] **ADV-01:** Interactive Interactive SVG Siteplan Zoom & Pan Viewer (menggunakan `react-zoom-pan-pinch`).
+- [ ] **ADV-02:** Automated WhatsApp Notification Gateway via Webhook / Baileys.
+- [ ] **ADV-03:** Executive Analytics Charting (Recharts) untuk visualisasi perbandingan closing rate bulanan per marketing campaign.
+- [ ] **ADV-04:** Export/Import Excel (Maatwebsite Excel) untuk database kavling dan rekonsiliasi finance.

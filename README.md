@@ -27,19 +27,49 @@ Sistem menggunakan `spatie/laravel-permission` dengan 4 peran baku:
 
 ---
 
+## 🌟 Fitur Utama CRM & Housing Database
+
+1. **Manajemen Prospek & First-Principle Conversion Engine (`/leads`):**
+   - **Multi-View Parity:** Tampilan baku **Card View** (dengan switcher ke Tabel View) lengkap dengan navigasi data interaktif.
+   - **Lead Temperature:** Indikator prioritas prospek (🔥 Hot, ⚡ Warm, ❄️ Cold) memfokuskan sales pada pembeli paling potensial.
+   - **SLA & Auto-Revoke Tracking:** Monitoring batas waktu interaksi prospek baru (SLA 7 hari).
+   - **Internal Notes / Thread Diskusi:** Kolaborasi internal antara Manager, Superadmin, dan Sales PIC langsung di setiap riwayat follow-up.
+   - **Proteksi Anti-Duplikasi:** Validasi nomor WhatsApp dan NIK unik per proyek perumahan mencegah sengketa leads antar agen.
+   - **Audit Log Perubahan Sensitif:** Pencatatan otomatis ke `activity_logs` dan timeline saat terjadi perubahan WhatsApp, Status Pipeline, NIK, atau Sales PIC.
+   - **Archive & Blacklist Pool:** Pemisahan ruang kerja antara prospek aktif dan prospek batal/blacklist SLIK BI Checking.
+   - **KYC Document Vault:** Pengarsipan berkas KTP, KK, NPWP, Slip Gaji, dan Rekening Koran konsumen.
+
+2. **Katalog Perumahan & Unit Database (`/properties`, `/properties/units`):**
+   - Manajemen multi-developer, proyek kawasan perumahan, cluster, tipe unit, dan kavling.
+   - Integrasi SVG Element ID untuk pemetaan denah interaktif (siteplan master).
+   - Card View interaktif: klik kode unit untuk edit, filter cluster/tipe, dan pemantauan transaksi unit aktif.
+
+3. **Transaksi Tanda Jadi (UTJ) & Dokumen SPR (`/bookings`):**
+   - Registrasi booking kavling, pemilihan skema pembayaran (Cash Keras, Cash Bertahap, KPR Bank).
+   - Generator Surat Pemesanan Rumah (SPR) siap cetak dan ekspor format resmi.
+   - Transaction Dossier 360° dengan riwayat validasi pembayaran tanda jadi dan pelacakan akad KPR.
+
+4. **Direktori Staf & RBAC Manajemen (`/users`):**
+   - Manajemen staf terpadu berbasis Spatie Role-Permission (Superadmin, Sales Manager, Sales Agent, Finance).
+   - Card View staf dengan foto avatar, kontak click-to-chat WA, rekening komisi, dan audit peran.
+
+---
+
 ## 📐 Standar Antarmuka (UI & Frontend Standards)
 
-1. **Modal, Alert, & Popup (MANDATORY):**
+1. **Card View sebagai Default:**
+   - Semua modul daftar data utama (Leads, Units, Bookings, Users) secara default tampil dalam mode **Card View** dengan titik data interaktif yang dapat diklik (*clickable*).
+2. **Modal, Alert, & Popup (MANDATORY):**
    - **Dilarang Keras:** Memakai dialog bawaan browser (`window.alert()`, `window.confirm()`, `window.prompt()`).
    - **Wajib:** Menggunakan komponen resmi `Dialog` dari `@/Components/ui/dialog` (berbasis Radix UI) lengkap dengan `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription`, dan `DialogFooter`.
-2. **Navigasi & Sidebar Desktop:**
+3. **Navigasi & Sidebar Desktop:**
    - Sidebar sticky terkunci di layar (`lg:sticky lg:top-0 lg:h-screen`).
    - Mendukung mode minimize (`w-64` ke `w-[72px]`) dengan icon-only yang **simetris presisi pada sumbu 36px**.
    - Dimensi seluruh icon di mode minimize seragam `size-10 rounded-xl` (40×40px).
    - Menu independen yang dapat di-scroll ("bisa di-roll") tanpa merusak layout.
-3. **Tema Dark & Light Mode:**
+4. **Tema Dark & Light Mode:**
    - Terintegrasi penuh di seluruh komponen dengan transisi halus dan persistensi preferensi user.
-4. **Audit Trail & Integrasi Bot Telegram (Superadmin Only):**
+5. **Audit Trail & Integrasi Bot Telegram (Superadmin Only):**
    - Pencatatan otomatis setiap riwayat aktivitas (`activity_logs`) di `/settings/activity-logs`.
    - Konfigurasi kredensial Bot Token & Chat ID dinamis tersimpan di database (`system_settings`).
    - Fitur "Test Connection" instan dan auto-dispatch notifikasi log ke grup/chat Telegram secara real-time.
@@ -96,4 +126,5 @@ Jalankan pengujian unit dan fitur:
 ```bash
 php artisan test
 ```
-*Status Terkini:* **27 passed, 86 assertions** (100% lulus).
+*Status Terkini:* **162 passed, 780 assertions** (100% lulus / Green).
+
