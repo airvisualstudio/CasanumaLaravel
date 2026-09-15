@@ -95,8 +95,8 @@ class DocumentTemplateController extends Controller
             'sampleDictionary' => $this->renderer->getSampleDictionary(),
             'paperSizes' => DocumentTemplate::SIZES_MM,
             'recentBookings' => Booking::with([
-                'lead:id,name,phone,whatsapp,email,city,nik',
-                'unit:id,unit_code,cluster_id,surface_area,building_area,base_price',
+                'lead:id,name,whatsapp,email,address,nik',
+                'unit:id,unit_code,cluster_id,base_price',
                 'unit.cluster:id,name,housing_project_id',
                 'unit.cluster.project:id,name,city,address',
                 'salesAgent:id,name,email,phone',
@@ -147,8 +147,8 @@ class DocumentTemplateController extends Controller
             'sampleDictionary' => $this->renderer->getSampleDictionary(),
             'paperSizes' => DocumentTemplate::SIZES_MM,
             'recentBookings' => Booking::with([
-                'lead:id,name,phone,whatsapp,email,city,nik',
-                'unit:id,unit_code,cluster_id,surface_area,building_area,base_price',
+                'lead:id,name,whatsapp,email,address,nik',
+                'unit:id,unit_code,cluster_id,base_price',
                 'unit.cluster:id,name,housing_project_id',
                 'unit.cluster.project:id,name,city,address',
                 'salesAgent:id,name,email,phone',

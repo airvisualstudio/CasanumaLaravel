@@ -120,7 +120,7 @@ interface EditorProps {
     template?: TemplateData | null;
     availableTokens: Record<string, { label: string; tokens: TokenItem[] }>;
     sampleDictionary: Record<string, string>;
-    paperSizes: Record<string, { name: string; width: number; height: number; desc: string }>;
+    paperSizes: Record<string, { label: string; width: number; height: number }>;
     recentBookings: BookingOption[];
 }
 
@@ -487,7 +487,7 @@ export default function DocumentEditor({
 
     tokenCategories.forEach(([key, group]) => {
         if (activeTokenCategory === 'all' || activeTokenCategory === key) {
-            group.tokens.forEach((item) => {
+            (group.tokens || []).forEach((item) => {
                 const q = tokenSearch.toLowerCase();
                 if (
                     !q ||
@@ -518,7 +518,8 @@ export default function DocumentEditor({
         <AuthenticatedLayout>
             <Head title={isEditMode ? `Edit Template: ${name}` : 'Document Template Builder (Google Docs Style)'} />
 
-            <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-muted/20">
+            {/* Fullscreen Editor — breaks out of AuthenticatedLayout padding */}
+            <div className="-m-4 sm:-m-6 lg:-m-8 flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-muted/20">
                 {/* 1. Google Docs Topbar Header */}
                 <header className="h-16 px-4 border-b border-border bg-card flex items-center justify-between gap-3 shrink-0 z-30 shadow-xs">
                     <div className="flex items-center gap-3 min-w-0">
@@ -1235,9 +1236,9 @@ export default function DocumentEditor({
                                                     <SelectValue placeholder="Pilih Ukuran Kertas" />
                                                 </SelectTrigger>
                                                 <SelectContent className="rounded-xl border-border">
-                                                    {Object.entries(paperSizes).map(([k, val]) => (
+                                                    {Object.entries(paperSizes || {}).map(([k, val]) => (
                                                         <SelectItem key={k} value={k}>
-                                                            {val.name} ({val.desc})
+                                                            {val.label}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>

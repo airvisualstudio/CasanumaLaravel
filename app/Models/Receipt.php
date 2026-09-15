@@ -37,6 +37,9 @@ class Receipt extends Model
         'rejection_reason',
         'rejected_by',
         'rejected_at',
+        'voided_by',
+        'voided_at',
+        'void_reason',
         'qr_code_token',
         'qr_code_url',
         'pdf_path',
@@ -49,6 +52,7 @@ class Receipt extends Model
         'reviewed_by_finance_at' => 'datetime',
         'approved_by_manager_at' => 'datetime',
         'rejected_at' => 'datetime',
+        'voided_at' => 'datetime',
     ];
 
     protected $appends = [
@@ -71,6 +75,8 @@ class Receipt extends Model
     public const STATUS_MANAGER_APPROVED = 'manager_approved';
 
     public const STATUS_REJECTED = 'rejected';
+
+    public const STATUS_VOID = 'void';
 
     /**
      * Payment type constants.

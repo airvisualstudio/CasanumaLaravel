@@ -210,12 +210,12 @@ export default function DocumentTemplatesIndex({
 
                     <div className="flex items-center gap-2">
                         {can('manage-document-templates') && (
-                            <Link href={route('document-templates.create')}>
-                                <Button className="h-9 gap-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-md">
+                            <Button asChild className="h-9 gap-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-md">
+                                <Link href={route('document-templates.create')}>
                                     <Plus className="size-4" />
                                     <span>Buat Template Baru</span>
-                                </Button>
-                            </Link>
+                                </Link>
+                            </Button>
                         )}
                     </div>
                 </div>
@@ -350,12 +350,12 @@ export default function DocumentTemplatesIndex({
                             Tidak ditemukan template dokumen untuk kriteria pencarian ini. Buat template pertama Anda sekarang.
                         </p>
                         {can('manage-document-templates') && (
-                            <Link href={route('document-templates.create')}>
-                                <Button size="sm" className="rounded-xl mt-2 gap-1.5">
+                            <Button asChild size="sm" className="rounded-xl mt-2 gap-1.5">
+                                <Link href={route('document-templates.create')}>
                                     <Plus className="size-4" />
                                     <span>Buat Template</span>
-                                </Button>
-                            </Link>
+                                </Link>
+                            </Button>
                         )}
                     </div>
                 ) : viewMode === 'card' ? (
@@ -422,51 +422,54 @@ export default function DocumentTemplatesIndex({
                                     <div className="flex items-center justify-between gap-1 pt-1 border-t border-border/80">
                                         <div className="flex items-center gap-1">
                                             {/* Open PDF sample */}
-                                            <a
-                                                href={route('document-templates.pdf', template.id)}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                            >
-                                                <Button
+                                            <Button
+                                                    asChild
                                                     variant="ghost"
                                                     size="sm"
                                                     className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
                                                     title="Unduh Contoh PDF"
                                                 >
+                                                <a
+                                                    href={route('document-templates.pdf', template.id)}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                >
                                                     <Printer className="size-3.5" />
                                                     <span className="hidden sm:inline">PDF</span>
-                                                </Button>
-                                            </a>
+                                                </a>
+                                            </Button>
 
                                             {/* Duplicate template */}
                                             {can('manage-document-templates') && (
-                                                <Link href={route('document-templates.create', { from_id: template.id })}>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
-                                                        title="Duplikasi sebagai Template Baru"
-                                                    >
+                                                <Button
+                                                    asChild
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+                                                    title="Duplikasi sebagai Template Baru"
+                                                >
+                                                    <Link href={route('document-templates.create', { from_id: template.id })}>
                                                         <Copy className="size-3.5" />
                                                         <span className="hidden sm:inline">Salin</span>
-                                                    </Button>
-                                                </Link>
+                                                    </Link>
+                                                </Button>
                                             )}
                                         </div>
 
                                         <div className="flex items-center gap-1">
                                             {can('manage-document-templates') && (
                                                 <>
-                                                    <Link href={route('document-templates.edit', template.id)}>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="h-8 px-2.5 text-xs rounded-lg gap-1 border-primary/30 text-primary hover:bg-primary/10"
-                                                        >
+                                                    <Button
+                                                        asChild
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-8 px-2.5 text-xs rounded-lg gap-1 border-primary/30 text-primary hover:bg-primary/10"
+                                                    >
+                                                        <Link href={route('document-templates.edit', template.id)}>
                                                             <Edit3 className="size-3.5" />
                                                             <span>Edit</span>
-                                                        </Button>
-                                                    </Link>
+                                                        </Link>
+                                                    </Button>
 
                                                     <Button
                                                         variant="ghost"
@@ -541,44 +544,47 @@ export default function DocumentTemplatesIndex({
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-1">
-                                                <a
-                                                    href={route('document-templates.pdf', template.id)}
-                                                    target="_blank"
-                                                    rel="noreferrer"
+                                                <Button
+                                                    asChild
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="size-8 text-muted-foreground hover:text-foreground"
+                                                    title="Cetak Contoh PDF"
                                                 >
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="size-8 text-muted-foreground hover:text-foreground"
-                                                        title="Cetak Contoh PDF"
+                                                    <a
+                                                        href={route('document-templates.pdf', template.id)}
+                                                        target="_blank"
+                                                        rel="noreferrer"
                                                     >
                                                         <Printer className="size-3.5" />
-                                                    </Button>
-                                                </a>
+                                                    </a>
+                                                </Button>
 
                                                 {can('manage-document-templates') && (
                                                     <>
-                                                        <Link href={route('document-templates.create', { from_id: template.id })}>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="size-8 text-muted-foreground hover:text-foreground"
-                                                                title="Duplikasi Template"
-                                                            >
+                                                        <Button
+                                                            asChild
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="size-8 text-muted-foreground hover:text-foreground"
+                                                            title="Duplikasi Template"
+                                                        >
+                                                            <Link href={route('document-templates.create', { from_id: template.id })}>
                                                                 <Copy className="size-3.5" />
-                                                            </Button>
-                                                        </Link>
+                                                            </Link>
+                                                        </Button>
 
-                                                        <Link href={route('document-templates.edit', template.id)}>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="h-8 px-2.5 text-xs rounded-lg gap-1 border-primary/30 text-primary hover:bg-primary/10"
-                                                            >
+                                                        <Button
+                                                            asChild
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-8 px-2.5 text-xs rounded-lg gap-1 border-primary/30 text-primary hover:bg-primary/10"
+                                                        >
+                                                            <Link href={route('document-templates.edit', template.id)}>
                                                                 <Edit3 className="size-3.5" />
                                                                 <span>Edit</span>
-                                                            </Button>
-                                                        </Link>
+                                                            </Link>
+                                                        </Button>
 
                                                         <Button
                                                             variant="ghost"
