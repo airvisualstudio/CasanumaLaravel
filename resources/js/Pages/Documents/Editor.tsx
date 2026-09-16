@@ -1,11 +1,17 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage } from '@inertiajs/react';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
+import { TextStyle } from '@tiptap/extension-text-style';
+import FontFamily from '@tiptap/extension-font-family';
+import TiptapImage from '@tiptap/extension-image';
+import { PlaceholderToken } from '@/Components/Documents/PlaceholderToken';
+import { PageBreak } from '@/Components/Documents/PageBreak';
+import { FontSize } from '@/Components/Documents/FontSize';
 import {
     FileText,
     ArrowLeft,
@@ -48,6 +54,14 @@ import {
     Home,
     Calendar,
     ChevronDown,
+    Image as ImageIcon,
+    Scissors,
+    HelpCircle,
+    Maximize2,
+    Minimize2,
+    RotateCcw,
+    CloudCheck,
+    AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -123,6 +137,14 @@ interface EditorProps {
     paperSizes: Record<string, { label: string; width: number; height: number }>;
     recentBookings: BookingOption[];
 }
+
+const DEFAULT_PAPER_SIZES: Record<string, { label: string; width: number; height: number }> = {
+    a4: { width: 210, height: 297, label: 'A4 (210 × 297 mm)' },
+    f4: { width: 215, height: 330, label: 'F4 / Folio (215 × 330 mm)' },
+    letter: { width: 216, height: 279, label: 'Letter (216 × 279 mm)' },
+    legal: { width: 216, height: 356, label: 'Legal (216 × 356 mm)' },
+    custom: { width: 210, height: 297, label: 'Kustom (Ukuran Bebas)' },
+};
 
 const DEFAULT_DOCUMENT_HTML = `
 <h2>SURAT PESANAN RUMAH (SPR)</h2>
@@ -247,7 +269,28 @@ export default function DocumentEditor({
     const [activeTokenCategory, setActiveTokenCategory] = useState<string>('all');
     const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
-    // Initialize TipTap Editor
+    // Auto-save, UI states, and dialogs
+    const [isDirty, setIsDirty] = useState(false);
+    const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
+    const [hasDraftNotice, setHasDraftNotice] = useState(false);
+    const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+    const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
+    const [imageDialogOpen, setImageDialogOpen] = useState(false);
+    const [imageUrlInput, setImageUrlInput] = useState('');
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const imageFileInputRef = useRef<HTMLInputElement | null>(null);
+
+    const DRAFT_STORAGE_KEY = `casanuma_doc_template_draft_${template?.id || 'new'}`;
+
+    // Effective paper sizes with guaranteed fallback
+    const effectivePaperSizes = useMemo(() => {
+        return {
+            ...DEFAULT_PAPER_SIZES,
+            ...(paperSizes && Object.keys(paperSizes).length > 0 ? paperSizes : {}),
+        };
+    }, [paperSizes]);
+
+    // Initialize TipTap Editor with full extensions
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -256,6 +299,9 @@ export default function DocumentEditor({
                 },
             }),
             Underline,
+            TextStyle,
+            FontFamily,
+            FontSize,
             TextAlign.configure({
                 types: ['heading', 'paragraph'],
             }),
@@ -265,21 +311,156 @@ export default function DocumentEditor({
             TableRow,
             TableHeader,
             TableCell,
+            TiptapImage.configure({
+                inline: true,
+                allowBase64: true,
+            }),
+            PlaceholderToken,
+            PageBreak,
         ],
         content: contentHtml,
         onUpdate: ({ editor: currentEditor }) => {
             setContentHtml(currentEditor.getHTML());
+            setIsDirty(true);
         },
     });
+
+    // Check for existing local draft on mount
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.savedAt && parsed.contentHtml && parsed.contentHtml !== template?.content_html) {
+                    setHasDraftNotice(true);
+                    setDraftSavedAt(new Date(parsed.savedAt).toLocaleTimeString());
+                }
+            }
+        } catch (e) {
+            // ignore
+        }
+    }, [DRAFT_STORAGE_KEY, template?.content_html]);
+
+    // Restore draft handler
+    const restoreDraft = () => {
+        try {
+            const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed.name) setName(parsed.name);
+                if (parsed.category) setCategory(parsed.category);
+                if (parsed.paperSize) setPaperSize(parsed.paperSize);
+                if (parsed.customWidth) setCustomWidth(parsed.customWidth);
+                if (parsed.customHeight) setCustomHeight(parsed.customHeight);
+                if (parsed.orientation) setOrientation(parsed.orientation);
+                if (parsed.marginTop !== undefined) setMarginTop(parsed.marginTop);
+                if (parsed.marginBottom !== undefined) setMarginBottom(parsed.marginBottom);
+                if (parsed.marginLeft !== undefined) setMarginLeft(parsed.marginLeft);
+                if (parsed.marginRight !== undefined) setMarginRight(parsed.marginRight);
+                if (parsed.letterheadMode) setLetterheadMode(parsed.letterheadMode);
+                if (parsed.letterheadTitle !== undefined) setLetterheadTitle(parsed.letterheadTitle);
+                if (parsed.letterheadSubtitle !== undefined) setLetterheadSubtitle(parsed.letterheadSubtitle);
+                if (parsed.letterheadAddress !== undefined) setLetterheadAddress(parsed.letterheadAddress);
+                if (parsed.letterheadContact !== undefined) setLetterheadContact(parsed.letterheadContact);
+                if (parsed.footerText !== undefined) setFooterText(parsed.footerText);
+                if (parsed.contentHtml && editor) {
+                    editor.commands.setContent(parsed.contentHtml);
+                    setContentHtml(parsed.contentHtml);
+                }
+                setHasDraftNotice(false);
+                setIsDirty(true);
+                toast.success('Draf lokal berhasil dipulihkan!');
+            }
+        } catch (e) {
+            toast.error('Gagal memulihkan draf lokal.');
+        }
+    };
+
+    // Discard draft handler
+    const discardDraft = () => {
+        try {
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+            setHasDraftNotice(false);
+            toast.info('Draf lokal diabaikan.');
+        } catch (e) {}
+    };
+
+    // Debounced Auto-Save to localStorage
+    useEffect(() => {
+        if (!isDirty) return;
+        const timer = setTimeout(() => {
+            try {
+                const draftData = {
+                    name,
+                    category,
+                    description,
+                    paperSize,
+                    customWidth,
+                    customHeight,
+                    orientation,
+                    marginTop,
+                    marginBottom,
+                    marginLeft,
+                    marginRight,
+                    letterheadMode,
+                    letterheadTitle,
+                    letterheadSubtitle,
+                    letterheadAddress,
+                    letterheadContact,
+                    footerText,
+                    contentHtml: editor ? editor.getHTML() : contentHtml,
+                    savedAt: new Date().toISOString(),
+                };
+                localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+                setLastSavedTime(new Date());
+            } catch (e) {}
+        }, 1200);
+
+        return () => clearTimeout(timer);
+    }, [
+        isDirty,
+        name,
+        category,
+        description,
+        paperSize,
+        customWidth,
+        customHeight,
+        orientation,
+        marginTop,
+        marginBottom,
+        marginLeft,
+        marginRight,
+        letterheadMode,
+        letterheadTitle,
+        letterheadSubtitle,
+        letterheadAddress,
+        letterheadContact,
+        footerText,
+        contentHtml,
+        editor,
+        DRAFT_STORAGE_KEY,
+    ]);
+
+    // Warn on page leave if unsaved
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (isDirty) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isDirty]);
 
     // Calculate dimensions for paper canvas
     const currentDimensions = useMemo(() => {
         if (paperSize === 'custom') {
             return { width: customWidth || 210, height: customHeight || 297 };
         }
-        const preset = paperSizes[paperSize] || { width: 210, height: 297 };
+        const preset = effectivePaperSizes[paperSize] || { width: 210, height: 297 };
         return { width: preset.width, height: preset.height };
-    }, [paperSize, customWidth, customHeight, paperSizes]);
+    }, [paperSize, customWidth, customHeight, effectivePaperSizes]);
 
     // Live preview fetcher
     const fetchPreview = async (bookingId?: string) => {
@@ -323,11 +504,18 @@ export default function DocumentEditor({
         fetchPreview(selectedBookingId);
     };
 
-    // Insert dynamic token into editor
-    const handleInsertToken = (token: string) => {
+    // Insert dynamic token into editor as a visual badge chip
+    const handleInsertToken = (token: string, label?: string) => {
         if (!editor) return;
-        editor.chain().focus().insertContent(token).run();
+        editor.chain().focus().insertContent({
+            type: 'placeholderToken',
+            attrs: {
+                token,
+                label: label || token,
+            },
+        }).run();
         setCopiedToken(token);
+        setIsDirty(true);
         toast.success(`Variabel ${token} disisipkan!`);
         setTimeout(() => setCopiedToken(null), 1500);
     };
@@ -339,6 +527,35 @@ export default function DocumentEditor({
         setCopiedToken(token);
         toast.info(`Variabel ${token} disalin ke clipboard!`);
         setTimeout(() => setCopiedToken(null), 1500);
+    };
+
+    // Image Insertion Handlers
+    const handleInsertImageFromUrl = () => {
+        if (!imageUrlInput.trim() || !editor) return;
+        editor.chain().focus().setImage({ src: imageUrlInput.trim() }).run();
+        setImageUrlInput('');
+        setImageDialogOpen(false);
+        setIsDirty(true);
+        toast.success('Gambar berhasil disisipkan!');
+    };
+
+    const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !editor) return;
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error('Ukuran gambar maksimal 2MB');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            if (typeof reader.result === 'string') {
+                editor.chain().focus().setImage({ src: reader.result }).run();
+                setImageDialogOpen(false);
+                setIsDirty(true);
+                toast.success('Gambar berhasil disisipkan ke dokumen!');
+            }
+        };
+        reader.readAsDataURL(file);
     };
 
     // Preset Insertions
@@ -377,6 +594,7 @@ export default function DocumentEditor({
             </table>
             <p></p>
         `).run();
+        setIsDirty(true);
         toast.success('Tabel rincian kwitansi disisipkan!');
     };
 
@@ -403,6 +621,7 @@ export default function DocumentEditor({
             </table>
             <p></p>
         `).run();
+        setIsDirty(true);
         toast.success('Blok tanda tangan & QR Manager disisipkan!');
     };
 
@@ -462,6 +681,10 @@ export default function DocumentEditor({
             onSuccess: () => {
                 toast.success('Template dokumen berhasil disimpan!');
                 setIsSaving(false);
+                setIsDirty(false);
+                try {
+                    localStorage.removeItem(DRAFT_STORAGE_KEY);
+                } catch (e) {}
             },
             onError: (errors) => {
                 const first = Object.values(errors)[0];
@@ -470,6 +693,18 @@ export default function DocumentEditor({
             },
         });
     };
+
+    // Global Ctrl+S shortcut
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                handleSave();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    });
 
     // PDF Export
     const handleExportPdf = () => {
@@ -515,11 +750,52 @@ export default function DocumentEditor({
     };
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout fluid>
             <Head title={isEditMode ? `Edit Template: ${name}` : 'Document Template Builder (Google Docs Style)'} />
 
-            {/* Fullscreen Editor — breaks out of AuthenticatedLayout padding */}
-            <div className="-m-4 sm:-m-6 lg:-m-8 flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-muted/20">
+            {/* Hidden File Input for Image Upload */}
+            <input
+                type="file"
+                ref={imageFileInputRef}
+                className="hidden"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                onChange={handleImageFileUpload}
+            />
+
+            {/* Fullscreen Editor — takes 100% of the right pane */}
+            <div className={`flex flex-col h-full w-full overflow-hidden bg-muted/20 ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>
+                {/* Draft Notification Banner */}
+                {hasDraftNotice && (
+                    <div className="bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between text-xs text-amber-800 dark:text-amber-200 shrink-0">
+                        <div className="flex items-center gap-2">
+                            <AlertCircle className="size-4 text-amber-600 shrink-0" />
+                            <span>
+                                Ditemukan draf lokal belum tersimpan dari sesi sebelumnya ({draftSavedAt}). Pulihkan draf ini?
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20"
+                                onClick={restoreDraft}
+                            >
+                                Pulihkan Draf
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                                onClick={discardDraft}
+                            >
+                                Abaikan
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
                 {/* 1. Google Docs Topbar Header */}
                 <header className="h-16 px-4 border-b border-border bg-card flex items-center justify-between gap-3 shrink-0 z-30 shadow-xs">
                     <div className="flex items-center gap-3 min-w-0">
@@ -527,7 +803,13 @@ export default function DocumentEditor({
                             variant="ghost"
                             size="icon"
                             className="size-9 rounded-xl shrink-0"
-                            onClick={() => setDiscardDialogOpen(true)}
+                            onClick={() => {
+                                if (isDirty) {
+                                    setDiscardDialogOpen(true);
+                                } else {
+                                    router.visit(route('document-templates.index'));
+                                }
+                            }}
                             title="Kembali ke Daftar Template"
                         >
                             <ArrowLeft className="size-4" />
@@ -538,7 +820,10 @@ export default function DocumentEditor({
                                 <input
                                     type="text"
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    onChange={(e) => {
+                                        setName(e.target.value);
+                                        setIsDirty(true);
+                                    }}
                                     placeholder="Ketik Nama Template Dokumen..."
                                     className="text-sm sm:text-base font-bold bg-transparent hover:bg-muted/40 focus:bg-background px-2 py-0.5 rounded-lg border-transparent focus:border-border transition-all outline-none text-foreground truncate max-w-xs sm:max-w-md"
                                 />
@@ -548,10 +833,29 @@ export default function DocumentEditor({
                                     </Badge>
                                 )}
                             </div>
-                            <span className="text-[11px] text-muted-foreground px-2 flex items-center gap-1.5">
-                                <FileText className="size-3" />
-                                {isEditMode ? 'Mengubah Template Tersimpan' : 'Template Dokumen Baru'}
-                            </span>
+                            <div className="flex items-center gap-2 px-2">
+                                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                    <FileText className="size-3" />
+                                    {isEditMode ? 'Mengubah Template' : 'Template Dokumen Baru'}
+                                </span>
+                                <span className="text-muted-foreground/40">•</span>
+                                {isSaving ? (
+                                    <span className="text-[11px] text-primary flex items-center gap-1 font-medium">
+                                        <div className="size-2.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                        Menyimpan...
+                                    </span>
+                                ) : isDirty ? (
+                                    <span className="text-[11px] text-amber-500 dark:text-amber-400 flex items-center gap-1 font-medium">
+                                        <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
+                                        Ada perubahan belum disimpan
+                                    </span>
+                                ) : (
+                                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
+                                        <CheckCircle2 className="size-3" />
+                                        Tersimpan
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -607,6 +911,28 @@ export default function DocumentEditor({
                             </Button>
                         </div>
 
+                        {/* Keyboard Shortcuts Dialog Trigger */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-9 rounded-xl text-muted-foreground hover:text-foreground hidden sm:flex"
+                            onClick={() => setShortcutsDialogOpen(true)}
+                            title="Panduan Pintasan Keyboard (Shortcuts)"
+                        >
+                            <HelpCircle className="size-4" />
+                        </Button>
+
+                        {/* Fullscreen Toggle */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`size-9 rounded-xl text-muted-foreground hover:text-foreground hidden sm:flex ${isFullscreen ? 'bg-muted text-foreground' : ''}`}
+                            onClick={() => setIsFullscreen(!isFullscreen)}
+                            title={isFullscreen ? 'Keluar Mode Layar Penuh' : 'Mode Layar Penuh'}
+                        >
+                            {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+                        </Button>
+
                         {/* Export PDF */}
                         {isEditMode && (
                             <Button
@@ -627,6 +953,7 @@ export default function DocumentEditor({
                             className="h-9 gap-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-md font-semibold px-4"
                             onClick={handleSave}
                             disabled={isSaving}
+                            title="Simpan Template (Ctrl+S)"
                         >
                             <Save className="size-3.5" />
                             <span>{isSaving ? 'Menyimpan...' : 'Simpan Template'}</span>
@@ -701,6 +1028,77 @@ export default function DocumentEditor({
                                     <SelectItem value="h1" className="text-xs font-bold">Judul 1 (H1)</SelectItem>
                                     <SelectItem value="h2" className="text-xs font-semibold">Judul 2 (H2)</SelectItem>
                                     <SelectItem value="h3" className="text-xs font-medium">Judul 3 (H3)</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            <div className="h-4 w-px bg-border mx-1" />
+
+                            {/* Font Family Selector */}
+                            <Select
+                                value={
+                                    editor.isActive('textStyle', { fontFamily: 'Inter' })
+                                        ? 'Inter'
+                                        : editor.isActive('textStyle', { fontFamily: 'Public Sans' })
+                                        ? 'Public Sans'
+                                        : editor.isActive('textStyle', { fontFamily: 'Times New Roman' })
+                                        ? 'Times New Roman'
+                                        : editor.isActive('textStyle', { fontFamily: 'Georgia' })
+                                        ? 'Georgia'
+                                        : editor.isActive('textStyle', { fontFamily: 'Arial' })
+                                        ? 'Arial'
+                                        : editor.isActive('textStyle', { fontFamily: 'Courier New' })
+                                        ? 'Courier New'
+                                        : 'default'
+                                }
+                                onValueChange={(val) => {
+                                    if (val === 'default') {
+                                        (editor.chain().focus() as any).unsetFontFamily().run();
+                                    } else {
+                                        (editor.chain().focus() as any).setFontFamily(val).run();
+                                    }
+                                }}
+                            >
+                                <SelectTrigger className="h-8 w-28 text-xs rounded-lg bg-background border-border">
+                                    <SelectValue placeholder="Font" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-border">
+                                    <SelectItem value="default" className="text-xs">Bawaan Font</SelectItem>
+                                    <SelectItem value="Inter" className="text-xs font-sans">Inter (Modern)</SelectItem>
+                                    <SelectItem value="Public Sans" className="text-xs font-sans">Public Sans</SelectItem>
+                                    <SelectItem value="Times New Roman" className="text-xs font-serif">Times New Roman</SelectItem>
+                                    <SelectItem value="Georgia" className="text-xs font-serif">Georgia</SelectItem>
+                                    <SelectItem value="Arial" className="text-xs">Arial</SelectItem>
+                                    <SelectItem value="Courier New" className="text-xs font-mono">Courier New</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {/* Font Size Selector */}
+                            <Select
+                                value={
+                                    editor.getAttributes('textStyle').fontSize || 'default'
+                                }
+                                onValueChange={(val) => {
+                                    if (val === 'default') {
+                                        (editor.chain().focus() as any).unsetFontSize().run();
+                                    } else {
+                                        (editor.chain().focus() as any).setFontSize(val).run();
+                                    }
+                                }}
+                            >
+                                <SelectTrigger className="h-8 w-20 text-xs rounded-lg bg-background border-border">
+                                    <SelectValue placeholder="Ukuran" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-border">
+                                    <SelectItem value="default" className="text-xs">Bawaan</SelectItem>
+                                    <SelectItem value="9pt" className="text-xs">9 pt</SelectItem>
+                                    <SelectItem value="10pt" className="text-xs">10 pt</SelectItem>
+                                    <SelectItem value="11pt" className="text-xs">11 pt</SelectItem>
+                                    <SelectItem value="12pt" className="text-xs">12 pt</SelectItem>
+                                    <SelectItem value="14pt" className="text-xs">14 pt</SelectItem>
+                                    <SelectItem value="16pt" className="text-xs">16 pt</SelectItem>
+                                    <SelectItem value="18pt" className="text-xs">18 pt</SelectItem>
+                                    <SelectItem value="24pt" className="text-xs">24 pt</SelectItem>
+                                    <SelectItem value="32pt" className="text-xs">32 pt</SelectItem>
                                 </SelectContent>
                             </Select>
 
@@ -889,6 +1287,31 @@ export default function DocumentEditor({
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+
+                            {/* Insert Image Button */}
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
+                                onClick={() => setImageDialogOpen(true)}
+                                title="Sisipkan Gambar (Logo, Stempel, TTD)"
+                            >
+                                <ImageIcon className="size-4" />
+                            </Button>
+
+                            {/* Insert Page Break Button */}
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-1 text-xs rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
+                                onClick={() => (editor.commands as any).insertPageBreak?.()}
+                                title="Batas Halaman Baru (Ctrl+Enter)"
+                            >
+                                <Scissors className="size-3.5 text-indigo-500" />
+                                <span className="hidden md:inline">Batas Halaman</span>
+                            </Button>
                         </div>
 
                         {/* Quick Insertion Chips */}
@@ -929,8 +1352,17 @@ export default function DocumentEditor({
                         onDrop={(e) => {
                             e.preventDefault();
                             const token = e.dataTransfer.getData('text/plain');
+                            const label = e.dataTransfer.getData('application/x-token-label') || token;
                             if (token && editor) {
-                                editor.chain().focus().insertContent(token).run();
+                                if (token.startsWith('{{') && token.endsWith('}}')) {
+                                    editor.chain().focus().insertContent({
+                                        type: 'placeholderToken',
+                                        attrs: { token, label },
+                                    }).run();
+                                } else {
+                                    editor.chain().focus().insertContent(token).run();
+                                }
+                                setIsDirty(true);
                                 toast.success(`Variabel ${token} disisipkan ke dokumen!`);
                             }
                         }}
@@ -1321,29 +1753,73 @@ export default function DocumentEditor({
                                                 onValueChange={(val: any) => setLetterheadMode(val)}
                                             >
                                                 <SelectTrigger className="h-9 text-xs rounded-xl bg-background border-border">
-                                                    <SelectValue />
+                                                    <SelectValue placeholder="Pilih Mode Kop Surat" />
                                                 </SelectTrigger>
                                                 <SelectContent className="rounded-xl border-border">
-                                                    <SelectItem value="default_company">Gunakan Data Profil PT Casanuma</SelectItem>
-                                                    <SelectItem value="custom_builder">Kop Teks Kustom (Logo + Alamat)</SelectItem>
-                                                    <SelectItem value="custom_image">Kop Gambar Banner Penuh</SelectItem>
-                                                    <SelectItem value="none">Tanpa Kop Surat (Kertas Polos)</SelectItem>
+                                                    <SelectItem value="default_company">Gunakan Profil Perusahaan Baku</SelectItem>
+                                                    <SelectItem value="custom_builder">Atur Kustom (Ketik Teks Sendiri)</SelectItem>
+                                                    <SelectItem value="custom_image">Unggah Gambar Banner Kop Surat</SelectItem>
+                                                    <SelectItem value="none">Tanpa Kop Surat (Polos)</SelectItem>
                                                 </SelectContent>
                                             </Select>
 
+                                            {letterheadMode === 'custom_image' && (
+                                                <div className="space-y-2 p-3 bg-muted/40 rounded-xl border border-border/70 mt-2">
+                                                    <span className="text-[11px] font-semibold text-muted-foreground block">
+                                                        Unggah Gambar Kop Surat
+                                                    </span>
+                                                    {letterheadImagePreview ? (
+                                                        <div className="space-y-2">
+                                                            <img
+                                                                src={letterheadImagePreview}
+                                                                alt="Kop Preview"
+                                                                className="w-full h-20 object-contain rounded border border-border bg-white"
+                                                            />
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="w-full text-xs text-rose-600 rounded-xl h-7"
+                                                                onClick={() => {
+                                                                    setLetterheadImageFile(null);
+                                                                    setLetterheadImagePreview(null);
+                                                                    setRemoveLetterheadImage(true);
+                                                                }}
+                                                            >
+                                                                Hapus Gambar Kop
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <Input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={(e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (file) {
+                                                                    setLetterheadImageFile(file);
+                                                                    setLetterheadImagePreview(URL.createObjectURL(file));
+                                                                    setRemoveLetterheadImage(false);
+                                                                }
+                                                            }}
+                                                            className="text-xs"
+                                                        />
+                                                    )}
+                                                </div>
+                                            )}
+
                                             {letterheadMode === 'custom_builder' && (
-                                                <div className="space-y-2 mt-2 p-3 bg-muted/40 rounded-xl border border-border">
+                                                <div className="space-y-2 p-3 bg-muted/40 rounded-xl border border-border/70 mt-2">
                                                     <div>
-                                                        <span className="text-[10px] text-muted-foreground">Nama PT / Instansi</span>
+                                                        <span className="text-[10px] text-muted-foreground">Nama Institusi / PT</span>
                                                         <Input
                                                             value={letterheadTitle}
                                                             onChange={(e) => setLetterheadTitle(e.target.value)}
                                                             className="h-8 text-xs rounded-lg"
-                                                            placeholder="PT CASANUMA GRAHA UTAMA"
+                                                            placeholder="PT CASANUMA MODERN LIVING"
                                                         />
                                                     </div>
                                                     <div>
-                                                        <span className="text-[10px] text-muted-foreground">Sub-judul / Unit Bisnis</span>
+                                                        <span className="text-[10px] text-muted-foreground">Sub-Judul / Tagline</span>
                                                         <Input
                                                             value={letterheadSubtitle}
                                                             onChange={(e) => setLetterheadSubtitle(e.target.value)}
@@ -1425,6 +1901,125 @@ export default function DocumentEditor({
                             className="rounded-xl"
                         >
                             Tinggalkan Tanpa Simpan
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Keyboard Shortcuts Dialog */}
+            <Dialog open={shortcutsDialogOpen} onOpenChange={setShortcutsDialogOpen}>
+                <DialogContent className="sm:max-w-lg rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <HelpCircle className="size-5 text-primary" />
+                            <span>Pintasan Keyboard & Panduan Editor</span>
+                        </DialogTitle>
+                        <DialogDescription>
+                            Daftar tombol pintas untuk mempercepat pembuatan dan format template dokumen.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 py-2 text-xs">
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-muted/40 border border-border/60">
+                            <span className="text-muted-foreground">Tebal (Bold)</span>
+                            <kbd className="px-2 py-0.5 rounded bg-background border border-border font-mono font-bold text-[10px]">Ctrl + B</kbd>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-muted/40 border border-border/60">
+                            <span className="text-muted-foreground">Miring (Italic)</span>
+                            <kbd className="px-2 py-0.5 rounded bg-background border border-border font-mono font-bold text-[10px]">Ctrl + I</kbd>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-muted/40 border border-border/60">
+                            <span className="text-muted-foreground">Garis Bawah (Underline)</span>
+                            <kbd className="px-2 py-0.5 rounded bg-background border border-border font-mono font-bold text-[10px]">Ctrl + U</kbd>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-muted/40 border border-border/60">
+                            <span className="text-muted-foreground">Undo Terakhir</span>
+                            <kbd className="px-2 py-0.5 rounded bg-background border border-border font-mono font-bold text-[10px]">Ctrl + Z</kbd>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-muted/40 border border-border/60">
+                            <span className="text-muted-foreground">Redo</span>
+                            <kbd className="px-2 py-0.5 rounded bg-background border border-border font-mono font-bold text-[10px]">Ctrl + Y</kbd>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-muted/40 border border-border/60">
+                            <span className="text-muted-foreground">Batas Halaman (Page Break)</span>
+                            <kbd className="px-2 py-0.5 rounded bg-background border border-border font-mono font-bold text-[10px]">Ctrl + Enter</kbd>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-muted/40 border border-border/60">
+                            <span className="text-muted-foreground">Simpan Template</span>
+                            <kbd className="px-2 py-0.5 rounded bg-background border border-border font-mono font-bold text-[10px]">Ctrl + S</kbd>
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-muted/40 border border-border/60">
+                            <span className="text-muted-foreground">Sisipkan Variabel</span>
+                            <span className="text-primary font-medium text-[11px]">Klik atau Tarik (Drag & Drop)</span>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={() => setShortcutsDialogOpen(false)} className="rounded-xl w-full sm:w-auto">
+                            Tutup
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Image Insertion Dialog */}
+            <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+                <DialogContent className="sm:max-w-md rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <ImageIcon className="size-5 text-primary" />
+                            <span>Sisipkan Gambar ke Dokumen</span>
+                        </DialogTitle>
+                        <DialogDescription>
+                            Pilih file gambar dari komputer (stempel, tanda tangan, logo) atau masukkan URL gambar.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-2">
+                        <div className="p-4 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-center bg-muted/20">
+                            <Upload className="size-6 text-muted-foreground" />
+                            <div className="text-xs">
+                                <span className="font-semibold text-foreground">Unggah dari Komputer</span>
+                                <p className="text-[11px] text-muted-foreground mt-0.5">PNG, JPG, SVG hingga 2MB</p>
+                            </div>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="rounded-xl text-xs mt-1"
+                                onClick={() => imageFileInputRef.current?.click()}
+                            >
+                                Pilih File Gambar...
+                            </Button>
+                        </div>
+
+                        <div className="relative flex items-center justify-center">
+                            <div className="border-t border-border w-full" />
+                            <span className="bg-card px-2 text-[10px] uppercase font-semibold text-muted-foreground absolute">atau</span>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold">Tautan URL Gambar</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    value={imageUrlInput}
+                                    onChange={(e) => setImageUrlInput(e.target.value)}
+                                    placeholder="https://domain.com/gambar.png"
+                                    className="h-9 text-xs rounded-xl"
+                                />
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    className="rounded-xl text-xs shrink-0"
+                                    onClick={handleInsertImageFromUrl}
+                                >
+                                    Sisipkan
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setImageDialogOpen(false)} className="rounded-xl">
+                            Batal
                         </Button>
                     </DialogFooter>
                 </DialogContent>

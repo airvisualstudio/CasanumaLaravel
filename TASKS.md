@@ -1,7 +1,7 @@
 # 🎯 Engineering Tasks & Sprint Roadmap
 **Project:** CASANUMA CRM & Centralized Housing Database  
 **Sprint Cadence:** 4 Phases (Milestone Delivery)  
-**Current Test Suite Status:** **162 tests passed, 780 assertions (100% Green)**  
+**Current Test Suite Status:** **180 tests passed, 906 assertions (100% Green)**  
 
 ---
 
@@ -86,6 +86,24 @@
 - [x] **BOOK-02:** Transaction Dossier 360° ([`TransactionDossierDialog.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/CRM/TransactionDossierDialog.tsx)):
   - Rincian lengkap pemesan, spesifikasi kavling, riwayat pembayaran UTJ, dan tracking KPR bank.
 - [x] **BOOK-03:** Surat Pemesanan Rumah (SPR) Generator ([`SprPrintModal.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/CRM/SprPrintModal.tsx)) siap cetak dan ekspor format resmi.
+
+---
+
+## Phase 6: Document Template Builder & Legal Engine (COMPLETED ✅)
+- [x] **DOC-01:** Google Docs Style WYSIWYG Editor ([`Editor.tsx`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Pages/Documents/Editor.tsx)) berbasis TipTap dengan kanvas kertas berskala mm (A4, F4, Legal, Letter, Custom).
+- [x] **DOC-02:** Sistem Variabel Dinamis & Token Chips Visual ([`PlaceholderToken.ts`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/Documents/PlaceholderToken.ts)):
+  - Render chip badge inline interaktif untuk placeholder variabel (`{{nama_konsumen}}`, `{{nomor_spr}}`, dll).
+  - Drag & drop atau klik variabel dari sidebar rak variabel dinamis.
+- [x] **DOC-03:** Format Kertas, Batas Halaman, & Tipografi:
+  - Custom page break extension ([`PageBreak.ts`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/Documents/PageBreak.ts)) dengan pembagi visual dan `Ctrl+Enter` shortcut.
+  - Font size selector (8pt–24pt) ([`FontSize.ts`](file:///d:/90_ARCHIVE/nama-projek-lo/resources/js/Components/Documents/FontSize.ts)) dan font family selector (Inter, Public Sans, Times New Roman, Arial, dll).
+- [x] **DOC-04:** Kop Surat Dinamis & Sisip Gambar:
+  - Mode Kop: Profil Perusahaan Baku, Custom Builder (teks + logo), Custom Banner Gambar, atau Tanpa Kop.
+  - Sisip gambar langsung (upload lokal / URL) dengan modal dialog shadcn.
+- [x] **DOC-05:** Pratinjau Nyata & Auto-Save:
+  - Live simulation render dengan data transaksi riil dari database.
+  - Auto-save ke `localStorage` dengan status dirty ("Ada perubahan belum disimpan" / "Tersimpan") dan restore notice.
+  - Ekspor cetak PDF resmi via DomPDF backend.
 
 ---
 

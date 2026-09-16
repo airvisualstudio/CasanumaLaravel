@@ -61,6 +61,7 @@ import { PageProps } from '@/types';
 
 interface AuthenticatedLayoutProps {
     header?: ReactNode;
+    fluid?: boolean;
 }
 
 interface NavItem {
@@ -80,6 +81,7 @@ interface NavGroup {
 
 export default function Authenticated({
     header,
+    fluid = false,
     children,
 }: PropsWithChildren<AuthenticatedLayoutProps>) {
     const { user, can, isSuperAdmin } = useAuthorization();
@@ -728,8 +730,8 @@ export default function Authenticated({
                 )}
 
                 {/* Main Content Area */}
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 transition-all duration-300">
-                    <div className="w-full max-w-[1550px] mx-auto transition-all duration-300">
+                <main className={`flex-1 transition-all duration-300 ${fluid ? 'p-0 overflow-hidden flex flex-col h-[calc(100vh-64px)]' : 'p-4 sm:p-6 lg:p-8'}`}>
+                    <div className={`w-full transition-all duration-300 ${fluid ? 'h-full flex-1 flex flex-col' : 'max-w-[1550px] mx-auto'}`}>
                         {children}
                     </div>
                 </main>

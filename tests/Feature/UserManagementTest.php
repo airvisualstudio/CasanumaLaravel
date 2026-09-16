@@ -197,13 +197,16 @@ class UserManagementTest extends TestCase
     public function test_superadmin_can_delete_user(): void
     {
         $admin = User::where('email', 'admin@casanuma.com')->first();
-        $sales = User::where('email', 'sales@casanuma.com')->first();
+        $userToDelete = User::factory()->create([
+            'email' => 'todelete@casanuma.com',
+            'is_active' => true,
+        ]);
 
-        $response = $this->actingAs($admin)->delete("/users/{$sales->id}");
+        $response = $this->actingAs($admin)->delete("/users/{$userToDelete->id}");
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('users', [
-            'id' => $sales->id,
+            'id' => $userToDelete->id,
         ]);
     }
 

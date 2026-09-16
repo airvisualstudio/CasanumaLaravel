@@ -7,6 +7,14 @@ import { Node } from '@tiptap/react';
  * When exported to HTML for PDF rendering, outputs a
  * `page-break-before: always` div.
  */
+declare module '@tiptap/core' {
+    interface Commands<ReturnType> {
+        pageBreak: {
+            insertPageBreak: () => ReturnType;
+        };
+    }
+}
+
 export const PageBreak = Node.create({
     name: 'pageBreak',
     group: 'block',
@@ -93,11 +101,13 @@ export const PageBreak = Node.create({
 
     addCommands() {
         return {
-            insertPageBreak: () => ({ chain }: { chain: any }) => {
-                return chain()
-                    .insertContent({ type: this.name })
-                    .run();
-            },
+            insertPageBreak:
+                () =>
+                ({ chain }: any) => {
+                    return chain()
+                        .insertContent({ type: this.name })
+                        .run();
+                },
         };
     },
 
