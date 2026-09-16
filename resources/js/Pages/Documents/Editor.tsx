@@ -13,6 +13,13 @@ import { PlaceholderToken } from '@/Components/Documents/PlaceholderToken';
 import { PageBreak } from '@/Components/Documents/PageBreak';
 import { FontSize } from '@/Components/Documents/FontSize';
 import EditorDragHandle from '@/Components/Documents/EditorDragHandle';
+import BlockCanvas from '@/Components/Documents/BlockBuilder/BlockCanvas';
+import BlockPalette from '@/Components/Documents/BlockBuilder/BlockPalette';
+import {
+    DocumentBlock,
+    blocksToHtml,
+    getInitialBlocksForCategory,
+} from '@/Components/Documents/BlockBuilder/types';
 import {
     FileText,
     ArrowLeft,
@@ -55,6 +62,8 @@ import {
     Home,
     Calendar,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     Image as ImageIcon,
     Scissors,
     HelpCircle,
@@ -275,11 +284,17 @@ export default function DocumentEditor({
     const [footerText, setFooterText] = useState(template?.footer_text || '');
     const [isDefault, setIsDefault] = useState(!!template?.is_default);
 
+    // Block Builder States
+    const [activeEditorMode, setActiveEditorMode] = useState<'blocks' | 'tiptap'>('blocks');
+    const [blocks, setBlocks] = useState<DocumentBlock[]>(() =>
+        getInitialBlocksForCategory(template?.category || 'spr')
+    );
+
     // View & UI controls
     const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
     const [zoomPercent, setZoomPercent] = useState<number>(100);
     const [showGuides, setShowGuides] = useState(true);
-    const [sidebarTab, setSidebarTab] = useState<'variables' | 'settings'>('variables');
+    const [sidebarTab, setSidebarTab] = useState<'blocks' | 'variables' | 'settings'>('blocks');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [selectedBookingId, setSelectedBookingId] = useState<string>('sample');
     const [previewHtml, setPreviewHtml] = useState<string>('');
@@ -314,6 +329,39 @@ export default function DocumentEditor({
 
     // Quick Legal Menu
     const [quickLegalMenuOpen, setQuickLegalMenuOpen] = useState(false);
+
+    // Toolbar scrolling controls & slide state
+    const toolbarRef = useRef<HTMLDivElement | null>(null);
+    const [canScrollToolbarLeft, setCanScrollToolbarLeft] = useState(false);
+    const [canScrollToolbarRight, setCanScrollToolbarRight] = useState(false);
+
+    const updateToolbarScrollState = () => {
+        if (!toolbarRef.current) return;
+        const { scrollLeft, scrollWidth, clientWidth } = toolbarRef.current;
+        setCanScrollToolbarLeft(scrollLeft > 6);
+        setCanScrollToolbarRight(scrollLeft < scrollWidth - clientWidth - 6);
+    };
+
+    useEffect(() => {
+        const timer = setTimeout(updateToolbarScrollState, 150);
+        window.addEventListener('resize', updateToolbarScrollState);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('resize', updateToolbarScrollState);
+        };
+    }, [viewMode, sidebarOpen]);
+
+    const handleScrollToolbar = (offset: number) => {
+        if (!toolbarRef.current) return;
+        toolbarRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    };
+
+    const handleToolbarWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+        if (toolbarRef.current && e.deltaY !== 0) {
+            toolbarRef.current.scrollLeft += e.deltaY * 0.85;
+            updateToolbarScrollState();
+        }
+    };
 
     const DRAFT_STORAGE_KEY = `casanuma_doc_template_draft_${template?.id || 'new'}`;
 
@@ -501,7 +549,9 @@ export default function DocumentEditor({
     const fetchPreview = async (bookingId?: string) => {
         setIsRenderingPreview(true);
         try {
-            const currentContent = editor ? editor.getHTML() : contentHtml;
+            const currentContent = activeEditorMode === 'blocks'
+                ? blocksToHtml(blocks)
+                : (editor ? editor.getHTML() : contentHtml);
             const payload: any = {
                 content_html: currentContent,
             };
@@ -532,7 +582,9 @@ export default function DocumentEditor({
     };
 
     const handleSwitchToPreview = () => {
-        if (editor) {
+        if (activeEditorMode === 'blocks') {
+            setContentHtml(blocksToHtml(blocks));
+        } else if (editor) {
             setContentHtml(editor.getHTML());
         }
         setViewMode('preview');
@@ -814,6 +866,8 @@ export default function DocumentEditor({
         if (editor) {
             editor.commands.setContent(pillHtml);
         }
+        // Initialize appropriate blocks for preset category
+        setBlocks(getInitialBlocksForCategory(preset.category));
         setIsDirty(true);
         setPresetModalOpen(false);
         setPresetConfirmTarget(null);
@@ -827,7 +881,9 @@ export default function DocumentEditor({
             return;
         }
 
-        const currentHtml = editor ? editor.getHTML() : contentHtml;
+        const currentHtml = activeEditorMode === 'blocks'
+            ? blocksToHtml(blocks)
+            : (editor ? editor.getHTML() : contentHtml);
 
         setIsSaving(true);
         const formData = new FormData();
@@ -1080,29 +1136,56 @@ export default function DocumentEditor({
                             </Button>
                         </div>
 
-                        {/* View Switcher: Editor vs Pratinjau Nyata */}
+                        {/* View Switcher: Block Builder vs Free Rich Text vs Pratinjau Nyata */}
                         <div className="flex items-center bg-muted/60 p-1 rounded-xl border border-border/50">
                             <Button
-                                variant={viewMode === 'edit' ? 'default' : 'ghost'}
+                                variant={viewMode === 'edit' && activeEditorMode === 'blocks' ? 'default' : 'ghost'}
                                 size="sm"
-                                className={`h-8 px-3 text-xs rounded-lg gap-1.5 font-medium transition-all ${
-                                    viewMode === 'edit' ? 'shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                                className={`h-8 px-2.5 text-xs rounded-lg gap-1.5 font-medium transition-all ${
+                                    viewMode === 'edit' && activeEditorMode === 'blocks' ? 'shadow-xs' : 'text-muted-foreground hover:text-foreground'
                                 }`}
-                                onClick={() => setViewMode('edit')}
+                                onClick={() => {
+                                    setViewMode('edit');
+                                    setActiveEditorMode('blocks');
+                                    setSidebarTab('blocks');
+                                }}
+                                title="Mode Visual Block Builder (Anti-geser & Presisi Cetak)"
+                            >
+                                <Layers className="size-3.5" />
+                                <span>Mode Blok</span>
+                            </Button>
+                            <Button
+                                variant={viewMode === 'edit' && activeEditorMode === 'tiptap' ? 'default' : 'ghost'}
+                                size="sm"
+                                className={`h-8 px-2.5 text-xs rounded-lg gap-1.5 font-medium transition-all ${
+                                    viewMode === 'edit' && activeEditorMode === 'tiptap' ? 'shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                                onClick={() => {
+                                    if (activeEditorMode === 'blocks') {
+                                        const html = blocksToHtml(blocks);
+                                        setContentHtml(html);
+                                        if (editor) editor.commands.setContent(html);
+                                    }
+                                    setViewMode('edit');
+                                    setActiveEditorMode('tiptap');
+                                    setSidebarTab('variables');
+                                }}
+                                title="Mode Teks Bebas (Tiptap Editor)"
                             >
                                 <PenTool className="size-3.5" />
-                                <span>Editor Dokumen</span>
+                                <span className="hidden sm:inline">Teks Bebas</span>
                             </Button>
                             <Button
                                 variant={viewMode === 'preview' ? 'default' : 'ghost'}
                                 size="sm"
-                                className={`h-8 px-3 text-xs rounded-lg gap-1.5 font-medium transition-all ${
+                                className={`h-8 px-2.5 text-xs rounded-lg gap-1.5 font-medium transition-all ${
                                     viewMode === 'preview' ? 'shadow-xs' : 'text-muted-foreground hover:text-foreground'
                                 }`}
                                 onClick={handleSwitchToPreview}
+                                title="Lihat Pratinjau Nyata dengan Data Transaksi Asli"
                             >
                                 <Eye className="size-3.5" />
-                                <span>Pratinjau Nyata</span>
+                                <span>Pratinjau</span>
                             </Button>
                         </div>
 
@@ -1180,10 +1263,31 @@ export default function DocumentEditor({
                     </div>
                 </header>
 
-                {/* 2. Google Docs Action Toolbar (Rich Text & Table Tools) */}
-                {viewMode === 'edit' && editor ? (
-                    <div className="px-4 py-2 bg-card/80 backdrop-blur-md border-b border-border flex items-center justify-between gap-2 overflow-x-auto no-scrollbar shrink-0 shadow-xs">
-                        <div className="flex items-center gap-1 shrink-0">
+                {/* 2. Google Docs Action Toolbar (Rich Text & Table Tools) - Only in Free Text mode */}
+                {viewMode === 'edit' && activeEditorMode === 'tiptap' && editor ? (
+                    <div className="relative bg-card/80 backdrop-blur-md border-b border-border shadow-xs shrink-0 select-none group/toolbar">
+                        {/* Scroll Left Button */}
+                        {canScrollToolbarLeft && (
+                            <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pl-1.5 pr-4 bg-gradient-to-r from-card via-card/90 to-transparent pointer-events-none">
+                                <button
+                                    type="button"
+                                    onClick={() => handleScrollToolbar(-220)}
+                                    className="size-7 rounded-lg bg-background/95 shadow-md border border-border flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-all active:scale-95 pointer-events-auto cursor-pointer"
+                                    title="Geser menu ke kiri"
+                                >
+                                    <ChevronLeft className="size-4" />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Scrollable Track */}
+                        <div
+                            ref={toolbarRef}
+                            onScroll={updateToolbarScrollState}
+                            onWheel={handleToolbarWheel}
+                            className="px-4 py-2 flex items-center gap-1.5 overflow-x-auto scroll-smooth scrollbar-thin [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/80 hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 [&::-webkit-scrollbar-track]:bg-transparent"
+                        >
+                            <div className="flex items-center gap-1 shrink-0">
                             {/* Undo / Redo */}
                             <Button
                                 type="button"
@@ -1522,6 +1626,9 @@ export default function DocumentEditor({
                             </Button>
                         </div>
 
+                        {/* Divider between formatting tools and legal blocks */}
+                        <div className="h-5 w-px bg-border/80 shrink-0 mx-1" />
+
                         {/* Quick Insertion Chips & Property Legal Menu */}
                         <div className="flex items-center gap-1.5 shrink-0">
                             <DropdownMenu>
@@ -1592,7 +1699,7 @@ export default function DocumentEditor({
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleInsertMateraiBox}
-                                className="h-8 text-xs gap-1.5 rounded-lg text-foreground/80 hover:text-foreground hover:bg-muted border border-border/60 hidden xl:flex"
+                                className="h-8 text-xs gap-1.5 rounded-lg text-foreground/80 hover:text-foreground hover:bg-muted border border-border/60 flex"
                                 title="Sisipkan Kotak Materai 10.000"
                             >
                                 <FileCheck className="size-3.5 text-sky-600" />
@@ -1603,7 +1710,7 @@ export default function DocumentEditor({
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleInsertPaymentScheduleTable}
-                                className="h-8 text-xs gap-1.5 rounded-lg text-foreground/80 hover:text-foreground hover:bg-muted border border-border/60 hidden xl:flex"
+                                className="h-8 text-xs gap-1.5 rounded-lg text-foreground/80 hover:text-foreground hover:bg-muted border border-border/60 flex"
                                 title="Sisipkan Tabel Jadwal Angsuran"
                             >
                                 <FileSpreadsheet className="size-3.5 text-emerald-600" />
@@ -1611,7 +1718,22 @@ export default function DocumentEditor({
                             </Button>
                         </div>
                     </div>
-                ) : null}
+
+                    {/* Scroll Right Button */}
+                    {canScrollToolbarRight && (
+                        <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center pr-1.5 pl-4 bg-gradient-to-l from-card via-card/90 to-transparent pointer-events-none">
+                            <button
+                                type="button"
+                                onClick={() => handleScrollToolbar(220)}
+                                className="size-7 rounded-lg bg-background/95 shadow-md border border-border flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-all active:scale-95 pointer-events-auto cursor-pointer"
+                                title="Geser menu ke kanan"
+                            >
+                                <ChevronRight className="size-4" />
+                            </button>
+                        </div>
+                    )}
+                </div>
+            ) : null}
 
                 {/* 3. Main Workspace Area: Paper Viewport (Center) + Docked Variable Shelf (Right) */}
                 <div className="flex-1 flex overflow-hidden">
@@ -1729,6 +1851,54 @@ export default function DocumentEditor({
                                     )}
                                 </PaperCanvas>
                             </div>
+                        ) : activeEditorMode === 'blocks' ? (
+                            /* Visual Block Builder Canvas */
+                            <PaperCanvas
+                                widthMm={currentDimensions.width}
+                                heightMm={currentDimensions.height}
+                                marginTopMm={marginTop}
+                                marginBottomMm={marginBottom}
+                                marginLeftMm={marginLeft}
+                                marginRightMm={marginRight}
+                                orientation={orientation}
+                                zoomPercent={zoomPercent}
+                                showMarginGuides={showGuides}
+                                watermarkText={watermarkText}
+                                watermarkOpacity={watermarkOpacity}
+                                footerText={footerText}
+                                letterhead={{
+                                    mode: letterheadMode,
+                                    title: letterheadTitle,
+                                    subtitle: letterheadSubtitle,
+                                    address: letterheadAddress,
+                                    contact: letterheadContact,
+                                    logoUrl: letterheadLogoPreview,
+                                    imageUrl: letterheadImagePreview,
+                                    companySettings: {
+                                        company_name: app_settings?.company_name,
+                                        company_address: app_settings?.company_address,
+                                        company_phone: app_settings?.company_phone,
+                                        company_email: app_settings?.company_email,
+                                        logo_light_url: app_settings?.logo_light,
+                                    },
+                                }}
+                            >
+                                <BlockCanvas
+                                    blocks={blocks}
+                                    paperHeightMm={currentDimensions.height}
+                                    marginTopMm={marginTop}
+                                    marginBottomMm={marginBottom}
+                                    availableTokens={availableTokens}
+                                    onBlocksChange={(newBlocks) => {
+                                        setBlocks(newBlocks);
+                                        setIsDirty(true);
+                                    }}
+                                    onOpenPalette={() => {
+                                        setSidebarOpen(true);
+                                        setSidebarTab('blocks');
+                                    }}
+                                />
+                            </PaperCanvas>
                         ) : (
                             /* TipTap Rich Text Paper Canvas */
                             <PaperCanvas
@@ -1776,29 +1946,54 @@ export default function DocumentEditor({
                             <div className="flex border-b border-border bg-muted/40 p-1 shrink-0">
                                 <button
                                     type="button"
+                                    onClick={() => setSidebarTab('blocks')}
+                                    className={`flex-1 py-2 px-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                                        sidebarTab === 'blocks'
+                                            ? 'bg-card text-foreground shadow-xs'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    <Layers className="size-3.5 text-primary" />
+                                    <span>Blok Legal</span>
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={() => setSidebarTab('variables')}
-                                    className={`flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                                    className={`flex-1 py-2 px-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
                                         sidebarTab === 'variables'
                                             ? 'bg-card text-foreground shadow-xs'
                                             : 'text-muted-foreground hover:text-foreground'
                                     }`}
                                 >
-                                    <Sparkles className="size-3.5 text-primary" />
-                                    <span>Variabel Dinamis</span>
+                                    <Sparkles className="size-3.5 text-amber-500" />
+                                    <span>Variabel</span>
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setSidebarTab('settings')}
-                                    className={`flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                                    className={`flex-1 py-2 px-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
                                         sidebarTab === 'settings'
                                             ? 'bg-card text-foreground shadow-xs'
                                             : 'text-muted-foreground hover:text-foreground'
                                     }`}
                                 >
                                     <Sliders className="size-3.5 text-muted-foreground" />
-                                    <span>Format Kertas & Kop</span>
+                                    <span>Format & Kop</span>
                                 </button>
                             </div>
+
+                            {/* Tab 0: Block Palette (Modular Blocks) */}
+                            {sidebarTab === 'blocks' && (
+                                <div className="flex-1 overflow-y-auto">
+                                    <BlockPalette
+                                        onAddBlock={(newBlock) => {
+                                            setBlocks((prev) => [...prev, newBlock]);
+                                            setIsDirty(true);
+                                            toast.success(`Blok "${newBlock.title}" ditambahkan ke dokumen!`);
+                                        }}
+                                    />
+                                </div>
+                            )}
 
                             {/* Tab 1: Dynamic Variables Shelf */}
                             {sidebarTab === 'variables' && (
