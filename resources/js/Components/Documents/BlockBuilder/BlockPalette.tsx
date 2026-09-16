@@ -11,6 +11,7 @@ import {
     ScrollText,
     Type,
     Plus,
+    Columns,
 } from 'lucide-react';
 import { BlockType, DocumentBlock } from './types';
 import { Button } from '@/Components/ui/button';
@@ -30,6 +31,127 @@ interface PaletteItem {
 
 export default function BlockPalette({ onAddBlock }: BlockPaletteProps) {
     const paletteItems: PaletteItem[] = [
+        {
+            type: 'custom_kop',
+            label: 'Kop Surat Modular (Custom)',
+            description: 'Kop surat multi-kolom (Logo, Nama PT, Alamat, Garis Kop Ganda)',
+            icon: Building2,
+            color: 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20',
+            createBlock: () => ({
+                id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                type: 'custom_kop',
+                title: 'Kop Surat Perusahaan',
+                data: {
+                    layoutMode: '2_col',
+                    showBottomDivider: true,
+                    bottomDivider: {
+                        id: 'div-bot',
+                        type: 'divider',
+                        style: 'double',
+                        thicknessPx: 2,
+                        colorHex: '#0f172a',
+                        marginTopPx: 6,
+                        marginBottomPx: 12,
+                    },
+                    columns: [
+                        {
+                            id: 'col-1',
+                            widthPercent: 20,
+                            align: 'center',
+                            elements: [
+                                {
+                                    id: 'el-logo',
+                                    type: 'logo',
+                                    url: '',
+                                    widthPx: 80,
+                                    maxHeightPx: 60,
+                                    align: 'center',
+                                },
+                            ],
+                        },
+                        {
+                            id: 'col-2',
+                            widthPercent: 80,
+                            align: 'center',
+                            elements: [
+                                {
+                                    id: 'el-t1',
+                                    type: 'text',
+                                    content: 'PT CASANUMA MODERN LIVING',
+                                    fontSizePt: 13,
+                                    fontWeight: '800',
+                                    colorHex: '#0f172a',
+                                    isUppercase: true,
+                                    align: 'center',
+                                },
+                                {
+                                    id: 'el-t2',
+                                    type: 'text',
+                                    content: 'PENGEMBANG PERUMAHAN & PROPERTY RESIDENTIAL TERPADU',
+                                    fontSizePt: 8.5,
+                                    fontWeight: 'bold',
+                                    colorHex: '#334155',
+                                    isUppercase: true,
+                                    align: 'center',
+                                },
+                                {
+                                    id: 'el-t3',
+                                    type: 'text',
+                                    content: 'Jl. Boulevard Utama No. 88, Bandung • Telp: (022) 8765-4321 • Email: info@casanuma.com',
+                                    fontSizePt: 7.5,
+                                    fontWeight: 'normal',
+                                    colorHex: '#64748b',
+                                    isUppercase: false,
+                                    align: 'center',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            }),
+        },
+        {
+            type: 'column_container',
+            label: 'Container Multi-Kolom',
+            description: 'Split layout jadi 2-3 kolom fleksibel dengan slider rasio lebar',
+            icon: Columns,
+            color: 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20',
+            createBlock: () => ({
+                id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                type: 'column_container',
+                title: 'Container Kolom (Split 50:50)',
+                data: {
+                    columnCount: 2,
+                    gapPx: 12,
+                    columns: [
+                        {
+                            id: `col-1-${Date.now()}`,
+                            widthPercent: 50,
+                            align: 'left',
+                            content: {
+                                type: 'callout',
+                                calloutVariant: 'neutral',
+                                calloutTitle: 'CATATAN KONSUMEN',
+                                calloutText: 'Dokumen ini sah jika telah ditandatangani dan diverifikasi oleh pihak berwenang.',
+                            },
+                        },
+                        {
+                            id: `col-2-${Date.now()}`,
+                            widthPercent: 50,
+                            align: 'center',
+                            content: {
+                                type: 'signature',
+                                signRole: 'Pihak Pertama (Konsumen)',
+                                signName: '{{nama_konsumen}}',
+                                signSubtext: 'Konsumen',
+                                signHasQr: false,
+                                signHasMaterai: true,
+                            },
+                        },
+                    ],
+                },
+            }),
+        },
         {
             type: 'doc_header',
             label: 'Header & No. Surat',
@@ -223,6 +345,51 @@ export default function BlockPalette({ onAddBlock }: BlockPaletteProps) {
                 title: 'Paragraf Teks Tambahan',
                 data: {
                     contentHtml: '<p>Demikian surat perjanjian ini dibuat dalam rangkap 2 (dua) bermaterai cukup serta memiliki kekuatan hukum yang sama bagi kedua belah pihak.</p>',
+                },
+            }),
+        },
+        {
+            type: 'dynamic_table',
+            label: 'Tabel Kustom & Looping',
+            description: 'Tabel fleksibel dengan sel variabel & opsi baris berulang otomatis',
+            icon: Calculator,
+            color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
+            createBlock: () => ({
+                id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                type: 'dynamic_table',
+                title: 'Tabel Kustom Dinamis',
+                data: {
+                    sectionTitle: 'TABEL RINCIAN TRANSAKSI',
+                    headers: ['Keterangan', 'Spesifikasi / Detail', 'Nominal (Rp)'],
+                    showBorder: true,
+                    isStriped: true,
+                    rows: [
+                        {
+                            id: 'r-1',
+                            cells: [
+                                { id: 'c-1-1', text: 'Nama Pemesan', align: 'left' },
+                                { id: 'c-1-2', text: '{{nama_konsumen}}', align: 'left' },
+                                { id: 'c-1-3', text: '-', align: 'center' },
+                            ],
+                        },
+                        {
+                            id: 'r-2',
+                            cells: [
+                                { id: 'c-2-1', text: 'Nomor Kavling Unit', align: 'left' },
+                                { id: 'c-2-2', text: '{{nomor_kavling}} ({{nama_cluster}})', align: 'left' },
+                                { id: 'c-2-3', text: '-', align: 'center' },
+                            ],
+                        },
+                        {
+                            id: 'r-3',
+                            isRepeatable: true,
+                            cells: [
+                                { id: 'c-3-1', text: 'Tanda Jadi (Booking Fee)', align: 'left' },
+                                { id: 'c-3-2', text: 'Pembayaran Awal Terverifikasi', align: 'left' },
+                                { id: 'c-3-3', text: '{{booking_fee}}', align: 'right' },
+                            ],
+                        },
+                    ],
                 },
             }),
         },

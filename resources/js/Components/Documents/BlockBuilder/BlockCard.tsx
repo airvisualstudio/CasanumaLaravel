@@ -21,8 +21,17 @@ import {
     ScrollText,
     Type,
     Sparkles,
+    Table as TableIcon,
+    Repeat,
+    Layers,
+    Columns,
+    Palette,
 } from 'lucide-react';
-import { DocumentBlock, PaymentScheduleItem } from './types';
+import { DocumentBlock, PaymentScheduleItem, DynamicTableBlock, CustomKopBlock, ColumnContainerBlock, BlockStyles } from './types';
+import AtomicVariablePill from './AtomicVariablePill';
+import CustomKopEditor from './CustomKopEditor';
+import ColumnContainerEditor from './ColumnContainerEditor';
+import BlockStyleSettings from './BlockStyleSettings';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -75,19 +84,15 @@ function QuickVariableChips({
         <div className="pt-1.5">
             <div className="flex items-center gap-1 text-[10px] text-muted-foreground mb-1">
                 <Sparkles className="size-3 text-amber-500" />
-                <span>Klik untuk sisipkan variabel cepat:</span>
+                <span>Klik atau drag variabel ke dalam input/sel:</span>
             </div>
-            <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto pr-1">
+            <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
                 {presetTokens.map((token) => (
-                    <button
+                    <AtomicVariablePill
                         key={token}
-                        type="button"
+                        token={token}
                         onClick={() => onSelectToken(token)}
-                        className="px-1.5 py-0.5 rounded text-[9.5px] font-mono bg-muted/80 hover:bg-primary/10 hover:text-primary border border-border/60 transition-all text-muted-foreground active:scale-95"
-                        title={`Sisipkan ${token}`}
-                    >
-                        + {token}
-                    </button>
+                    />
                 ))}
             </div>
         </div>
@@ -108,10 +113,13 @@ export default function BlockCard({
     onDrop,
 }: BlockCardProps) {
     const [isEditing, setIsEditing] = useState(false);
+    const [editTab, setEditTab] = useState<'content' | 'styling'>('content');
 
     // Render icon based on block type
     const getBlockIcon = () => {
         switch (block.type) {
+            case 'column_container': return <Columns className="size-3.5 text-indigo-600" />;
+            case 'custom_kop': return <Layers className="size-3.5 text-blue-600" />;
             case 'doc_header': return <FileText className="size-3.5 text-blue-500" />;
             case 'customer_dossier': return <UserCheck className="size-3.5 text-sky-500" />;
             case 'unit_spec': return <Building2 className="size-3.5 text-indigo-500" />;
@@ -122,6 +130,7 @@ export default function BlockCard({
             case 'signatures_two': return <Stamp className="size-3.5 text-primary" />;
             case 'signatures_three': return <ScrollText className="size-3.5 text-violet-500" />;
             case 'custom_text': return <Type className="size-3.5 text-slate-500" />;
+            case 'dynamic_table': return <TableIcon className="size-3.5 text-emerald-500" />;
         }
     };
 
@@ -191,11 +200,49 @@ export default function BlockCard({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className={`h-6 px-2 text-[11px] gap-1 rounded-md ${isEditing ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'text-muted-foreground hover:text-foreground'}`}
-                        onClick={() => setIsEditing(!isEditing)}
+                        className={`h-6 px-2 text-[11px] gap-1 rounded-md ${
+                            isEditing && editTab === 'content'
+                                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        onClick={() => {
+                            if (!isEditing) {
+                                setIsEditing(true);
+                                setEditTab('content');
+                            } else if (editTab === 'content') {
+                                setIsEditing(false);
+                            } else {
+                                setEditTab('content');
+                            }
+                        }}
                     >
-                        {isEditing ? <Check className="size-3" /> : <Settings className="size-3" />}
-                        <span>{isEditing ? 'Selesai' : 'Ubah Data'}</span>
+                        {isEditing && editTab === 'content' ? <Check className="size-3" /> : <Settings className="size-3" />}
+                        <span>{isEditing && editTab === 'content' ? 'Selesai' : 'Ubah Data'}</span>
+                    </Button>
+
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className={`h-6 px-2 text-[11px] gap-1 rounded-md ${
+                            isEditing && editTab === 'styling'
+                                ? 'bg-amber-500 text-white hover:bg-amber-600'
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        onClick={() => {
+                            if (!isEditing) {
+                                setIsEditing(true);
+                                setEditTab('styling');
+                            } else if (editTab === 'styling') {
+                                setIsEditing(false);
+                            } else {
+                                setEditTab('styling');
+                            }
+                        }}
+                        title="Atur margin, padding, warna background, dan border box"
+                    >
+                        <Palette className="size-3 text-amber-500" />
+                        <span>Styling</span>
                     </Button>
 
                     <Button
@@ -225,9 +272,43 @@ export default function BlockCard({
             {/* 2. Block Content Render / Edit Form */}
             <div className="p-4">
                 {isEditing ? (
-                    <BlockSettingsForm block={block} onUpdate={onUpdate} />
+                    editTab === 'styling' ? (
+                        <BlockStyleSettings
+                            styles={block.styles}
+                            onChange={(newStyles) => onUpdate({ ...block, styles: newStyles })}
+                            onReset={() => {
+                                const { styles: _, ...rest } = block;
+                                onUpdate(rest as DocumentBlock);
+                            }}
+                        />
+                    ) : (
+                        <BlockSettingsForm block={block} onUpdate={onUpdate} />
+                    )
                 ) : (
-                    <BlockVisualPreview block={block} />
+                    <div
+                        style={{
+                            marginTop: block.styles?.marginTopPx !== undefined ? `${block.styles.marginTopPx}px` : undefined,
+                            marginBottom: block.styles?.marginBottomPx !== undefined ? `${block.styles.marginBottomPx}px` : undefined,
+                            paddingTop: block.styles?.paddingTopPx !== undefined ? `${block.styles.paddingTopPx}px` : undefined,
+                            paddingBottom: block.styles?.paddingBottomPx !== undefined ? `${block.styles.paddingBottomPx}px` : undefined,
+                            paddingLeft: block.styles?.paddingLeftPx !== undefined ? `${block.styles.paddingLeftPx}px` : undefined,
+                            paddingRight: block.styles?.paddingRightPx !== undefined ? `${block.styles.paddingRightPx}px` : undefined,
+                            backgroundColor:
+                                block.styles?.backgroundColor && block.styles.backgroundColor !== 'transparent'
+                                    ? block.styles.backgroundColor
+                                    : undefined,
+                            borderColor: block.styles?.borderColor || undefined,
+                            borderWidth: block.styles?.borderWidthPx ? `${block.styles.borderWidthPx}px` : undefined,
+                            borderStyle:
+                                block.styles?.borderStyle && block.styles.borderStyle !== 'none'
+                                    ? block.styles.borderStyle
+                                    : undefined,
+                            borderRadius: block.styles?.borderRadiusPx ? `${block.styles.borderRadiusPx}px` : undefined,
+                        }}
+                        className="transition-all"
+                    >
+                        <BlockVisualPreview block={block} />
+                    </div>
                 )}
             </div>
         </div>
@@ -239,6 +320,212 @@ export default function BlockCard({
  */
 function BlockVisualPreview({ block }: { block: DocumentBlock }) {
     switch (block.type) {
+        case 'column_container': {
+            const { columns, gapPx = 12 } = block.data;
+            return (
+                <div className="w-full flex items-start" style={{ gap: `${gapPx}px` }}>
+                    {columns.map((col, cIdx) => {
+                        const alignClass =
+                            col.align === 'center' ? 'text-center items-center' :
+                            col.align === 'right' ? 'text-right items-end' :
+                            'text-left items-start';
+                        const c = col.content;
+                        return (
+                            <div
+                                key={col.id || cIdx}
+                                style={{ width: `${col.widthPercent}%` }}
+                                className={`flex flex-col ${alignClass} text-xs`}
+                            >
+                                {c.type === 'text' && (
+                                    <div
+                                        className="w-full text-muted-foreground leading-relaxed prose prose-sm max-w-none text-[11px]"
+                                        dangerouslySetInnerHTML={{ __html: c.textHtml || '<p>Teks...</p>' }}
+                                    />
+                                )}
+                                {c.type === 'callout' && (
+                                    <div className={`w-full p-2.5 rounded-lg border text-[10.5px] ${
+                                        c.calloutVariant === 'warning'
+                                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300'
+                                            : c.calloutVariant === 'info'
+                                            ? 'bg-sky-500/10 border-sky-500/30 text-sky-700 dark:text-sky-300'
+                                            : 'bg-muted/40 border-border text-foreground'
+                                    }`}>
+                                        {c.calloutTitle && (
+                                            <p className="font-bold uppercase tracking-wider text-[9.5px] mb-1">
+                                                {c.calloutTitle}
+                                            </p>
+                                        )}
+                                        <p>{c.calloutText}</p>
+                                    </div>
+                                )}
+                                {c.type === 'dossier' && (
+                                    <div className="w-full border border-border/80 rounded-lg overflow-hidden text-[10.5px]">
+                                        {c.dossierTitle && (
+                                            <div className="bg-muted/60 px-2.5 py-1 font-bold uppercase tracking-wider text-[9.5px] text-foreground border-b border-border/80">
+                                                {c.dossierTitle}
+                                            </div>
+                                        )}
+                                        <div className="divide-y divide-border/60">
+                                            {(c.dossierItems || []).map((item, idx) => (
+                                                <div key={idx} className="flex justify-between px-2.5 py-1 text-[10px]">
+                                                    <span className="text-muted-foreground">{item.label}</span>
+                                                    <span className="font-semibold text-foreground">{item.value}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {c.type === 'signature' && (
+                                    <div className="w-full border border-dashed border-border/80 rounded-lg p-2.5 bg-muted/20 text-center text-[10px]">
+                                        <p className="text-muted-foreground mb-1.5">{c.signRole}</p>
+                                        {c.signHasMaterai && (
+                                            <div className="inline-block border border-dashed border-muted-foreground/40 rounded px-2 py-1 my-1 text-[8.5px] text-muted-foreground bg-background">
+                                                MATERAI Rp 10.000
+                                            </div>
+                                        )}
+                                        {c.signHasQr ? (
+                                            <div className="inline-block border border-border rounded px-1.5 py-0.5 my-1 text-[8.5px] font-mono text-primary bg-background">
+                                                [QR VERIFIED]
+                                            </div>
+                                        ) : (
+                                            <div className="h-8" />
+                                        )}
+                                        <p className="font-bold underline text-foreground mt-1.5">{c.signName}</p>
+                                        <p className="text-[9px] text-muted-foreground">{c.signSubtext}</p>
+                                    </div>
+                                )}
+                                {c.type === 'table' && (
+                                    <div className="w-full border border-border/80 rounded-lg overflow-hidden text-[10px]">
+                                        <table className="w-full text-left">
+                                            {c.tableHeaders && c.tableHeaders.length > 0 && (
+                                                <thead className="bg-muted/40 text-foreground font-bold border-b border-border/60">
+                                                    <tr>
+                                                        {c.tableHeaders.map((h, i) => (
+                                                            <th key={i} className="py-1 px-2">{h}</th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                            )}
+                                            <tbody className="divide-y divide-border/60">
+                                                {(c.tableRows || []).map((row, rIdx) => (
+                                                    <tr key={rIdx}>
+                                                        {row.map((cell, cellIdx) => (
+                                                            <td key={cellIdx} className="py-1 px-2 text-foreground">{cell}</td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+        }
+
+        case 'custom_kop': {
+            const { columns, showBottomDivider, bottomDivider } = block.data;
+            return (
+                <div className="w-full">
+                    {/* Multi-column Kop Preview */}
+                    <div className="flex items-center gap-4 w-full">
+                        {columns.map((col) => {
+                            const justifyClass =
+                                col.align === 'center' ? 'items-center text-center' :
+                                col.align === 'right' ? 'items-end text-right' :
+                                'items-start text-left';
+                            return (
+                                <div
+                                    key={col.id}
+                                    style={{ width: `${col.widthPercent}%` }}
+                                    className={`flex flex-col ${justifyClass} space-y-1`}
+                                >
+                                    {col.elements.map((el) => {
+                                        if (el.type === 'logo') {
+                                            return (
+                                                <div key={el.id} className="py-0.5">
+                                                    {el.url ? (
+                                                        <img
+                                                            src={el.url}
+                                                            alt="Logo Kop"
+                                                            style={{ width: `${el.widthPx}px`, maxHeight: `${el.maxHeightPx}px` }}
+                                                            className="object-contain inline-block"
+                                                        />
+                                                    ) : (
+                                                        <div
+                                                            style={{ width: `${el.widthPx}px`, height: `${Math.min(el.maxHeightPx, 48)}px` }}
+                                                            className="border border-dashed border-border rounded flex items-center justify-center text-[10px] text-muted-foreground bg-muted/30"
+                                                        >
+                                                            [LOGO PT]
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                        if (el.type === 'text') {
+                                            const isToken = el.content.includes('{{');
+                                            return (
+                                                <div
+                                                    key={el.id}
+                                                    style={{
+                                                        fontSize: `${el.fontSizePt}pt`,
+                                                        fontWeight: el.fontWeight === '800' ? 800 : el.fontWeight === 'bold' ? 700 : 400,
+                                                        color: el.colorHex || 'inherit',
+                                                        textTransform: el.isUppercase ? 'uppercase' : 'none',
+                                                        lineHeight: el.lineHeight || 1.3,
+                                                    }}
+                                                    className="w-full"
+                                                >
+                                                    {isToken ? (
+                                                        <AtomicVariablePill token={el.content} draggable={false} />
+                                                    ) : (
+                                                        el.content || <span className="italic text-muted-foreground opacity-50">(Teks kosong)</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                        if (el.type === 'divider') {
+                                            return (
+                                                <div
+                                                    key={el.id}
+                                                    className="w-full"
+                                                    style={{
+                                                        marginTop: `${el.marginTopPx}px`,
+                                                        marginBottom: `${el.marginBottomPx}px`,
+                                                        borderTop: el.style === 'double' ? `${el.thicknessPx}px double ${el.colorHex}` : `${el.thicknessPx}px ${el.style} ${el.colorHex}`,
+                                                    }}
+                                                />
+                                            );
+                                        }
+                                        if (el.type === 'spacer') {
+                                            return <div key={el.id} style={{ height: `${el.heightPx}px` }} />;
+                                        }
+                                        return null;
+                                    })}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Bottom Divider / Garis Kop */}
+                    {showBottomDivider && bottomDivider && (
+                        <div
+                            className="w-full"
+                            style={{
+                                marginTop: `${bottomDivider.marginTopPx || 8}px`,
+                                marginBottom: `${bottomDivider.marginBottomPx || 4}px`,
+                                borderTop: bottomDivider.style === 'double'
+                                    ? `${bottomDivider.thicknessPx || 3}px double ${bottomDivider.colorHex || '#000000'}`
+                                    : `${bottomDivider.thicknessPx || 2}px ${bottomDivider.style || 'solid'} ${bottomDivider.colorHex || '#000000'}`,
+                            }}
+                        />
+                    )}
+                </div>
+            );
+        }
+
         case 'doc_header':
             return (
                 <div className="text-center py-1">
@@ -515,6 +802,48 @@ function BlockVisualPreview({ block }: { block: DocumentBlock }) {
                     dangerouslySetInnerHTML={{ __html: block.data.contentHtml }}
                 />
             );
+
+        case 'dynamic_table':
+            return (
+                <div className="border border-border/80 rounded-lg overflow-hidden text-[11px]">
+                    {block.data.sectionTitle && (
+                        <div className="bg-muted/60 px-3 py-1.5 font-bold uppercase tracking-wider text-[10px] text-foreground border-b border-border/80">
+                            {block.data.sectionTitle}
+                        </div>
+                    )}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            {block.data.headers && block.data.headers.length > 0 && (
+                                <thead className="bg-muted/30 text-[10px] font-bold text-foreground border-b border-border/60">
+                                    <tr>
+                                        {block.data.headers.map((h, i) => (
+                                            <th key={i} className="py-1.5 px-3">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                            )}
+                            <tbody className="divide-y divide-border/60">
+                                {block.data.rows.map((row, rIdx) => (
+                                    <tr key={row.id} className={block.data.isStriped && rIdx % 2 === 1 ? 'bg-muted/15' : ''}>
+                                        {row.cells.map((cell) => {
+                                            const isToken = cell.text.includes('{{');
+                                            return (
+                                                <td key={cell.id} className="py-2 px-3 text-foreground">
+                                                    {isToken ? (
+                                                        <AtomicVariablePill token={cell.text} draggable={false} />
+                                                    ) : (
+                                                        <span>{cell.text}</span>
+                                                    )}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
     }
 }
 
@@ -529,6 +858,22 @@ function BlockSettingsForm({
     onUpdate: (b: DocumentBlock) => void;
 }) {
     switch (block.type) {
+        case 'column_container':
+            return (
+                <ColumnContainerEditor
+                    block={block}
+                    onUpdate={(updatedBlock) => onUpdate(updatedBlock)}
+                />
+            );
+
+        case 'custom_kop':
+            return (
+                <CustomKopEditor
+                    block={block}
+                    onUpdate={(updatedBlock) => onUpdate(updatedBlock)}
+                />
+            );
+
         case 'doc_header':
             return (
                 <div className="space-y-3">
@@ -1017,6 +1362,196 @@ function BlockSettingsForm({
                             onUpdate({ ...block, data: { ...block.data, contentHtml: next } });
                         }}
                     />
+                </div>
+            );
+
+        case 'dynamic_table':
+            return (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1">
+                            <Label className="text-xs">Judul Tabel</Label>
+                            <Input
+                                className="h-8 text-xs mt-1"
+                                value={block.data.sectionTitle}
+                                onChange={(e) => onUpdate({ ...block, data: { ...block.data, sectionTitle: e.target.value } })}
+                                placeholder="e.g. TABEL RINCIAN BIAYA"
+                            />
+                        </div>
+                        <div className="flex items-center gap-3 pt-5">
+                            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                                <Checkbox
+                                    checked={block.data.showBorder}
+                                    onCheckedChange={(val) => onUpdate({ ...block, data: { ...block.data, showBorder: !!val } })}
+                                />
+                                <span>Garis Border</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                                <Checkbox
+                                    checked={block.data.isStriped}
+                                    onCheckedChange={(val) => onUpdate({ ...block, data: { ...block.data, isStriped: !!val } })}
+                                />
+                                <span>Belang (Zebra)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Table Headers */}
+                    <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-[11px] font-semibold text-muted-foreground uppercase">Kolom Header</Label>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-[10px] gap-1 rounded-md"
+                                onClick={() => {
+                                    const colNum = block.data.headers.length + 1;
+                                    const newHeaders = [...block.data.headers, `Kolom ${colNum}`];
+                                    const newRows = block.data.rows.map((r) => ({
+                                        ...r,
+                                        cells: [...r.cells, { id: `c-${Date.now()}-${Math.random().toString(36).substr(2, 3)}`, text: '-' }],
+                                    }));
+                                    onUpdate({ ...block, data: { ...block.data, headers: newHeaders, rows: newRows } });
+                                }}
+                            >
+                                <Plus className="size-3" />
+                                <span>+ Kolom</span>
+                            </Button>
+                        </div>
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                            {block.data.headers.map((header, hIdx) => (
+                                <div key={hIdx} className="flex items-center gap-1 min-w-[130px] flex-1">
+                                    <Input
+                                        className="h-7 text-xs font-semibold"
+                                        value={header}
+                                        onChange={(e) => {
+                                            const nextHeaders = [...block.data.headers];
+                                            nextHeaders[hIdx] = e.target.value;
+                                            onUpdate({ ...block, data: { ...block.data, headers: nextHeaders } });
+                                        }}
+                                    />
+                                    {block.data.headers.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const nextHeaders = block.data.headers.filter((_, i) => i !== hIdx);
+                                                const nextRows = block.data.rows.map((r) => ({
+                                                    ...r,
+                                                    cells: r.cells.filter((_, i) => i !== hIdx),
+                                                }));
+                                                onUpdate({ ...block, data: { ...block.data, headers: nextHeaders, rows: nextRows } });
+                                            }}
+                                            className="size-5 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                            title="Hapus Kolom"
+                                        >
+                                            <X className="size-3" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Table Rows */}
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-[11px] font-semibold text-muted-foreground uppercase">Baris & Sel Data</Label>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-[10px] gap-1 rounded-md"
+                                onClick={() => {
+                                    const newCells = block.data.headers.map(() => ({
+                                        id: `c-${Date.now()}-${Math.random().toString(36).substr(2, 3)}`,
+                                        text: '',
+                                    }));
+                                    const newRow = {
+                                        id: `r-${Date.now()}`,
+                                        cells: newCells,
+                                        isRepeatable: false,
+                                    };
+                                    onUpdate({ ...block, data: { ...block.data, rows: [...block.data.rows, newRow] } });
+                                }}
+                            >
+                                <Plus className="size-3" />
+                                <span>+ Baris</span>
+                            </Button>
+                        </div>
+
+                        {block.data.rows.map((row, rIdx) => (
+                            <div key={row.id} className="p-2 rounded-lg border border-border/80 bg-muted/20 space-y-2">
+                                <div className="flex items-center justify-between text-[10.5px]">
+                                    <span className="font-semibold text-foreground">Baris #{rIdx + 1}</span>
+                                    <div className="flex items-center gap-2">
+                                        <label className="flex items-center gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground" title="Jadikan baris ini berulang otomatis untuk setiap data termin/pembayaran">
+                                            <Repeat className={`size-3 ${row.isRepeatable ? 'text-primary' : 'text-muted-foreground'}`} />
+                                            <Checkbox
+                                                checked={row.isRepeatable}
+                                                onCheckedChange={(val) => {
+                                                    const nextRows = [...block.data.rows];
+                                                    nextRows[rIdx] = { ...row, isRepeatable: !!val };
+                                                    onUpdate({ ...block, data: { ...block.data, rows: nextRows } });
+                                                }}
+                                            />
+                                            <span className={row.isRepeatable ? 'font-semibold text-primary' : ''}>Looping Otomatis</span>
+                                        </label>
+
+                                        {block.data.rows.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const nextRows = block.data.rows.filter((_, i) => i !== rIdx);
+                                                    onUpdate({ ...block, data: { ...block.data, rows: nextRows } });
+                                                }}
+                                                className="size-5 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                title="Hapus Baris"
+                                            >
+                                                <X className="size-3" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                                    {row.cells.map((cell, cIdx) => (
+                                        <div key={cell.id} className="space-y-1">
+                                            <Input
+                                                className="h-7 text-xs"
+                                                placeholder={`Sel Kolom ${cIdx + 1}`}
+                                                value={cell.text}
+                                                onChange={(e) => {
+                                                    const nextRows = [...block.data.rows];
+                                                    const nextCells = [...row.cells];
+                                                    nextCells[cIdx] = { ...cell, text: e.target.value };
+                                                    nextRows[rIdx] = { ...row, cells: nextCells };
+                                                    onUpdate({ ...block, data: { ...block.data, rows: nextRows } });
+                                                }}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Variable chips for row */}
+                                <QuickVariableChips
+                                    onSelectToken={(token) => {
+                                        const nextRows = [...block.data.rows];
+                                        const nextCells = [...row.cells];
+                                        // Append to the last empty cell or first cell
+                                        const targetIndex = nextCells.findIndex((c) => !c.text) >= 0 ? nextCells.findIndex((c) => !c.text) : 1;
+                                        const currentText = nextCells[targetIndex]?.text || '';
+                                        nextCells[targetIndex] = {
+                                            ...nextCells[targetIndex],
+                                            text: currentText ? `${currentText} ${token}` : token,
+                                        };
+                                        nextRows[rIdx] = { ...row, cells: nextCells };
+                                        onUpdate({ ...block, data: { ...block.data, rows: nextRows } });
+                                    }}
+                                />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             );
     }

@@ -11,6 +11,7 @@ import {
     Stamp,
     ScrollText,
     Type,
+    Columns,
 } from 'lucide-react';
 import { DocumentBlock, BlockType } from './types';
 import {
@@ -36,6 +37,115 @@ export default function QuickInsertDivider({
     const createBlock = (type: BlockType): DocumentBlock => {
         const id = `block-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
         switch (type) {
+            case 'column_container':
+                return {
+                    id,
+                    type: 'column_container',
+                    title: 'Container Kolom (Split 50:50)',
+                    data: {
+                        columnCount: 2,
+                        gapPx: 12,
+                        columns: [
+                            {
+                                id: `col-1-${Date.now()}`,
+                                widthPercent: 50,
+                                align: 'left',
+                                content: {
+                                    type: 'callout',
+                                    calloutVariant: 'neutral',
+                                    calloutTitle: 'CATATAN',
+                                    calloutText: 'Catatan penting atau klausul dokumen.',
+                                },
+                            },
+                            {
+                                id: `col-2-${Date.now()}`,
+                                widthPercent: 50,
+                                align: 'center',
+                                content: {
+                                    type: 'signature',
+                                    signRole: 'Pihak Pertama',
+                                    signName: '{{nama_konsumen}}',
+                                    signSubtext: 'Konsumen',
+                                    signHasQr: false,
+                                    signHasMaterai: true,
+                                },
+                            },
+                        ],
+                    },
+                };
+            case 'custom_kop':
+                return {
+                    id,
+                    type: 'custom_kop',
+                    title: 'Kop Surat Perusahaan',
+                    data: {
+                        layoutMode: '2_col',
+                        showBottomDivider: true,
+                        bottomDivider: {
+                            id: 'div-bot',
+                            type: 'divider',
+                            style: 'double',
+                            thicknessPx: 2,
+                            colorHex: '#0f172a',
+                            marginTopPx: 6,
+                            marginBottomPx: 12,
+                        },
+                        columns: [
+                            {
+                                id: 'col-1',
+                                widthPercent: 20,
+                                align: 'center',
+                                elements: [
+                                    {
+                                        id: 'el-logo',
+                                        type: 'logo',
+                                        url: '',
+                                        widthPx: 80,
+                                        maxHeightPx: 60,
+                                        align: 'center',
+                                    },
+                                ],
+                            },
+                            {
+                                id: 'col-2',
+                                widthPercent: 80,
+                                align: 'center',
+                                elements: [
+                                    {
+                                        id: 'el-t1',
+                                        type: 'text',
+                                        content: 'PT CASANUMA MODERN LIVING',
+                                        fontSizePt: 13,
+                                        fontWeight: '800',
+                                        colorHex: '#0f172a',
+                                        isUppercase: true,
+                                        align: 'center',
+                                    },
+                                    {
+                                        id: 'el-t2',
+                                        type: 'text',
+                                        content: 'PENGEMBANG PERUMAHAN & PROPERTY RESIDENTIAL TERPADU',
+                                        fontSizePt: 8.5,
+                                        fontWeight: 'bold',
+                                        colorHex: '#334155',
+                                        isUppercase: true,
+                                        align: 'center',
+                                    },
+                                    {
+                                        id: 'el-t3',
+                                        type: 'text',
+                                        content: 'Jl. Boulevard Utama No. 88, Bandung • Telp: (022) 8765-4321 • Email: info@casanuma.com',
+                                        fontSizePt: 7.5,
+                                        fontWeight: 'normal',
+                                        colorHex: '#64748b',
+                                        isUppercase: false,
+                                        align: 'center',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                };
             case 'doc_header':
                 return {
                     id,
@@ -172,6 +282,37 @@ export default function QuickInsertDivider({
                         contentHtml: '<p>Demikian surat perjanjian ini dibuat dalam rangkap 2 (dua) serta memiliki kekuatan hukum yang sama bagi kedua belah pihak.</p>',
                     },
                 };
+            case 'dynamic_table':
+                return {
+                    id,
+                    type: 'dynamic_table',
+                    title: 'Tabel Kustom Dinamis',
+                    data: {
+                        sectionTitle: 'TABEL RINCIAN BIAYA',
+                        headers: ['Keterangan', 'Rincian', 'Nominal (Rp)'],
+                        showBorder: true,
+                        isStriped: true,
+                        rows: [
+                            {
+                                id: 'r-1',
+                                cells: [
+                                    { id: 'c-1-1', text: 'Nama Konsumen' },
+                                    { id: 'c-1-2', text: '{{nama_konsumen}}' },
+                                    { id: 'c-1-3', text: '-' },
+                                ],
+                            },
+                            {
+                                id: 'r-2',
+                                isRepeatable: true,
+                                cells: [
+                                    { id: 'c-2-1', text: 'Tanda Jadi (Booking)' },
+                                    { id: 'c-2-2', text: 'Pembayaran Sah' },
+                                    { id: 'c-2-3', text: '{{booking_fee}}' },
+                                ],
+                            },
+                        ],
+                    },
+                };
         }
     };
 
@@ -205,6 +346,10 @@ export default function QuickInsertDivider({
                         Sisipkan Blok Di Sini (#{atIndex + 1})
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleSelect('column_container')} className="text-xs gap-2 py-1.5 cursor-pointer">
+                        <Columns className="size-3.5 text-indigo-600" />
+                        <span>Container Multi-Kolom</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleSelect('doc_header')} className="text-xs gap-2 py-1.5 cursor-pointer">
                         <FileText className="size-3.5 text-blue-500" />
                         <span>Header & No. Surat</span>
@@ -217,9 +362,13 @@ export default function QuickInsertDivider({
                         <Building2 className="size-3.5 text-indigo-500" />
                         <span>Spesifikasi Unit</span>
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleSelect('dynamic_table')} className="text-xs gap-2 py-1.5 cursor-pointer">
+                        <Calculator className="size-3.5 text-emerald-500" />
+                        <span>Tabel Dinamis / Looping</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleSelect('cost_summary')} className="text-xs gap-2 py-1.5 cursor-pointer">
                         <Calculator className="size-3.5 text-emerald-500" />
-                        <span>Rincian Biaya</span>
+                        <span>Rincian Biaya Standar</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleSelect('payment_schedule')} className="text-xs gap-2 py-1.5 cursor-pointer">
                         <Calendar className="size-3.5 text-teal-500" />
