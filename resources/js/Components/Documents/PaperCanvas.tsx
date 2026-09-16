@@ -27,6 +27,8 @@ export interface PaperCanvasProps {
     orientation: 'portrait' | 'landscape';
     zoomPercent: number;
     showMarginGuides?: boolean;
+    watermarkText?: string | null;
+    watermarkOpacity?: number;
     letterhead: LetterheadProps;
     footerText?: string | null;
     children: React.ReactNode;
@@ -42,6 +44,8 @@ export default function PaperCanvas({
     orientation,
     zoomPercent = 100,
     showMarginGuides = true,
+    watermarkText,
+    watermarkOpacity = 10,
     letterhead,
     footerText,
     children,
@@ -178,23 +182,40 @@ export default function PaperCanvas({
                     </div>
                 )}
 
+                {/* Watermark Overlay */}
+                {watermarkText && (
+                    <div
+                        className="pointer-events-none select-none absolute inset-0 overflow-hidden flex items-center justify-center z-0 print:flex"
+                        aria-hidden="true"
+                    >
+                        <span
+                            style={{
+                                opacity: (watermarkOpacity ?? 10) / 100,
+                                fontSize: `${64 * zoomFactor}px`,
+                                letterSpacing: '0.18em',
+                            }}
+                            className="font-black tracking-widest text-slate-900 uppercase -rotate-45 transform whitespace-nowrap select-none"
+                        >
+                            {watermarkText}
+                        </span>
+                    </div>
+                )}
+
                 {/* Top Section: Kop Surat */}
-                <div className="w-full shrink-0">
+                <div className="w-full shrink-0 relative z-10">
                     {renderLetterhead()}
                 </div>
 
                 {/* Content Section */}
-                <div className="w-full grow leading-relaxed">
+                <div className="w-full grow leading-relaxed relative z-10">
                     {children}
                 </div>
 
                 {/* Bottom Section: Footer text */}
-                {footerText && (
-                    <div className="w-full shrink-0 pt-4 mt-6 border-t border-slate-300 text-[10px] text-gray-500 flex justify-between items-center select-none">
-                        <span>{footerText}</span>
-                        <span>Hal 1 / 1</span>
-                    </div>
-                )}
+                <div className="w-full shrink-0 pt-4 mt-6 border-t border-slate-300 text-[10px] text-gray-500 flex justify-between items-center select-none relative z-10">
+                    <span>{footerText || 'CASANUMA CRM — Official Document'}</span>
+                    <span className="font-mono text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Halaman 1 / 1</span>
+                </div>
             </div>
         </div>
     );

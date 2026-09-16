@@ -12,6 +12,7 @@ import TiptapImage from '@tiptap/extension-image';
 import { PlaceholderToken } from '@/Components/Documents/PlaceholderToken';
 import { PageBreak } from '@/Components/Documents/PageBreak';
 import { FontSize } from '@/Components/Documents/FontSize';
+import EditorDragHandle from '@/Components/Documents/EditorDragHandle';
 import {
     FileText,
     ArrowLeft,
@@ -62,7 +63,13 @@ import {
     RotateCcw,
     CloudCheck,
     AlertCircle,
+    Stamp,
+    FileCheck,
+    ScrollText,
+    BookOpen,
+    AlertTriangle,
 } from 'lucide-react';
+import { PROPERTY_DOCUMENT_PRESETS, PropertyPresetTemplate } from '@/Components/Documents/PropertyDocumentPresets';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -208,6 +215,20 @@ const DEFAULT_DOCUMENT_HTML = `
 </table>
 `;
 
+/**
+ * Automatically convert raw {{variable}} patterns into interactive atomic pill spans
+ */
+export function formatContentWithPills(html: string): string {
+    if (!html) return '';
+    return html.replace(
+        /(<span[^>]*data-type="placeholder-token"[^>]*>.*?<\/span>)|(\{\{([a-zA-Z0-9_]+)\}\})/g,
+        (match, pill, _raw, key) => {
+            if (pill) return pill;
+            return `<span data-type="placeholder-token" data-token="{{${key}}}" data-label="${key}">{{${key}}}</span>`;
+        }
+    );
+}
+
 export default function DocumentEditor({
     template,
     availableTokens,
@@ -248,7 +269,9 @@ export default function DocumentEditor({
     const [removeLetterheadImage, setRemoveLetterheadImage] = useState(false);
 
     // Content & Footer
-    const [contentHtml, setContentHtml] = useState<string>(template?.content_html || DEFAULT_DOCUMENT_HTML);
+    const [contentHtml, setContentHtml] = useState<string>(() =>
+        formatContentWithPills(template?.content_html || DEFAULT_DOCUMENT_HTML)
+    );
     const [footerText, setFooterText] = useState(template?.footer_text || '');
     const [isDefault, setIsDefault] = useState(!!template?.is_default);
 
@@ -279,6 +302,18 @@ export default function DocumentEditor({
     const [imageUrlInput, setImageUrlInput] = useState('');
     const [isFullscreen, setIsFullscreen] = useState(false);
     const imageFileInputRef = useRef<HTMLInputElement | null>(null);
+    const editorContainerRef = useRef<HTMLDivElement | null>(null);
+
+    // Watermark states
+    const [watermarkText, setWatermarkText] = useState<string>(template?.description?.match(/\[watermark:(.*?)\]/)?.[1] || '');
+    const [watermarkOpacity, setWatermarkOpacity] = useState<number>(10);
+
+    // Preset Template Dialogs
+    const [presetModalOpen, setPresetModalOpen] = useState(false);
+    const [presetConfirmTarget, setPresetConfirmTarget] = useState<PropertyPresetTemplate | null>(null);
+
+    // Quick Legal Menu
+    const [quickLegalMenuOpen, setQuickLegalMenuOpen] = useState(false);
 
     const DRAFT_STORAGE_KEY = `casanuma_doc_template_draft_${template?.id || 'new'}`;
 
@@ -625,6 +660,166 @@ export default function DocumentEditor({
         toast.success('Blok tanda tangan & QR Manager disisipkan!');
     };
 
+    // Insert Materai 10.000 Box with Signature
+    const handleInsertMateraiBox = () => {
+        if (!editor) return;
+        editor.chain().focus().insertContent(`
+            <table style="width: 100%; border: none; margin-top: 28px; border-collapse: collapse;">
+                <tbody>
+                    <tr>
+                        <td style="width: 50%; border: none; text-align: center; vertical-align: top; padding: 10px;">
+                            <p style="font-size: 11px; margin-bottom: 8px; font-weight: 600;">Pihak Pertama (Konsumen),</p>
+                            <div style="width: 115px; height: 70px; border: 1.5px dashed #94a3b8; background-color: #f8fafc; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 6px; padding: 4px;">
+                                <span style="font-size: 7.5px; font-weight: bold; color: #64748b; letter-spacing: 0.5px;">MATERAI TEMPEL</span>
+                                <span style="font-size: 10.5px; font-weight: 800; color: #0284c7; margin: 2px 0;">Rp 10.000</span>
+                                <span style="font-size: 7px; color: #94a3b8;">Tanda Tangan Kena Materai</span>
+                            </div>
+                            <div style="height: 10px;"></div>
+                            <p style="font-weight: bold; font-size: 11px; text-decoration: underline; margin-bottom: 2px;">{{nama_konsumen}}</p>
+                            <p style="font-size: 10px; color: #64748b;">NIK: {{nik_konsumen}}</p>
+                        </td>
+                        <td style="width: 50%; border: none; text-align: center; vertical-align: top; padding: 10px;">
+                            <p style="font-size: 11px; margin-bottom: 8px; font-weight: 600;">Disetujui Oleh (Pengembang),</p>
+                            <div style="margin: 4px auto; height: 70px; display: flex; align-items: center; justify-content: center;">{{qr_manager}}</div>
+                            <div style="height: 10px;"></div>
+                            <p style="font-weight: bold; font-size: 11px; text-decoration: underline; margin-bottom: 2px;">{{nama_manager}}</p>
+                            <p style="font-size: 10px; color: #64748b;">Sales & Operational Manager</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p></p>
+        `).run();
+        setIsDirty(true);
+        toast.success('Kotak Materai Rp 10.000 & TTD disisipkan!');
+    };
+
+    // Insert 3-Party Signature Block (Konsumen, Developer, Notaris)
+    const handleInsertThreePartySignature = () => {
+        if (!editor) return;
+        editor.chain().focus().insertContent(`
+            <table style="width: 100%; border: none; margin-top: 32px; border-collapse: collapse;">
+                <tbody>
+                    <tr>
+                        <td style="width: 33.33%; border: none; text-align: center; vertical-align: top; padding: 6px;">
+                            <p style="font-size: 11px; margin-bottom: 6px; font-weight: 600;">Pihak Pertama (Konsumen),</p>
+                            <div style="width: 95px; height: 62px; border: 1.5px dashed #94a3b8; background-color: #f8fafc; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 4px;">
+                                <span style="font-size: 7px; font-weight: bold; color: #64748b;">MATERAI</span>
+                                <span style="font-size: 9px; font-weight: 800; color: #0284c7;">10.000</span>
+                            </div>
+                            <div style="height: 8px;"></div>
+                            <p style="font-weight: bold; font-size: 11px; text-decoration: underline;">{{nama_konsumen}}</p>
+                            <p style="font-size: 9.5px; color: #64748b;">Pembeli / Konsumen</p>
+                        </td>
+                        <td style="width: 33.33%; border: none; text-align: center; vertical-align: top; padding: 6px;">
+                            <p style="font-size: 11px; margin-bottom: 6px; font-weight: 600;">Pihak Kedua (Pengembang),</p>
+                            <div style="margin: 2px auto; height: 62px; display: flex; align-items: center; justify-content: center;">{{qr_manager}}</div>
+                            <div style="height: 8px;"></div>
+                            <p style="font-weight: bold; font-size: 11px; text-decoration: underline;">{{nama_manager}}</p>
+                            <p style="font-size: 9.5px; color: #64748b;">PT CASANUMA MODERN LIVING</p>
+                        </td>
+                        <td style="width: 33.33%; border: none; text-align: center; vertical-align: top; padding: 6px;">
+                            <p style="font-size: 11px; margin-bottom: 6px; font-weight: 600;">Mengetahui (Saksi / Notaris),</p>
+                            <div style="height: 70px;"></div>
+                            <p style="font-weight: bold; font-size: 11px; text-decoration: underline;">( ......................................... )</p>
+                            <p style="font-size: 9.5px; color: #64748b;">Notaris / PPAT Rekanan</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p></p>
+        `).run();
+        setIsDirty(true);
+        toast.success('Blok TTD 3 Pihak (Notaris/PPAT) disisipkan!');
+    };
+
+    // Insert Official Circular Company Stamp
+    const handleInsertCompanyStamp = () => {
+        if (!editor) return;
+        editor.chain().focus().insertContent(`
+            <div style="display: inline-block; padding: 8px 14px; border: 2.5px solid #2563eb; border-radius: 50%; color: #2563eb; font-family: ui-sans-serif, system-ui, sans-serif; text-align: center; transform: rotate(-8deg); margin: 6px; opacity: 0.85; user-select: none;">
+                <div style="font-size: 8px; font-weight: bold; letter-spacing: 1px; border-bottom: 1px solid #2563eb; padding-bottom: 2px;">PT CASANUMA MODERN LIVING</div>
+                <div style="font-size: 11px; font-weight: 900; letter-spacing: 1.5px; padding: 3px 0;">LEGAL APPROVED</div>
+                <div style="font-size: 7.5px; font-weight: bold; border-top: 1px solid #2563eb; padding-top: 2px;">OFFICIAL PROPERTY CRM</div>
+            </div>
+            <p></p>
+        `).run();
+        setIsDirty(true);
+        toast.success('Stempel resmi perusahaan disisipkan!');
+    };
+
+    // Insert Payment Schedule Table
+    const handleInsertPaymentScheduleTable = () => {
+        if (!editor) return;
+        editor.chain().focus().insertContent(`
+            <table style="width: 100%; border-collapse: collapse; margin: 14px 0;">
+                <thead>
+                    <tr style="background-color: #f1f5f9;">
+                        <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; font-size: 10px; width: 8%;">No</th>
+                        <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; font-size: 10px; width: 35%;">Tahapan Pembayaran</th>
+                        <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: right; font-size: 10px; width: 27%;">Nominal (Rp)</th>
+                        <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; font-size: 10px; width: 30%;">Jatuh Tempo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; font-size: 10px;">1</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10px; font-weight: 600;">Booking Fee / Tanda Jadi</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: right; font-size: 10px; font-weight: bold;">{{booking_fee}}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; font-size: 10px;">{{tanggal_transaksi}} (Lunas)</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; font-size: 10px;">2</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10px;">Uang Muka (DP 1)</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: right; font-size: 10px;">{{nominal_dp}}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; font-size: 10px;">14 Hari pasca booking</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; font-size: 10px;">3</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10px;">Pelunasan / Akad KPR Bank</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: right; font-size: 10px; font-weight: bold; color: #0284c7;">{{sisa_pembayaran}}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; font-size: 10px;">Saat Akad Kredit</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p></p>
+        `).run();
+        setIsDirty(true);
+        toast.success('Tabel jadwal angsuran pembayaran disisipkan!');
+    };
+
+    // Apply Preset Template Handler
+    const handleSelectPreset = (preset: PropertyPresetTemplate) => {
+        const currentHtml = editor ? editor.getHTML() : contentHtml;
+        const hasCustomContent = currentHtml && currentHtml.length > 100 && currentHtml !== DEFAULT_DOCUMENT_HTML;
+        if (hasCustomContent) {
+            setPresetConfirmTarget(preset);
+        } else {
+            executeApplyPreset(preset);
+        }
+    };
+
+    const executeApplyPreset = (preset: PropertyPresetTemplate) => {
+        setName(preset.title);
+        setCategory(preset.category);
+        setPaperSize(preset.paperSize);
+        setOrientation(preset.orientation);
+        if (preset.watermarkPreset) {
+            setWatermarkText(preset.watermarkPreset);
+        } else {
+            setWatermarkText('');
+        }
+        const pillHtml = formatContentWithPills(preset.contentHtml);
+        setContentHtml(pillHtml);
+        if (editor) {
+            editor.commands.setContent(pillHtml);
+        }
+        setIsDirty(true);
+        setPresetModalOpen(false);
+        setPresetConfirmTarget(null);
+        toast.success(`Preset "${preset.title}" berhasil diterapkan!`);
+    };
+
     // Save Template
     const handleSave = () => {
         if (!name.trim()) {
@@ -910,6 +1105,19 @@ export default function DocumentEditor({
                                 <span>Pratinjau Nyata</span>
                             </Button>
                         </div>
+
+                        {/* Preset Template Gallery Button */}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 sm:h-9 gap-1.5 rounded-xl border-primary/30 text-primary hover:bg-primary/10 shadow-2xs font-medium"
+                            onClick={() => setPresetModalOpen(true)}
+                            title="Pilih Template Resmi Properti Siap Pakai"
+                        >
+                            <Sparkles className="size-3.5 text-primary" />
+                            <span className="hidden md:inline">Preset Template</span>
+                        </Button>
 
                         {/* Keyboard Shortcuts Dialog Trigger */}
                         <Button
@@ -1314,27 +1522,92 @@ export default function DocumentEditor({
                             </Button>
                         </div>
 
-                        {/* Quick Insertion Chips */}
+                        {/* Quick Insertion Chips & Property Legal Menu */}
                         <div className="flex items-center gap-1.5 shrink-0">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 text-xs gap-1.5 rounded-lg text-primary hover:bg-primary/10 border border-primary/30 font-semibold"
+                                    >
+                                        <Stamp className="size-3.5" />
+                                        <span>+ Blok Legalitas</span>
+                                        <ChevronDown className="size-3 opacity-60" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-64 rounded-xl border-border">
+                                    <DropdownMenuLabel className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                                        Elemen Sah Properti Indonesia
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={handleInsertMateraiBox} className="text-xs gap-2 py-2 cursor-pointer">
+                                        <FileCheck className="size-3.5 text-sky-600" />
+                                        <div>
+                                            <p className="font-semibold text-foreground">Kotak Materai Rp 10.000</p>
+                                            <p className="text-[10px] text-muted-foreground">Siap TTD konsumen & QR manager</p>
+                                        </div>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleInsertThreePartySignature} className="text-xs gap-2 py-2 cursor-pointer">
+                                        <ScrollText className="size-3.5 text-indigo-600" />
+                                        <div>
+                                            <p className="font-semibold text-foreground">TTD 3 Pihak (+ Notaris/PPAT)</p>
+                                            <p className="text-[10px] text-muted-foreground">Konsumen, Developer & Saksi Notaris</p>
+                                        </div>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleInsertCompanyStamp} className="text-xs gap-2 py-2 cursor-pointer">
+                                        <Stamp className="size-3.5 text-blue-600" />
+                                        <div>
+                                            <p className="font-semibold text-foreground">Stempel Digital Resmi</p>
+                                            <p className="text-[10px] text-muted-foreground">Cap basah PT Casanuma rotasi -8°</p>
+                                        </div>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={handleInsertPaymentScheduleTable} className="text-xs gap-2 py-2 cursor-pointer">
+                                        <FileSpreadsheet className="size-3.5 text-emerald-600" />
+                                        <div>
+                                            <p className="font-semibold text-foreground">Tabel Jadwal Angsuran / DP</p>
+                                            <p className="text-[10px] text-muted-foreground">Booking, Uang Muka, Pelunasan KPR</p>
+                                        </div>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleInsertReceiptTable} className="text-xs gap-2 py-2 cursor-pointer">
+                                        <FileSpreadsheet className="size-3.5 text-amber-600" />
+                                        <div>
+                                            <p className="font-semibold text-foreground">Tabel Rincian Kwitansi</p>
+                                            <p className="text-[10px] text-muted-foreground">Kwitansi pembayaran terbilang</p>
+                                        </div>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleInsertSignatureBlock} className="text-xs gap-2 py-2 cursor-pointer">
+                                        <QrIcon className="size-3.5 text-primary" />
+                                        <div>
+                                            <p className="font-semibold text-foreground">TTD 2 Pihak + QR Code</p>
+                                            <p className="text-[10px] text-muted-foreground">Tanda tangan standar manajer</p>
+                                        </div>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={handleInsertReceiptTable}
-                                className="h-8 text-xs gap-1.5 rounded-lg text-primary hover:bg-primary/10 border border-primary/20"
+                                onClick={handleInsertMateraiBox}
+                                className="h-8 text-xs gap-1.5 rounded-lg text-foreground/80 hover:text-foreground hover:bg-muted border border-border/60 hidden xl:flex"
+                                title="Sisipkan Kotak Materai 10.000"
                             >
-                                <FileSpreadsheet className="size-3.5" />
-                                <span>+ Tabel Rincian</span>
+                                <FileCheck className="size-3.5 text-sky-600" />
+                                <span>+ Materai 10rb</span>
                             </Button>
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={handleInsertSignatureBlock}
-                                className="h-8 text-xs gap-1.5 rounded-lg text-primary hover:bg-primary/10 border border-primary/20"
+                                onClick={handleInsertPaymentScheduleTable}
+                                className="h-8 text-xs gap-1.5 rounded-lg text-foreground/80 hover:text-foreground hover:bg-muted border border-border/60 hidden xl:flex"
+                                title="Sisipkan Tabel Jadwal Angsuran"
                             >
-                                <QrIcon className="size-3.5" />
-                                <span>+ TTD & QR Approval</span>
+                                <FileSpreadsheet className="size-3.5 text-emerald-600" />
+                                <span>+ Jadwal DP</span>
                             </Button>
                         </div>
                     </div>
@@ -1423,6 +1696,8 @@ export default function DocumentEditor({
                                     orientation={orientation}
                                     zoomPercent={zoomPercent}
                                     showMarginGuides={showGuides}
+                                    watermarkText={watermarkText}
+                                    watermarkOpacity={watermarkOpacity}
                                     footerText={footerText}
                                     letterhead={{
                                         mode: letterheadMode,
@@ -1466,6 +1741,8 @@ export default function DocumentEditor({
                                 orientation={orientation}
                                 zoomPercent={zoomPercent}
                                 showMarginGuides={showGuides}
+                                watermarkText={watermarkText}
+                                watermarkOpacity={watermarkOpacity}
                                 footerText={footerText}
                                 letterhead={{
                                     mode: letterheadMode,
@@ -1484,7 +1761,8 @@ export default function DocumentEditor({
                                     },
                                 }}
                             >
-                                <div className="document-editor-content">
+                                <div ref={editorContainerRef} className="document-editor-content relative">
+                                    <EditorDragHandle editor={editor} containerRef={editorContainerRef} />
                                     <EditorContent editor={editor} />
                                 </div>
                             </PaperCanvas>
@@ -1860,6 +2138,84 @@ export default function DocumentEditor({
                                             />
                                         </div>
 
+                                        {/* Watermark Settings */}
+                                        <div className="space-y-2.5 pt-2 border-t border-border">
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-xs font-semibold flex items-center gap-1.5">
+                                                    <Stamp className="size-3.5 text-primary" />
+                                                    <span>Watermark / Cap Transparan</span>
+                                                </Label>
+                                                {watermarkText && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold">
+                                                        Aktif
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Quick Watermark Chips */}
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {[
+                                                    { label: 'Tanpa', value: '' },
+                                                    { label: 'DRAFT', value: 'DRAFT' },
+                                                    { label: 'LUNAS', value: 'LUNAS' },
+                                                    { label: 'SALINAN', value: 'SALINAN' },
+                                                    { label: 'SP1', value: 'SURAT PERINGATAN' },
+                                                    { label: 'CONFIDENTIAL', value: 'RAHASIA' },
+                                                ].map((chip) => (
+                                                    <button
+                                                        key={chip.label}
+                                                        type="button"
+                                                        onClick={() => setWatermarkText(chip.value)}
+                                                        className={`text-[10px] px-2 py-1 rounded-lg border font-medium transition-all ${
+                                                            watermarkText === chip.value
+                                                                ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                                                                : 'bg-background hover:bg-muted text-muted-foreground border-border'
+                                                        }`}
+                                                    >
+                                                        {chip.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* Custom Watermark Input */}
+                                            <div>
+                                                <Input
+                                                    value={watermarkText}
+                                                    onChange={(e) => setWatermarkText(e.target.value)}
+                                                    placeholder="Ketik teks watermark kustom..."
+                                                    className="h-8 text-xs rounded-xl"
+                                                />
+                                            </div>
+
+                                            {/* Watermark Opacity Level */}
+                                            {watermarkText && (
+                                                <div className="space-y-1 bg-muted/40 p-2.5 rounded-xl border border-border/60">
+                                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                                        <span>Transparansi (Opacity):</span>
+                                                        <span className="font-semibold text-foreground">
+                                                            {Math.round(watermarkOpacity * 100)}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="grid grid-cols-4 gap-1.5 pt-1">
+                                                        {[0.05, 0.08, 0.12, 0.18].map((op) => (
+                                                            <button
+                                                                key={op}
+                                                                type="button"
+                                                                onClick={() => setWatermarkOpacity(op)}
+                                                                className={`text-[10px] py-1 rounded-lg border font-medium transition-all ${
+                                                                    watermarkOpacity === op
+                                                                        ? 'bg-primary text-primary-foreground border-primary font-bold'
+                                                                        : 'bg-background hover:bg-muted text-muted-foreground border-border'
+                                                                }`}
+                                                            >
+                                                                {Math.round(op * 100)}%
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
                                         {/* Set Default Toggle */}
                                         <div className="flex items-center gap-2 pt-2 border-t border-border">
                                             <Checkbox
@@ -2020,6 +2376,168 @@ export default function DocumentEditor({
                     <DialogFooter>
                         <Button variant="ghost" onClick={() => setImageDialogOpen(false)} className="rounded-xl">
                             Batal
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Preset Template Library Dialog */}
+            <Dialog open={presetModalOpen} onOpenChange={setPresetModalOpen}>
+                <DialogContent className="sm:max-w-3xl flex flex-col p-0 gap-0 overflow-hidden max-h-[90vh]">
+                    <DialogHeader className="p-5 border-b border-border shrink-0 bg-muted/10">
+                        <DialogTitle className="flex items-center gap-2.5 text-base font-bold">
+                            <div className="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                <BookOpen className="size-4" />
+                            </div>
+                            <div>
+                                <span>Pustaka Template Dokumen Properti</span>
+                                <span className="block text-xs font-normal text-muted-foreground mt-0.5">
+                                    Pilih format dokumen resmi siap pakai berstandar hukum properti Indonesia
+                                </span>
+                            </div>
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                            {PROPERTY_DOCUMENT_PRESETS.map((preset) => {
+                                const categoryColor: Record<string, string> = {
+                                    spr: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+                                    receipt: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                                    bast: 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+                                    kpr: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
+                                    warning_letter: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+                                };
+
+                                return (
+                                    <div
+                                        key={preset.id}
+                                        className="group relative flex flex-col justify-between p-4 rounded-2xl border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200"
+                                    >
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span
+                                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-md border uppercase tracking-wider ${
+                                                        categoryColor[preset.category] || 'bg-muted text-muted-foreground'
+                                                    }`}
+                                                >
+                                                    {preset.category.replace('_', ' ')}
+                                                </span>
+                                                <span className="text-[11px] text-muted-foreground font-mono">
+                                                    {preset.paperSize.toUpperCase()} • {preset.orientation}
+                                                </span>
+                                            </div>
+
+                                            <h4 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
+                                                {preset.title}
+                                            </h4>
+
+                                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                                                {preset.description}
+                                            </p>
+
+                                            {/* Feature tags */}
+                                            <div className="flex flex-wrap gap-1 pt-1">
+                                                {preset.id === 'spr_standard' && (
+                                                    <>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Materai 10.000</span>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Tabel Skema DP</span>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Klausul Pembatalan</span>
+                                                    </>
+                                                )}
+                                                {preset.id === 'receipt_standard' && (
+                                                    <>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">QR Validasi Digital</span>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Stempel Lunas</span>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Terbilang Otomatis</span>
+                                                    </>
+                                                )}
+                                                {preset.id === 'bast_standard' && (
+                                                    <>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Ceklis 6 Item Fisik</span>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">TTD 3 Pihak (+PPAT)</span>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Masa Retensi 100 Hari</span>
+                                                    </>
+                                                )}
+                                                {preset.id === 'kpr_invitation' && (
+                                                    <>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Jadwal Bank & Notaris</span>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Daftar Dokumen Asli</span>
+                                                    </>
+                                                )}
+                                                {preset.id === 'sp1_billing' && (
+                                                    <>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 font-medium">Watermark SP</span>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Rincian Tunggakan + Denda</span>
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Batas Waktu 7 Hari</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 mt-2 border-t border-border/60 flex items-center justify-end">
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                className="w-full sm:w-auto rounded-xl text-xs gap-1.5 shadow-xs"
+                                                onClick={() => handleSelectPreset(preset)}
+                                            >
+                                                <ScrollText className="size-3.5" />
+                                                <span>Gunakan Template Ini</span>
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <DialogFooter className="p-4 border-t border-border bg-muted/20 shrink-0 flex items-center justify-between sm:justify-between">
+                        <span className="text-xs text-muted-foreground hidden sm:inline">
+                            💡 Menggunakan template akan menyetel format kertas, watermark, dan struktur dokumen secara otomatis.
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPresetModalOpen(false)}
+                            className="rounded-xl text-xs w-full sm:w-auto"
+                        >
+                            Tutup
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Preset Overwrite Confirmation Dialog */}
+            <Dialog open={!!presetConfirmTarget} onOpenChange={(open) => !open && setPresetConfirmTarget(null)}>
+                <DialogContent className="sm:max-w-md rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
+                            <AlertTriangle className="size-5 shrink-0" />
+                            <span>Terapkan Template Dokumen?</span>
+                        </DialogTitle>
+                        <DialogDescription className="text-xs leading-relaxed pt-1">
+                            Anda akan menerapkan template <strong className="text-foreground">{presetConfirmTarget?.title}</strong>.
+                            <br />
+                            Konten pada kanvas editor saat ini akan ditimpa dengan teks dan tata letak template ini. Pastikan Anda telah menyimpan perubahan sebelumnya jika masih diperlukan.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter className="gap-2 sm:gap-0 pt-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPresetConfirmTarget(null)}
+                            className="rounded-xl text-xs"
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            size="sm"
+                            onClick={() => presetConfirmTarget && executeApplyPreset(presetConfirmTarget)}
+                            className="rounded-xl text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                        >
+                            Ya, Terapkan Sekarang
                         </Button>
                     </DialogFooter>
                 </DialogContent>

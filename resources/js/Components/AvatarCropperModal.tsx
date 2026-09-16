@@ -136,8 +136,8 @@ export default function AvatarCropperModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && !isProcessing && onClose()}>
-            <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
-                <DialogHeader className="p-5 pb-3 border-b border-border bg-muted/20">
+            <DialogContent className="sm:max-w-lg flex flex-col p-0 gap-0 overflow-hidden">
+                <DialogHeader className="p-5 pb-3 border-b border-border bg-muted/20 shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
                             <CropIcon className="size-5" />
@@ -230,7 +230,7 @@ export default function AvatarCropperModal({
                     </div>
                 </div>
 
-                <DialogFooter className="gap-2.5 sm:gap-3 p-4 border-t border-border bg-muted/20">
+                <DialogFooter className="gap-2.5 sm:gap-3 p-4 border-t border-border bg-muted/20 shrink-0">
                     <Button
                         type="button"
                         variant="outline"

@@ -290,3 +290,30 @@
   background: rgba(13, 148, 136, 0.12);
   pointer-events: none;
 }
+
+/* TipTap ProseMirror DropCursor for Block Drag & Drop */
+.ProseMirror-dropcursor {
+  border-top: 2.5px solid #3b82f6 !important;
+  background-color: #3b82f6 !important;
+  height: 2.5px !important;
+  border-radius: 2px !important;
+  pointer-events: none !important;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5) !important;
+  transition: transform 0.08s ease-out !important;
+}
+
+/* Selected Node Highlights */
+.document-editor-content .tiptap .ProseMirror-selectednode.placeholder-token-chip,
+.document-editor-content .tiptap .placeholder-token-chip.ProseMirror-selectednode {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 1.5px !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+  transform: translateY(-1px) !important;
+}
+
+.document-editor-content .tiptap .ProseMirror-selectednode:not(.placeholder-token-chip) {
+  outline: 2px solid rgba(59, 130, 246, 0.5) !important;
+  outline-offset: 2px !important;
+  border-radius: 6px !important;
+  background-color: rgba(239, 246, 255, 0.35) !important;
+}

@@ -303,7 +303,9 @@ class DocumentTemplateRenderer
      */
     public static function renderHtml(string $templateHtml, array $dictionary): string
     {
-        return str_replace(array_keys($dictionary), array_values($dictionary), $templateHtml);
+        // Strip interactive editor placeholder-token wrappers so printed & rendered documents are clean typography
+        $cleaned = preg_replace('/<span[^>]*data-type="placeholder-token"[^>]*>(.*?)<\/span>/is', '$1', $templateHtml);
+        return str_replace(array_keys($dictionary), array_values($dictionary), $cleaned ?? $templateHtml);
     }
 
     /**

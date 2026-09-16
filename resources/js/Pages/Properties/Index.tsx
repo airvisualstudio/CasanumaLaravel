@@ -969,8 +969,8 @@ export default function PropertiesIndex({
                 {/* DIALOG 1: TAMBAH / EDIT DEVELOPER (PT)                    */}
                 {/* ========================================================= */}
                 <Dialog open={devModalOpen} onOpenChange={setDevModalOpen}>
-                    <DialogContent className="sm:max-w-3xl p-0 overflow-hidden rounded-2xl border border-border/80 shadow-2xl bg-card">
-                        <DialogHeader className="px-6 py-5 border-b border-border/80 bg-muted/20">
+                    <DialogContent className="sm:max-w-3xl flex flex-col p-0 gap-0 overflow-hidden rounded-2xl border border-border/80 shadow-2xl bg-card max-h-[90vh]">
+                        <DialogHeader className="px-6 py-5 border-b border-border/80 bg-muted/20 shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
                                     <Building2 className="w-5 h-5" />
@@ -986,8 +986,8 @@ export default function PropertiesIndex({
                             </div>
                         </DialogHeader>
 
-                        <form onSubmit={handleSubmitDev}>
-                            <div className="px-6 py-5 max-h-[68vh] overflow-y-auto space-y-5 custom-scrollbar overscroll-contain">
+                        <form onSubmit={handleSubmitDev} className="flex flex-col flex-1 overflow-hidden">
+                            <div className="px-6 py-5 overflow-y-auto space-y-5 custom-scrollbar overscroll-contain flex-1">
                                 {/* Section 1: Identitas Legal & Operasional */}
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -1201,7 +1201,7 @@ export default function PropertiesIndex({
                                 </div>
                             </div>
 
-                            <DialogFooter className="px-6 py-4 border-t border-border/80 bg-muted/20 flex items-center justify-end gap-2.5">
+                            <DialogFooter className="px-6 py-4 border-t border-border/80 bg-muted/20 flex items-center justify-end gap-2.5 shrink-0">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -1229,8 +1229,8 @@ export default function PropertiesIndex({
                 {/* DIALOG 2: TAMBAH / EDIT PROYEK PERUMAHAN                  */}
                 {/* ========================================================= */}
                 <Dialog open={projModalOpen} onOpenChange={setProjModalOpen}>
-                    <DialogContent className="sm:max-w-3xl p-0 overflow-hidden rounded-2xl border border-border/80 shadow-2xl bg-card">
-                        <DialogHeader className="px-6 py-5 border-b border-border/80 bg-muted/20">
+                    <DialogContent className="sm:max-w-3xl flex flex-col p-0 gap-0 overflow-hidden rounded-2xl border border-border/80 shadow-2xl bg-card max-h-[90vh]">
+                        <DialogHeader className="px-6 py-5 border-b border-border/80 bg-muted/20 shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
                                     <Home className="w-5 h-5" />
@@ -1246,8 +1246,8 @@ export default function PropertiesIndex({
                             </div>
                         </DialogHeader>
 
-                        <form onSubmit={handleSubmitProj}>
-                            <div className="px-6 py-5 max-h-[68vh] overflow-y-auto space-y-5 custom-scrollbar overscroll-contain">
+                        <form onSubmit={handleSubmitProj} className="flex flex-col flex-1 overflow-hidden">
+                            <div className="px-6 py-5 overflow-y-auto space-y-5 custom-scrollbar overscroll-contain flex-1">
                                 {/* Section 1: Relasi & Status */}
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -1477,7 +1477,7 @@ export default function PropertiesIndex({
                                 </div>
                             </div>
 
-                            <DialogFooter className="px-6 py-4 border-t border-border/80 bg-muted/20 flex items-center justify-end gap-2.5">
+                            <DialogFooter className="px-6 py-4 border-t border-border/80 bg-muted/20 flex items-center justify-end gap-2.5 shrink-0">
                                 <Button
                                     type="button"
                                     variant="outline"

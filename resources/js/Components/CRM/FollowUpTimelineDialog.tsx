@@ -415,7 +415,7 @@ export default function FollowUpTimelineDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
                 {/* Header Banner */}
                 <div className="bg-gradient-to-r from-card to-muted/40 p-6 border-b border-border/80">
                     <DialogHeader>

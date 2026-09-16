@@ -1307,8 +1307,8 @@ export default function UsersIndex({ users, availableRoles, activeSales = [] }: 
 
                 {/* 5. Dialog Form Tambah / Edit Pengguna (Bertab Modern) */}
                 <Dialog open={isFormDialogOpen} onOpenChange={(open) => !open && closeFormDialog()}>
-                    <DialogContent className="sm:max-w-2xl p-0 overflow-hidden">
-                        <DialogHeader className="px-5 pt-4 pb-2 border-b border-border bg-muted/20">
+                    <DialogContent className="sm:max-w-2xl flex flex-col p-0 gap-0 overflow-hidden max-h-[90vh]">
+                        <DialogHeader className="px-5 pt-4 pb-2 border-b border-border bg-muted/20 shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
                                     {editingUser ? <Edit2 className="size-5" /> : <UserPlus className="size-5" />}
@@ -1376,8 +1376,8 @@ export default function UsersIndex({ users, availableRoles, activeSales = [] }: 
                             </div>
                         </DialogHeader>
 
-                        <form onSubmit={handleFormSubmit}>
-                            <div className="px-5 pt-3 pb-5 max-h-[60vh] overflow-y-auto space-y-4 custom-scrollbar">
+                        <form onSubmit={handleFormSubmit} className="flex flex-col flex-1 overflow-hidden">
+                            <div className="px-5 pt-3 pb-5 overflow-y-auto space-y-4 custom-scrollbar flex-1">
                                 {/* TAB 1: AKUN & ROLE */}
                                 {activeTab === 'account' && (
                                     <div className="space-y-4 animate-in fade-in-50">
@@ -1879,7 +1879,7 @@ export default function UsersIndex({ users, availableRoles, activeSales = [] }: 
                             </div>
 
                             {/* Standard DialogFooter with comfortable spacing */}
-                            <DialogFooter className="gap-2.5 sm:gap-3 p-4 border-t border-border bg-muted/20">
+                            <DialogFooter className="gap-2.5 sm:gap-3 p-4 border-t border-border bg-muted/20 shrink-0">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -1915,10 +1915,10 @@ export default function UsersIndex({ users, availableRoles, activeSales = [] }: 
 
                 {/* 7. Dialog Detail Dossier Staf (Modal Profil Lengkap) */}
                 <Dialog open={!!userToView} onOpenChange={(open) => !open && setUserToView(null)}>
-                    <DialogContent className="sm:max-w-xl p-0 overflow-hidden">
+                    <DialogContent className="sm:max-w-xl flex flex-col p-0 gap-0 overflow-hidden max-h-[90vh]">
                         {userToView && (
                             <>
-                                <DialogHeader className="p-5 pb-4 border-b border-border bg-linear-to-r from-muted/30 to-muted/10">
+                                <DialogHeader className="p-5 pb-4 border-b border-border bg-linear-to-r from-muted/30 to-muted/10 shrink-0">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex items-center gap-3.5">
                                             <UserAvatar user={userToView} className="size-14" textClassName="text-lg" />
@@ -1948,7 +1948,7 @@ export default function UsersIndex({ users, availableRoles, activeSales = [] }: 
                                     </div>
                                 </DialogHeader>
 
-                                <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                                <div className="flex-1 p-5 space-y-4 overflow-y-auto custom-scrollbar">
                                     {/* 1. Informasi Kontak & Pribadi */}
                                     <div className="rounded-xl border border-border/80 p-4 space-y-2.5">
                                         <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
@@ -2040,7 +2040,7 @@ export default function UsersIndex({ users, availableRoles, activeSales = [] }: 
                                     </div>
                                 </div>
 
-                                <DialogFooter className="gap-2.5 sm:gap-3 p-4 border-t border-border bg-muted/20">
+                                <DialogFooter className="gap-2.5 sm:gap-3 p-4 border-t border-border bg-muted/20 shrink-0">
                                     <Button
                                         type="button"
                                         variant="outline"
